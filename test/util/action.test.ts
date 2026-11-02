@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { registerActionClickListener, openPrimaryWebUi, updateBadgeText } from "../../src/util/action";
 import { getDefaultSettings } from "../../src/util/settings-defaults";
 import { serializeSettings } from "../../src/util/serializer";
@@ -16,6 +16,11 @@ function seedSettings(overrides: Partial<ReturnType<typeof getDefaultSettings>>)
     (chrome as any).__storage[SETTINGS_KEY] = serializeSettings(settings);
 }
 
+function expectWebUiTabOpened(url: string): void {
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "about:blank", active: true });
+    expect(chrome.tabs.update).toHaveBeenCalledWith(1, { url });
+}
+
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 
 describe("registerActionClickListener", () => {
@@ -29,7 +34,7 @@ describe("registerActionClickListener", () => {
         seedWebUISettings([makeWebUISettings({ host: "h", port: 8080 })]);
         registeredClickListener()({} as chrome.tabs.Tab);
         await flush();
-        expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "http://h:8080/", active: true });
+        expectWebUiTabOpened("http://h:8080/");
     });
 
     it("opens the WebUI picker popup when that behavior is selected and multiple WebUIs are configured", async () => {
@@ -54,7 +59,7 @@ describe("registerActionClickListener", () => {
         await flush();
 
         expect(chrome.action.openPopup).not.toHaveBeenCalled();
-        expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "http://h:8080/", active: true });
+        expectWebUiTabOpened("http://h:8080/");
     });
 
     it("opens the page-links popup when that behavior is selected", async () => {
@@ -76,7 +81,7 @@ describe("registerActionClickListener", () => {
         await flush();
 
         expect(chrome.action.openPopup).not.toHaveBeenCalled();
-        expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "http://h:8080/", active: true });
+        expectWebUiTabOpened("http://h:8080/");
     });
 });
 
@@ -87,7 +92,24 @@ describe("openPrimaryWebUi", () => {
             makeWebUISettings({ id: "b", host: "second", port: 9090 }),
         ]);
         await openPrimaryWebUi();
-        expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "http://first:8080/", active: true });
+        expectWebUiTabOpened("http://first:8080/");
+    });
+
+    it("remembers the new tab as belonging to the webui before navigating it", async () => {
+        seedWebUISettings([makeWebUISettings({ id: "a", host: "first", port: 8080 })]);
+        await openPrimaryWebUi();
+
+        expect(chrome.storage.session.set).toHaveBeenCalledWith({ "webUiTab:1": "a" });
+        expect(vi.mocked(chrome.storage.session.set).mock.invocationCallOrder[0])
+            .toBeLessThan(vi.mocked(chrome.tabs.update).mock.invocationCallOrder[0]!);
+    });
+
+    it("throws instead of navigating when the new tab has no id", async () => {
+        seedWebUISettings([makeWebUISettings({ host: "h", port: 8080 })]);
+        (chrome.tabs.create as any).mockResolvedValueOnce({});
+
+        await expect(openPrimaryWebUi()).rejects.toThrow("Opened tab has no id");
+        expect(chrome.tabs.update).not.toHaveBeenCalled();
     });
 
     it("does nothing when no webui is configured", async () => {

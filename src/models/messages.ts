@@ -50,6 +50,10 @@ export const SetTorrentLabelMessage: IMessagable = {
     action: "setTorrentLabel"
 }
 
+export const OpenWebUiMessage: IMessagable = {
+    action: "openWebUi"
+}
+
 export const FetchTorrentInPageMessage: IMessagable = {
     action: "fetchTorrentInPage"
 }
@@ -72,6 +76,10 @@ export interface ISetTorrentLabelMessage extends IMessagable {
     torrentName: string;
     label: string;
     labels: string[];
+}
+
+export interface IOpenWebUiMessage extends IMessagable {
+    webUiId: string;
 }
 
 export interface IPreAddTorrentMessage extends IMessagable {

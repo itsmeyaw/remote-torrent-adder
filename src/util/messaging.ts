@@ -18,13 +18,15 @@ import {
     type ITestNotificationMessage,
     type IMessagable,
     SetTorrentLabelMessage,
-    type ISetTorrentLabelMessage
+    type ISetTorrentLabelMessage,
+    OpenWebUiMessage,
+    type IOpenWebUiMessage
 } from "../models/messages";
 import { type RTASettings } from "../models/settings";
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ConnectionTestResult, type TorrentAddingResult, type TorrentWebUI, type WebUISettings } from "../models/webui";
 import { WebUIFactory } from "../models/clients";
-import { openActionPopup, openPopupWindow, updateBadgeText } from "./action";
+import { openActionPopup, openPopupWindow, openWebUi, updateBadgeText } from "./action";
 import { getAutoDirResult, getAutoLabelResult } from "./auto-label-dir-matcher";
 import { executeMethodWrappedWithOriginStripped } from "./cors-tricks";
 import { CloudflareChallengeError, downloadTorrent, type TorrentDownloadContext } from "./download";
@@ -148,6 +150,23 @@ export function registerMessageListener(): void {
                 }
                 case UpdateActionBadgeText.action: {
                     updateBadgeText((message as IUpdateActionBadgeTextMessage).text, sender.tab?.id || -1);
+                    break;
+                }
+                case OpenWebUiMessage.action: {
+                    if (!sender.url?.startsWith(ext.runtime.getURL(""))) {
+                        respondWithError(new Error("openWebUi is only accepted from extension pages"));
+                        break;
+                    }
+                    willRespondAsync = true;
+                    getWebUiById((message as IOpenWebUiMessage).webUiId, settingsProvider)
+                        .then(webUi => {
+                            if (!webUi) {
+                                throw new Error(`No WebUI found for id ${(message as IOpenWebUiMessage).webUiId}`);
+                            }
+                            void openWebUi(webUi).catch(error => console.error("Failed opening WebUI", error));
+                            finish({});
+                        })
+                        .catch(respondWithError);
                     break;
                 }
                 default: {

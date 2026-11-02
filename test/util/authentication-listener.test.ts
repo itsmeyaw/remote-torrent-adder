@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { registerAuthenticationListener, resolveAuthCredentials } from "../../src/util/authentication-listener";
+import { registerAuthenticationListener, rememberWebUiTab, resolveAuthCredentials } from "../../src/util/authentication-listener";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
 
 const webUiSettings = (over = {}) => makeWebUISettings({ host: "h", port: 8080, ...over });
@@ -37,12 +37,13 @@ describe("registerAuthenticationListener", () => {
         expect(asyncCallback).toHaveBeenCalledWith({ authCredentials: { username: "u", password: "p" } });
     });
 
-    it("hands tab-originated challenges straight back to the browser", async () => {
+    it("hands challenges from tabs RTA did not open straight back to the browser", async () => {
         seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
         const listener = registeredAuthListener();
         const asyncCallback = vi.fn();
 
         listener(authDetails({ requestId: "async-2", tabId: 5 }), asyncCallback);
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         expect(asyncCallback).toHaveBeenCalledWith({});
         expect(chrome.storage.local.get).not.toHaveBeenCalled();
@@ -82,6 +83,53 @@ describe("resolveAuthCredentials", () => {
     it("ignores challenges that originate from a real tab", async () => {
         seedWebUISettings([webUiSettings()]);
         expect(await resolveAuthCredentials(authDetails({ requestId: "e", tabId: 5 }))).toEqual({});
+    });
+
+    it("supplies credentials to a tab RTA opened for a url under the webui", async () => {
+        seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
+        await rememberWebUiTab(5, "webui-1");
+        const details = authDetails({ requestId: "t1", tabId: 5, type: "main_frame", url: "http://h:8080/" });
+        expect(await resolveAuthCredentials(details)).toEqual({
+            authCredentials: { username: "u", password: "p" },
+        });
+    });
+
+    it("stays out of a tab RTA opened when the url is outside the webui", async () => {
+        seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
+        await rememberWebUiTab(5, "webui-1");
+        const details = authDetails({ requestId: "t2", tabId: 5, type: "main_frame", url: "https://unrelated.example.com/" });
+        expect(await resolveAuthCredentials(details)).toEqual({});
+    });
+
+    it("stays out of a tab RTA opened once its webui has been deleted", async () => {
+        seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
+        await rememberWebUiTab(5, "gone");
+        const details = authDetails({ requestId: "t3", tabId: 5, type: "main_frame", url: "http://h:8080/" });
+        expect(await resolveAuthCredentials(details)).toEqual({});
+    });
+
+    it("stays out of subresource requests from a tab RTA opened, even to the webui", async () => {
+        seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
+        await rememberWebUiTab(5, "webui-1");
+        const details = authDetails({ requestId: "t5", tabId: 5, type: "xmlhttprequest", url: "http://h:8080/api/v2/app/version" });
+        expect(await resolveAuthCredentials(details)).toEqual({});
+    });
+
+    it("stays out of sub-frame requests from a tab RTA opened, even to the webui", async () => {
+        seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
+        await rememberWebUiTab(5, "webui-1");
+        const details = authDetails({ requestId: "t6", tabId: 5, type: "sub_frame", url: "http://h:8080/" });
+        expect(await resolveAuthCredentials(details)).toEqual({});
+    });
+
+    it("returns an empty response on the second challenge for the same request in a tab RTA opened", async () => {
+        seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
+        await rememberWebUiTab(5, "webui-1");
+        const details = authDetails({ requestId: "t4", tabId: 5, type: "main_frame", url: "http://h:8080/" });
+        expect(await resolveAuthCredentials(details)).toEqual({
+            authCredentials: { username: "u", password: "p" },
+        });
+        expect(await resolveAuthCredentials(details)).toEqual({});
     });
 
     it("returns an empty response on the second challenge for the same request", async () => {

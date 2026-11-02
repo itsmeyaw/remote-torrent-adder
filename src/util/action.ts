@@ -2,6 +2,8 @@ import { ext } from "./browser-api";
 import { addTrailingSlash } from "./utils";
 import { initiateWebUis, loadWebUis } from "./webuis";
 import { Settings } from "./settings";
+import { rememberWebUiTab } from "./authentication-listener";
+import { type TorrentWebUI } from "../models/webui";
 
 
 export const POPUP_PAGE = "popup/popup.html";
@@ -42,10 +44,21 @@ export async function openPrimaryWebUi(): Promise<void> {
         console.warn("Action icon clicked, but no WebUI is configured.");
         return;
     }
-    await ext.tabs.create({
-        url: addTrailingSlash(primaryWebUi.createBaseUrl()),
-        active: true,
-    });
+    await openWebUi(primaryWebUi);
+}
+
+/**
+ * Opens the WebUI in a new tab. The tab starts blank and is remembered before it
+ * navigates, so the auth listener already knows it when the first challenge arrives.
+ */
+export async function openWebUi(webUi: TorrentWebUI): Promise<void> {
+    const url = addTrailingSlash(webUi.createBaseUrl());
+    const tab = await ext.tabs.create({ url: "about:blank", active: true });
+    if (tab.id === undefined) {
+        throw new Error("Opened tab has no id");
+    }
+    await rememberWebUiTab(tab.id, webUi.settings.id);
+    await ext.tabs.update(tab.id, { url });
 }
 
 export async function openActionPopup(windowId: number, mode?: PopupMode): Promise<void> {

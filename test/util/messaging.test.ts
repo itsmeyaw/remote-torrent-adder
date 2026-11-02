@@ -21,6 +21,7 @@ import {
     AddTorrentMessage,
     AddTorrentMessageWithLabelAndDir,
     SetTorrentLabelMessage,
+    OpenWebUiMessage,
 } from "../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../src/util/serializer";
 import { getDefaultSettings } from "../../src/util/settings-defaults";
@@ -503,5 +504,46 @@ describe("labelling after the add", () => {
         });
 
         expect(response.error).toBe("No WebUI found for id missing");
+    });
+});
+
+describe("openWebUi", () => {
+    const extensionPage = () => ({ url: chrome.runtime.getURL("popup/popup.html") });
+
+    function seedTwoWebUis() {
+        const settings = getDefaultSettings();
+        settings.webuiSettings = [
+            makeWebUISettings({ id: "w1", client: Client.RqbitWebUI, host: "first", port: 8080 }),
+            makeWebUISettings({ id: "w2", client: Client.RqbitWebUI, host: "second", port: 9090 }),
+        ];
+        (chrome as any).__storage.settings = serializeSettings(settings);
+    }
+
+    it("opens the chosen webui and responds without waiting for the tab to load", async () => {
+        seedTwoWebUis();
+
+        expect(await dispatch({ action: OpenWebUiMessage.action, webUiId: "w2" }, extensionPage())).toEqual({});
+        await vi.waitFor(() => expect(chrome.tabs.update).toHaveBeenCalledWith(1, { url: "http://second:9090/" }));
+    });
+
+    it("reports an unknown webui", async () => {
+        seedTwoWebUis();
+
+        const response = await dispatch({ action: OpenWebUiMessage.action, webUiId: "missing" }, extensionPage());
+
+        expect(response.error).toBe("No WebUI found for id missing");
+        expect(chrome.tabs.create).not.toHaveBeenCalled();
+    });
+
+    it("refuses the message from a web page, so a page cannot open a WebUI", async () => {
+        seedTwoWebUis();
+
+        const response = await dispatch(
+            { action: OpenWebUiMessage.action, webUiId: "w2" },
+            { url: "https://evil.example/", tab: { id: 9 } },
+        );
+
+        expect(response.error).toMatch(/extension pages/);
+        expect(chrome.tabs.create).not.toHaveBeenCalled();
     });
 });

@@ -1,7 +1,8 @@
-import { ext } from '../../util/browser-api';
+import { trySendMessage } from '../../util/browser-api';
 import { useEffect, useState } from 'react';
 import Notice from './Notice';
 import { WebUIFactory } from '../../models/clients';
+import { OpenWebUiMessage, type IOpenWebUiMessage } from '../../models/messages';
 import { deserializeSettings } from '../../util/serializer';
 import { requestSerializedSettings } from '../../util/request-settings';
 import { addTrailingSlash } from '../../util/utils';
@@ -43,9 +44,9 @@ export default function WebUiPickerView() {
     };
   }, []);
 
-  const openWebUi = (url: string) => {
-    ext.tabs.create({ url, active: true });
-    window.close();
+  const openWebUi = (webUiId: string) => {
+    const message: IOpenWebUiMessage = { action: OpenWebUiMessage.action, webUiId };
+    void trySendMessage(message).finally(() => window.close());
   };
 
   if (state.status === 'loading') {
@@ -65,7 +66,7 @@ export default function WebUiPickerView() {
           {state.options.map(option => (
             <button
               key={option.id}
-              onClick={() => openWebUi(option.url)}
+              onClick={() => openWebUi(option.id)}
               className="w-full text-left bg-card p-3 rounded-lg border border-border shadow-sm hover:bg-accent transition-colors"
             >
               <span className="block font-medium text-foreground">{option.name}</span>
