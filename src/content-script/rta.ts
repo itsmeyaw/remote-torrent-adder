@@ -20,7 +20,6 @@ import { isMatchedByRegexes } from '../util/utils';
 import { fetchTorrentInPage } from './torrent-fetch';
 
 
-let numFoundLinks: number;
 let foundLinks: IPageLinkInfo[];
 let seenLinkUrls: Set<string>;
 loadSettingsAndRegisterActions();
@@ -44,7 +43,6 @@ ext.runtime.onMessage.addListener((
 });
 
 function loadSettingsAndRegisterActions(attemptNumber: number = 0): void {
-    numFoundLinks = 0;
     foundLinks = [];
     seenLinkUrls = new Set<string>();
     sendMessageAndForget({ action: UpdateActionBadgeText.action, text: '' } as IUpdateActionBadgeTextMessage);
@@ -69,22 +67,46 @@ function loadSettingsAndRegisterActions(attemptNumber: number = 0): void {
 
 function registerLinks(linkRegexes: RegExp[]): void {
     observe<HTMLAnchorElement>('a', (element) => {
-        checkUrlAndRegisterAction(element, () => {
-            if (!element.getAttribute('href')?.trim()) {
-                return undefined;
+        const getCurrentUrl = () => element.getAttribute('href')?.trim()
+            ? getMatchingUrl(element.href, linkRegexes)
+            : undefined;
+        const url = getCurrentUrl();
+        if (url) {
+            recordFoundLink(element, url);
+        }
+        element.addEventListener('click', (event: Event) => {
+            const currentUrl = getCurrentUrl();
+            if (!currentUrl) {
+                return;
             }
-            return getMatchingUrl(element.href, linkRegexes);
+            const mouseEvent = event as MouseEvent;
+            if (mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
+                console.debug("Clicked a recognized link, but RTA action was prevented due to pressed modifier keys.");
+                return;
+            }
+            mouseEvent.preventDefault();
+            sendMessageAndForget({ action: PreAddTorrentMessage.action, url: currentUrl } as IPreAddTorrentMessage);
         });
     });
 }
 
 function registerForms(linkRegexes: RegExp[]): void {
-    observe<HTMLInputElement | HTMLButtonElement>('input,button', (element) => {
-        checkUrlAndRegisterAction(element, () => {
-            if (!element.form?.getAttribute('action')?.trim()) {
-                return undefined;
+    observe<HTMLFormElement>('form', (form) => {
+        // The action is often set after insertion, so the submit listener is always attached.
+        const getCurrentUrl = () => form.getAttribute('action')?.trim()
+            ? getMatchingUrl(form.action, linkRegexes)
+            : undefined;
+        const url = getCurrentUrl();
+        if (url) {
+            recordFoundLink(form, url);
+        }
+        form.addEventListener('submit', (event: Event) => {
+            const currentUrl = getCurrentUrl();
+            if (!currentUrl) {
+                return;
             }
-            return getMatchingUrl(element.form.action, linkRegexes);
+            event.preventDefault();
+            sendMessageAndForget({ action: PreAddTorrentMessage.action, url: currentUrl } as IPreAddTorrentMessage);
         });
     });
 }
@@ -93,42 +115,14 @@ function getMatchingUrl(url: string, linkRegexes: RegExp[]): string | undefined 
     return isMatchedByRegexes(url, linkRegexes) || isMagnetLink(url) ? url : undefined;
 }
 
-function incrementCounter(): void {
-    sendMessageAndForget({
-        action: UpdateActionBadgeText.action,
-        text: (++numFoundLinks).toString()
-    } as IUpdateActionBadgeTextMessage);
-}
-
 function recordFoundLink(element: Element, url: string): void {
     if (seenLinkUrls.has(url)) {
         return;
     }
     seenLinkUrls.add(url);
     foundLinks.push({ url, label: deriveLinkLabel(element, url) });
-}
-
-function checkUrlAndRegisterAction(element: Element, getCurrentUrl: () => string | undefined): void {
-    const url = getCurrentUrl();
-    if (!url) {
-        return;
-    }
-    incrementCounter();
-    recordFoundLink(element, url);
-    console.debug(`Registered action for element: ${element.tagName}, URL: ${url}`);
-    element.addEventListener('click', (event: Event) => {
-        const mouseEvent = event as MouseEvent;
-        if (mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
-            console.debug("Clicked a recognized link, but RTA action was prevented due to pressed modifier keys.");
-            return;
-        }
-        const currentUrl = getCurrentUrl();
-        if (!currentUrl) {
-            return;
-        }
-        mouseEvent.preventDefault();
-        console.debug("Clicked form input");
-
-        sendMessageAndForget({ action: PreAddTorrentMessage.action, url: currentUrl } as IPreAddTorrentMessage);
-    });
+    sendMessageAndForget({
+        action: UpdateActionBadgeText.action,
+        text: foundLinks.length.toString()
+    } as IUpdateActionBadgeTextMessage);
 }

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createChromeMock } from "../helpers/chrome-mock";
-import { GetLinkCatchingConfig, PreAddTorrentMessage } from "../../src/models/messages";
+import { GetLinkCatchingConfig, PreAddTorrentMessage, UpdateActionBadgeText } from "../../src/models/messages";
 import { serializeObject } from "../../src/util/serializer";
 
 const RealMutationObserver = globalThis.MutationObserver;
@@ -43,6 +43,18 @@ async function start(html: string): Promise<void> {
     await import("../../src/content-script/rta");
     await vi.waitFor(() => expect(observers).toHaveLength(2));
     browser.runtime.sendMessage.mockClear();
+}
+
+function submit(element: HTMLElement): boolean {
+    const form = element instanceof HTMLFormElement ? element : (element as HTMLInputElement).form!;
+    let intercepted = false;
+    form.addEventListener("submit", event => {
+        intercepted = event.defaultPrevented;
+        event.preventDefault();
+    }, { once: true });
+    if (element instanceof HTMLFormElement) element.requestSubmit();
+    else element.click();
+    return intercepted;
 }
 
 function click(element: Element, init: MouseEventInit = {}): boolean {
@@ -149,39 +161,95 @@ describe("content-script link click targets", () => {
     });
 });
 
-describe("content-script form click targets", () => {
-    it("sends the current action when a form changes without replacing its button", async () => {
+describe("content-script form submit targets", () => {
+    it("sends the current action when a form is submitted after its action changes", async () => {
         await start('<form action="https://tracker.example/original.torrent"><button>Download</button></form>');
         const form = document.querySelector("form")!;
         form.action = "https://tracker.example/replacement.torrent";
 
-        expect(click(document.querySelector("button")!)).toBe(true);
+        expect(submit(form)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
             action: PreAddTorrentMessage.action,
             url: form.action,
         });
     });
 
-    it("uses the current form when an existing button is reassigned", async () => {
+    it.each([
+        ["a submit button", '<button>Download</button>'],
+        ["an explicit submit button", '<button type="submit">Download</button>'],
+        ["a submit input", '<input type="submit" value="Download">'],
+        ["an image input", '<input type="image" alt="Download">'],
+    ])("catches submission from %s", async (_, control) => {
+        await start(`<form action="https://tracker.example/original.torrent">${control}</form>`);
+
+        expect(submit(document.querySelector("form")!.querySelector("button,input")!)).toBe(true);
+        expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
+            action: PreAddTorrentMessage.action,
+            url: "https://tracker.example/original.torrent",
+        });
+    });
+
+    it("catches a programmatic submit event from requestSubmit", async () => {
+        await start('<form action="https://tracker.example/original.torrent"><input type="text"></form>');
+
+        expect(submit(document.querySelector("form")!)).toBe(true);
+        expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
+            action: PreAddTorrentMessage.action,
+            url: "https://tracker.example/original.torrent",
+        });
+    });
+
+    it("catches a form whose action is set to a torrent after insertion", async () => {
+        await start('<form><button>Download</button></form>');
+        const form = document.querySelector("form")!;
+        form.action = "https://tracker.example/late.torrent";
+
+        expect(submit(form)).toBe(true);
+        expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
+            action: PreAddTorrentMessage.action,
+            url: "https://tracker.example/late.torrent",
+        });
+    });
+
+    it("releases submission when the form action never matches", async () => {
+        await start('<form action="https://tracker.example/details/123"><button>Search</button></form>');
+
+        expect(submit(document.querySelector("form")!)).toBe(false);
+        expect(browser.runtime.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it("sends the current form when a submit button is reassigned", async () => {
         await start('<form id="first" action="https://tracker.example/first.torrent"></form>' +
             '<form id="second" action="https://tracker.example/second.torrent"></form>' +
             '<button form="first">Download</button>');
         const button = document.querySelector("button")!;
         button.setAttribute("form", "second");
 
-        expect(click(button)).toBe(true);
+        expect(submit(button)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
             action: PreAddTorrentMessage.action,
             url: "https://tracker.example/second.torrent",
         });
     });
 
-    it.each(["", "   ", null])("releases normal navigation when the form action is %s", async action => {
+    it.each([
+        ["a text input", '<input type="text">'],
+        ["a checkbox", '<input type="checkbox">'],
+        ["a button of type button", '<button type="button">Toggle</button>'],
+        ["an input of type button", '<input type="button" value="Toggle">'],
+    ])("leaves clicks on %s alone", async (_, control) => {
+        await start(`<form action="https://tracker.example/original.torrent">${control}</form>`);
+
+        expect(click(document.querySelector("form")!.querySelector("button,input")!)).toBe(false);
+        expect(browser.runtime.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it.each(["", "   ", null])("releases submission when the form action is %s", async action => {
         history.replaceState(null, "", "/download/page.torrent");
         const formTag = action === null ? "<form>" : `<form action="${action}">`;
         await start(`${formTag}<button>Search</button></form>`);
 
-        expect(click(document.querySelector("button")!)).toBe(false);
+        expect(submit(document.querySelector("form")!)).toBe(false);
         expect(browser.runtime.sendMessage).not.toHaveBeenCalled();
     });
 
@@ -192,5 +260,29 @@ describe("content-script form click targets", () => {
 
         expect(click(document.querySelector("button")!)).toBe(false);
         expect(browser.runtime.sendMessage).not.toHaveBeenCalled();
+    });
+});
+
+describe("content-script badge", () => {
+    async function startAndReadBadge(html: string): Promise<unknown[]> {
+        document.body.innerHTML = html;
+        await import("../../src/content-script/rta");
+        await vi.waitFor(() => expect(observers).toHaveLength(2));
+        const calls: [{ action: string; text?: string }][] = browser.runtime.sendMessage.mock.calls;
+        return calls
+            .map(([message]) => message)
+            .filter(message => message.action === UpdateActionBadgeText.action)
+            .map(message => message.text);
+    }
+
+    it("counts each distinct torrent link once across anchors and forms", async () => {
+        const badge = await startAndReadBadge(
+            '<a href="https://tracker.example/a.torrent">A</a>' +
+            '<a href="https://tracker.example/a.torrent">A again</a>' +
+            '<form action="https://tracker.example/a.torrent"><button>Download</button></form>' +
+            '<a href="https://tracker.example/b.torrent">B</a>',
+        );
+
+        expect(badge).toEqual(["", "1", "2"]);
     });
 });
