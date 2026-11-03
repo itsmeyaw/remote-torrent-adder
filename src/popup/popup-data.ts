@@ -2,7 +2,7 @@ import { ext } from "../util/browser-api";
 import { WebUIFactory } from "../models/clients";
 import { AddTorrentMessageWithLabelAndDir, type IAddTorrentMessageWithLabelAndDir } from "../models/messages";
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ClientSpecificSettingDescriptor, type WebUISettings } from "../models/webui";
+import { type ClientSpecificSettingDescriptor, resolveClientSpecificSetting, type WebUISettings } from "../models/webui";
 import { getAutoDirResult, getAutoLabelResult } from "../util/auto-label-dir-matcher";
 import { readBufferedTorrent } from "../util/buffered-torrent";
 
@@ -80,7 +80,7 @@ export async function loadPopupData(): Promise<PopupData | null> {
             descriptors: clientSpecificDescriptors,
             initial: Object.fromEntries(clientSpecificDescriptors.map(descriptor => [
                 descriptor.key,
-                (webUiSettings.clientSpecificSettings?.[descriptor.key] as boolean | undefined) ?? descriptor.default,
+                resolveClientSpecificSetting(descriptor.key, clientSpecificDescriptors, webUiSettings.clientSpecificSettings),
             ])),
         },
     };

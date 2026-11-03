@@ -8,6 +8,7 @@ import PageLinksView from './PageLinksView';
 import SetLabelView from './SetLabelView';
 import { errorMessage, moveToFront } from '../lib/utils';
 import { loadPopupData, submitTorrent, type PopupData } from '../popup-data';
+import { resolveClientSpecificSetting } from '../../models/webui';
 
 type LoadState =
   | { status: 'loading' }
@@ -147,7 +148,7 @@ function AddTorrentForm({ data }: { data: PopupData }) {
             <Toggle
               key={descriptor.key}
               label={descriptor.label}
-              checked={clientSpecific[descriptor.key] ?? descriptor.default}
+              checked={resolveClientSpecificSetting(descriptor.key, data.clientSpecific.descriptors, clientSpecific)}
               onChange={value => setClientSpecific(previous => ({ ...previous, [descriptor.key]: value }))}
             />
           ))}

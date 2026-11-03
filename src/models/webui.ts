@@ -36,6 +36,23 @@ export interface ClientSpecificSettingDescriptor {
     description?: string;
 }
 
+/**
+ * The one fallback chain for Client-Specific Settings: the per-torrent override, then the stored
+ * per-client value, then the descriptor's default, then false.
+ */
+export function resolveClientSpecificSetting(
+    key: string,
+    descriptors: ReadonlyArray<ClientSpecificSettingDescriptor>,
+    stored: Record<string, unknown> | undefined,
+    perTorrent?: Record<string, boolean>,
+): boolean {
+    const descriptor = descriptors.find(candidate => candidate.key === key);
+    return perTorrent?.[key]
+        ?? (stored?.[key] as boolean | undefined)
+        ?? descriptor?.default
+        ?? false;
+}
+
 export class HttpError extends Error {
     constructor(public readonly status: number, public readonly body: string) {
         super(`HTTP error ${status}`);
@@ -232,11 +249,7 @@ export abstract class TorrentWebUI {
     }
 
     protected getClientSpecific(key: string, config: TorrentUploadConfig): boolean {
-        const descriptor = this.clientSpecificSettingDescriptors.find(candidate => candidate.key === key);
-        return config.clientSpecificSettings?.[key]
-            ?? (this.settings.clientSpecificSettings?.[key] as boolean | undefined)
-            ?? descriptor?.default
-            ?? false;
+        return resolveClientSpecificSetting(key, this.clientSpecificSettingDescriptors, this.settings.clientSpecificSettings, config.clientSpecificSettings);
     }
 
 }
