@@ -89,7 +89,6 @@ describe("BiglyBTWebUI", () => {
         queueFetch(
             mockResponse({ status: 200 }),
             mockResponse({ status: 200, body: "<h1>200: OK</h1>" }),
-            mockResponse({ status: 200 }),
             mockResponse({ status: 200, json: { result: "error" } }),
         );
         const result = await build().sendTorrent(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }), { label: "movies" });

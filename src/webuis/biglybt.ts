@@ -1,18 +1,9 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type AddResult, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, type TorrentAddingResult } from "../models/webui";
 import { computeInfoHash } from "../torrent/info-hash";
-import { isTransmissionSessionHandshake } from "./transmission";
+import { TransmissionWebUI } from "./transmission";
 
-export class BiglyBTWebUI extends TorrentWebUI<string> {
-    public override testConnection(): Promise<ConnectionTestResult> {
-        return this.probeWithBasicAuth(this.createBaseUrl() + "/transmission/rpc", isTransmissionSessionHandshake);
-    }
-
-    protected override async login(): Promise<string> {
-        const response = await this.fetchAllowing(this.createBaseUrl() + "/transmission/rpc", { method: "POST", body: "" }, [409]);
-        return response.headers.get("X-Transmission-Session-Id") ?? "";
-    }
-
+export class BiglyBTWebUI extends TransmissionWebUI {
     protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
         const url = this.createBiglyBTBaseUrl(torrent, config);
 
@@ -29,25 +20,8 @@ export class BiglyBTWebUI extends TorrentWebUI<string> {
         return (await computeInfoHash(torrent)) ?? undefined;
     }
 
-    protected override async applyLabel(sessionId: string, infoHash: string, label: string): Promise<TorrentAddingResult> {
-        const response = await this.fetch(this.createBaseUrl() + "/transmission/rpc", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json; charset=UTF-8",
-                "X-Transmission-Session-Id": sessionId
-            },
-            body: JSON.stringify({ method: "torrent-set", arguments: { ids: [infoHash.toUpperCase()], labels: [label] } })
-        });
-        const responseText = await response.text();
-        return {
-            success: this.isSuccessResponse(responseText),
-            httpResponseCode: response.status,
-            httpResponseBody: responseText,
-        };
-    }
-
-    protected override labelAfterAdd(sessionId: string, torrentId: string, label: string): Promise<TorrentAddingResult> {
-        return this.applyLabel(sessionId, torrentId, label);
+    protected override applyLabel(sessionId: string, infoHash: string, label: string): Promise<TorrentAddingResult> {
+        return super.applyLabel(sessionId, infoHash.toUpperCase(), label);
     }
 
     createBiglyBTBaseUrl(torrent: Torrent, config: TorrentUploadConfig): string {
@@ -83,16 +57,15 @@ export class BiglyBTWebUI extends TorrentWebUI<string> {
         }
     }
 
-
-    get isLabelSupported(): boolean {
+    override get isLabelSupported(): boolean {
         return true;
     }
 
-    get isDirSupported(): boolean {
+    override get isDirSupported(): boolean {
         return false;
     }
 
-    get isAddPausedSupported(): boolean {
+    override get isAddPausedSupported(): boolean {
         return true;
     }
 }
