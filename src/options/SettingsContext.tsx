@@ -1,9 +1,10 @@
-import { sendMessageAndForget } from "../util/browser-api";
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { ext, sendMessageAndForget } from "../util/browser-api";
+import React, { createContext, useContext, useRef, useState, useEffect } from "react";
 import type { RTASettings } from "../models/settings";
 import { SaveSettingsMessage } from "../models/messages";
 import { deserializeSettings, serializeSettings } from "../util/serializer";
 import { requestSerializedSettings } from "../util/request-settings";
+import { SETTINGS_KEY } from "../util/settings";
 
 interface SettingsContextType {
   settings: RTASettings | null;
@@ -17,6 +18,8 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<RTASettings | null>(null);
   const [loading, setLoading] = useState(true);
+  // Serialized settings this page sent and has not seen echoed back by storage yet.
+  const pendingSaves = useRef<string[]>([]);
 
   // Fetch settings from service worker on mount
   useEffect(() => {
@@ -32,10 +35,29 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, []);
 
+  // The background writes settings too (e.g. new Label/Directory Lists), so take those
+  // in; the echo of this page's own saves is skipped, or it would undo a newer edit.
+  useEffect(() => {
+    const onChanged = (changes: Record<string, chrome.storage.StorageChange>) => {
+      const newValue = changes[SETTINGS_KEY]?.newValue as string | undefined;
+      if (newValue === undefined) return;
+      const echoIndex = pendingSaves.current.indexOf(newValue);
+      if (echoIndex >= 0) {
+        pendingSaves.current.splice(0, echoIndex + 1);
+        return;
+      }
+      setSettings(deserializeSettings(newValue));
+    };
+    ext.storage.local.onChanged.addListener(onChanged as Parameters<typeof ext.storage.local.onChanged.addListener>[0]);
+    return () => ext.storage.local.onChanged.removeListener(onChanged as Parameters<typeof ext.storage.local.onChanged.removeListener>[0]);
+  }, []);
+
   // Save settings to service worker whenever they change
   const saveSettings = (newSettings: RTASettings) => {
     setSettings(newSettings);
-    sendMessageAndForget({ action: SaveSettingsMessage.action, settings: serializeSettings(newSettings) });
+    const serialized = serializeSettings(newSettings);
+    pendingSaves.current.push(serialized);
+    sendMessageAndForget({ action: SaveSettingsMessage.action, settings: serialized });
   };
 
   const updateSetting = <K extends keyof RTASettings>(key: K, value: RTASettings[K]) => {
