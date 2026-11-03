@@ -132,13 +132,13 @@ describe("TransmissionWebUI", () => {
         expect(JSON.parse(callArgs(fetch, 2)[1].body as string).arguments.ids).toEqual(["dup"]);
     });
 
-    it("falls back to the default label", async () => {
+    it("sends the label from the config", async () => {
         const fetch = queueFetch(
             mockResponse({ status: 200, headers: { "X-Transmission-Session-Id": "s" } }),
             mockResponse({ status: 200, json: { result: "success", arguments: { "torrent-added": { hashString: "abc", id: 1 } } } }),
             mockResponse({ status: 200, json: { result: "success", arguments: {} } }),
         );
-        await build({ defaultLabel: "tv" }).sendTorrent(makeMagnetTorrent(), {});
+        await build().sendTorrent(makeMagnetTorrent(), { label: "tv" });
 
         expect(JSON.parse(callArgs(fetch, 2)[1].body as string).arguments.labels).toEqual(["tv"]);
     });

@@ -3,8 +3,8 @@ import { WebUIFactory } from "../models/clients";
 import { AddTorrentMessageWithLabelAndDir, type IAddTorrentMessageWithLabelAndDir } from "../models/messages";
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ClientSpecificSettingDescriptor, resolveClientSpecificSetting, type WebUISettings } from "../models/webui";
-import { getAutoDirResult, getAutoLabelResult } from "../torrent/auto-label-dir-matcher";
 import { readBufferedTorrent } from "../background/buffered-torrent";
+import { resolveUploadConfig } from "../torrent/upload-config";
 
 /**
  * Everything the popup needs, resolved once before the form is rendered, so the
@@ -51,10 +51,9 @@ export async function loadPopupData(bufferedId: string): Promise<PopupData | nul
     const { torrent, webUiSettings } = buffered;
     const webUi = WebUIFactory.createWebUI(webUiSettings);
 
-    // The matcher is pure, so the popup resolves this itself rather than having
+    // The resolver is pure, so the popup resolves this itself rather than having
     // the service worker compute it and ship the result across a message.
-    const autoLabel = getAutoLabelResult(torrent, webUiSettings.autoLabelDirSettings);
-    const autoDir = getAutoDirResult(torrent, webUiSettings.autoLabelDirSettings);
+    const resolved = resolveUploadConfig(torrent, webUiSettings);
 
     const clientSpecificDescriptors = (webUi?.clientSpecificSettingDescriptors ?? []).filter(descriptor => descriptor.perTorrent);
 
@@ -68,13 +67,13 @@ export async function loadPopupData(bufferedId: string): Promise<PopupData | nul
             paused: webUi?.isAddPausedSupported ?? false,
         },
         initial: {
-            label: autoLabel || webUiSettings.defaultLabel || firstEntry(webUiSettings.labels) || "",
-            directory: autoDir || webUiSettings.defaultDir || firstEntry(webUiSettings.dirs) || "",
-            paused: webUiSettings.addPaused,
+            label: resolved.config.label ?? "",
+            directory: resolved.config.dir ?? "",
+            paused: resolved.config.addPaused ?? false,
         },
         auto: {
-            label: !!autoLabel,
-            directory: !!autoDir,
+            label: resolved.fromRule.label,
+            directory: resolved.fromRule.dir,
         },
         labelOptions: webUiSettings.labels,
         directoryOptions: webUiSettings.dirs,
@@ -125,6 +124,3 @@ export async function submitTorrent(request: AddTorrentRequest): Promise<void> {
     }
 }
 
-function firstEntry(collection: Array<string>): string | null {
-    return collection?.[0] ?? null;
-}

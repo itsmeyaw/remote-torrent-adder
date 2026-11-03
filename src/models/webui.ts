@@ -237,15 +237,15 @@ export abstract class TorrentWebUI {
     }
 
     protected getDirectory(config: TorrentUploadConfig): string | null {
-        return config.dir ?? this.settings.defaultDir ?? null;
+        return config.dir ?? null;
     }
 
     protected getLabel(config: TorrentUploadConfig): string | null {
-        return config.label ?? this.settings.defaultLabel ?? null;
+        return config.label ?? null;
     }
 
     protected getAddPaused(config: TorrentUploadConfig): boolean | null {
-        return config.addPaused ?? this.settings.addPaused ?? false;
+        return config.addPaused ?? false;
     }
 
     protected getClientSpecific(key: string, config: TorrentUploadConfig): boolean {
