@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, HttpError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { computeInfoHash } from "../util/info-hash";
 import { isTransmissionSessionHandshake } from "./transmission-webui";
 
@@ -69,11 +69,7 @@ export class BiglyBTWebUI extends TorrentWebUI {
     }
 
     async fetchSessionCookie(apiBaseUrl: string): Promise<Response> {
-        const response = await fetch(apiBaseUrl);
-        if (response.status !== 200 && response.status !== 409) {
-            throw new HttpError(response.status, await response.text().catch(() => ""));
-        }
-        return response;
+        return this.fetchAllowing(apiBaseUrl, undefined, [409]);
     }
 
     createPayloadForMagnet(magnetUri: string, config: TorrentUploadConfig): string {

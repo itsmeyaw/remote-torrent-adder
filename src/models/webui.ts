@@ -174,8 +174,12 @@ export abstract class TorrentWebUI {
     }
 
     protected async fetch(url: string, options?: RequestInit): Promise<Response> {
+        return this.fetchAllowing(url, options, []);
+    }
+
+    protected async fetchAllowing(url: string, options: RequestInit | undefined, allowedStatuses: ReadonlyArray<number>): Promise<Response> {
         const res: Response = await fetch(url, options);
-        if (!res.ok) {
+        if (!res.ok && !allowedStatuses.includes(res.status)) {
             throw new HttpError(res.status, await res.text().catch(() => ""));
         }
         return res;

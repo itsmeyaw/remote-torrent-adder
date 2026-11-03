@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, HttpError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { blobToBase64 } from "../util/converter";
 
 interface TransmissionRpcResponse {
@@ -76,11 +76,7 @@ export class TransmissionWebUI extends TorrentWebUI {
     }
 
     private async fetchTransmissionSessionId(): Promise<string> {
-        // Raw fetch: the 409 handshake is not an error, so this.fetch would throw on it.
-        const response = await fetch(this.createBaseUrl() + "/transmission/rpc", { method: "POST", body: "" });
-        if (response.status !== 200 && response.status !== 409) {
-            throw new HttpError(response.status, await response.text().catch(() => ""));
-        }
+        const response = await this.fetchAllowing(this.createBaseUrl() + "/transmission/rpc", { method: "POST", body: "" }, [409]);
         return response.headers.get("X-Transmission-Session-Id") ?? "";
     }
 
