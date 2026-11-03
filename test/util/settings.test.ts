@@ -3,6 +3,7 @@ import { Settings } from "../../src/util/settings";
 import { serializeSettings } from "../../src/util/serializer";
 import { getDefaultSettings } from "../../src/util/settings-defaults";
 import { Client } from "../../src/models/clients";
+import { type RTASettings } from "../../src/models/settings";
 import { makeWebUISettings } from "../helpers/fixtures";
 import { at } from "../helpers/assert";
 
@@ -42,6 +43,30 @@ describe("Settings.loadSettings", () => {
         (chrome as any).__storage.settings = "{not valid json";
         const loaded = await new Settings().loadSettings();
         expect(loaded).toEqual(getDefaultSettings());
+    });
+
+    it("treats a config without a WebUI list as having no WebUIs, keeping the rest", async () => {
+        const stored = { ...getDefaultSettings(), notificationsDurationMs: 5000 } as Partial<RTASettings>;
+        delete stored.webuiSettings;
+        (chrome as any).__storage.settings = serializeSettings(stored as RTASettings);
+
+        const loaded = await new Settings().loadSettings();
+        expect(loaded.webuiSettings).toEqual([]);
+        expect(loaded.notificationsDurationMs).toBe(5000);
+    });
+
+    it("fills keys missing from an older config with defaults and keeps stored values, falsy ones included", async () => {
+        const stored = { ...getDefaultSettings(), notificationsDurationMs: 5000, notificationsSoundEnabled: true, linkCatchingEnabled: false } as Partial<RTASettings>;
+        delete stored.notificationsLabelButtonEnabled;
+        delete stored.iconClickAction;
+        (chrome as any).__storage.settings = serializeSettings(stored as RTASettings);
+
+        const loaded = await new Settings().loadSettings();
+        expect(loaded.notificationsLabelButtonEnabled).toBe(getDefaultSettings().notificationsLabelButtonEnabled);
+        expect(loaded.iconClickAction).toBe(getDefaultSettings().iconClickAction);
+        expect(loaded.notificationsDurationMs).toBe(5000);
+        expect(loaded.notificationsSoundEnabled).toBe(true);
+        expect(loaded.linkCatchingEnabled).toBe(false);
     });
 });
 

@@ -29,8 +29,9 @@ export class Settings {
         }
         try {
             const loaded = deserializeSettings(response[SETTINGS_KEY]) ?? getDefaultSettings();
-            const migrated = migrateSettingsClientIdentifiers(loaded);
-            if (migrated !== loaded) {
+            const merged = { ...getDefaultSettings(), ...loaded };
+            const migrated = migrateSettingsClientIdentifiers(merged);
+            if (migrated !== merged) {
                 await this.saveSettings(migrated);
             }
             return migrated;
