@@ -22,15 +22,17 @@ export class BiglyBTWebUI extends TorrentWebUI {
             const responseBody = await response.text();
             const success = this.isSuccessResponse(responseBody);
             const label = this.getLabel(config);
-            const infoHash = success && label ? await computeInfoHash(torrent) : null;
-            if (label && infoHash) {
-                return { ...await this.setLabel(infoHash, label), httpResponseBody: responseBody };
+            if (!success || !label) {
+                return { success, httpResponseCode: response.status, httpResponseBody: responseBody };
             }
-            return {
-                success,
-                httpResponseCode: response.status,
-                httpResponseBody: responseBody,
-            };
+            const warning = await this.runFollowUp(`Label "${label}" was not applied`, async () => {
+                const infoHash = await computeInfoHash(torrent);
+                if (!infoHash) {
+                    throw new Error("the info hash could not be computed");
+                }
+                return this.setLabel(infoHash, label);
+            });
+            return { success, httpResponseCode: response.status, httpResponseBody: responseBody, warning };
         } catch (error) {
             return this.toFailureResult(error);
         }
