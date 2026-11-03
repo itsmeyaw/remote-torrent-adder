@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "../../src/util/buffered-torrent";
+import { withStore } from "../../src/util/idb";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -110,6 +111,16 @@ describe("buffered torrent store", () => {
         } finally {
             vi.useRealTimers();
         }
+    });
+
+    it("drops the single record left by versions before per-click ids on the next save", async () => {
+        const legacyStore = { dbName: "rta-torrents", storeName: "buffered", version: 1 };
+        const legacy = { torrent: makeMagnetTorrent({ name: "legacy" }), webUiSettings: makeWebUISettings() };
+        await withStore(legacyStore, "readwrite", store => store.put(legacy, "pending"));
+
+        await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "new" }), webUiSettings: makeWebUISettings() });
+
+        expect(await readBufferedTorrent("pending")).toBeNull();
     });
 
     it("tolerates clearing when nothing is buffered", async () => {

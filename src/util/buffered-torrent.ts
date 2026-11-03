@@ -26,6 +26,8 @@ const BUFFERED_TORRENT_STORE: IdbStore = {
 };
 
 const RETENTION_MS = 24 * 60 * 60 * 1000;
+// The one key used before each click got its own record; it sorts after the timestamped ids, so the range delete misses it.
+const LEGACY_BUFFERED_TORRENT_KEY = "pending";
 
 /**
  * Each click gets its own record, so a second click while a Config Selector is
@@ -44,6 +46,7 @@ export async function saveBufferedTorrent(buffered: BufferedTorrent): Promise<st
     await withStore(BUFFERED_TORRENT_STORE, "readwrite", store => {
         // Queued first, so it runs before the put in the same transaction.
         store.delete(IDBKeyRange.upperBound(expiredBefore, true));
+        store.delete(LEGACY_BUFFERED_TORRENT_KEY);
         return store.put(buffered, id);
     });
     return id;
