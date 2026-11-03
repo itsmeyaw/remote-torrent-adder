@@ -117,6 +117,8 @@ export class QBittorrentWebUI extends TorrentWebUI {
 
         const addPaused = this.getAddPaused(config);
         if (addPaused !== null) {
+            // `stopped` is WebAPI 2.11+; older servers only know `paused`. Unknown fields are ignored, so send both.
+            body.append("paused", addPaused.toString());
             body.append("stopped", addPaused.toString());
         }
 
