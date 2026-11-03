@@ -5,6 +5,7 @@ export default {
   darkMode: "media", // Automatically follow system preference
   content: [
     './src/popup/**/*.{js,ts,jsx,tsx,html}',
+    './src/options/**/*.{js,ts,jsx,tsx,html}',
   ],
   prefix: "",
   theme: {
