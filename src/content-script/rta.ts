@@ -20,7 +20,6 @@ import { isMatchedByRegexes } from '../util/utils';
 import { fetchTorrentInPage } from './torrent-fetch';
 
 
-let numFoundLinks: number;
 let foundLinks: IPageLinkInfo[];
 let seenLinkUrls: Set<string>;
 loadSettingsAndRegisterActions();
@@ -44,7 +43,6 @@ ext.runtime.onMessage.addListener((
 });
 
 function loadSettingsAndRegisterActions(attemptNumber: number = 0): void {
-    numFoundLinks = 0;
     foundLinks = [];
     seenLinkUrls = new Set<string>();
     sendMessageAndForget({ action: UpdateActionBadgeText.action, text: '' } as IUpdateActionBadgeTextMessage);
@@ -74,17 +72,28 @@ function registerLinks(linkRegexes: RegExp[]): void {
                 return undefined;
             }
             return getMatchingUrl(element.href, linkRegexes);
+        }, 'click', (event, url) => {
+            const mouseEvent = event as MouseEvent;
+            if (mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
+                console.debug("Clicked a recognized link, but RTA action was prevented due to pressed modifier keys.");
+                return;
+            }
+            mouseEvent.preventDefault();
+            sendMessageAndForget({ action: PreAddTorrentMessage.action, url } as IPreAddTorrentMessage);
         });
     });
 }
 
 function registerForms(linkRegexes: RegExp[]): void {
-    observe<HTMLInputElement | HTMLButtonElement>('input,button', (element) => {
-        checkUrlAndRegisterAction(element, () => {
-            if (!element.form?.getAttribute('action')?.trim()) {
+    observe<HTMLFormElement>('form', (form) => {
+        checkUrlAndRegisterAction(form, () => {
+            if (!form.getAttribute('action')?.trim()) {
                 return undefined;
             }
-            return getMatchingUrl(element.form.action, linkRegexes);
+            return getMatchingUrl(form.action, linkRegexes);
+        }, 'submit', (event, url) => {
+            event.preventDefault();
+            sendMessageAndForget({ action: PreAddTorrentMessage.action, url } as IPreAddTorrentMessage);
         });
     });
 }
@@ -93,42 +102,35 @@ function getMatchingUrl(url: string, linkRegexes: RegExp[]): string | undefined 
     return isMatchedByRegexes(url, linkRegexes) || isMagnetLink(url) ? url : undefined;
 }
 
-function incrementCounter(): void {
-    sendMessageAndForget({
-        action: UpdateActionBadgeText.action,
-        text: (++numFoundLinks).toString()
-    } as IUpdateActionBadgeTextMessage);
-}
-
 function recordFoundLink(element: Element, url: string): void {
     if (seenLinkUrls.has(url)) {
         return;
     }
     seenLinkUrls.add(url);
     foundLinks.push({ url, label: deriveLinkLabel(element, url) });
+    sendMessageAndForget({
+        action: UpdateActionBadgeText.action,
+        text: foundLinks.length.toString()
+    } as IUpdateActionBadgeTextMessage);
 }
 
-function checkUrlAndRegisterAction(element: Element, getCurrentUrl: () => string | undefined): void {
+function checkUrlAndRegisterAction(
+    element: Element,
+    getCurrentUrl: () => string | undefined,
+    eventType: 'click' | 'submit',
+    handleEvent: (event: Event, url: string) => void
+): void {
     const url = getCurrentUrl();
     if (!url) {
         return;
     }
-    incrementCounter();
     recordFoundLink(element, url);
     console.debug(`Registered action for element: ${element.tagName}, URL: ${url}`);
-    element.addEventListener('click', (event: Event) => {
-        const mouseEvent = event as MouseEvent;
-        if (mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
-            console.debug("Clicked a recognized link, but RTA action was prevented due to pressed modifier keys.");
-            return;
-        }
+    element.addEventListener(eventType, (event: Event) => {
         const currentUrl = getCurrentUrl();
         if (!currentUrl) {
             return;
         }
-        mouseEvent.preventDefault();
-        console.debug("Clicked form input");
-
-        sendMessageAndForget({ action: PreAddTorrentMessage.action, url: currentUrl } as IPreAddTorrentMessage);
+        handleEvent(event, currentUrl);
     });
 }
