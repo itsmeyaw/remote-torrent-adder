@@ -68,19 +68,8 @@ export class BiglyBTWebUI extends TorrentWebUI {
         ].join("");
     }
 
-    fetchSessionCookie(apiBaseUrl: string): Promise<Response> {
-        return new Promise((resolve, reject) => {
-            fetch(apiBaseUrl)
-                .then(response => {
-                    if (response.status !== 200 && response.status !== 409) {
-                        reject(response);
-                    } else {
-                        resolve(response);
-                    }
-                }).catch(error => {
-                    reject(error);
-                });
-        });
+    async fetchSessionCookie(apiBaseUrl: string): Promise<Response> {
+        return this.fetchAllowing(apiBaseUrl, undefined, [409]);
     }
 
     createPayloadForMagnet(magnetUri: string, config: TorrentUploadConfig): string {

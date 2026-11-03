@@ -89,4 +89,23 @@ describe("BiglyBTWebUI", () => {
         queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, json: { result: "error" } }));
         await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toMatchObject({ success: false });
     });
+
+    it("reports the real status and body when the session cookie request is rejected", async () => {
+        const fetch = queueFetch(mockResponse({ status: 403, body: "forbidden" }));
+        await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toEqual({
+            success: false,
+            httpResponseCode: 403,
+            httpResponseBody: "forbidden",
+        });
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("reports the real status and body when the session cookie request fails while setting a label", async () => {
+        queueFetch(mockResponse({ status: 500, body: "server error" }));
+        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toEqual({
+            success: false,
+            httpResponseCode: 500,
+            httpResponseBody: "server error",
+        });
+    });
 });
