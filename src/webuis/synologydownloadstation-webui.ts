@@ -124,7 +124,10 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI {
         const json = await response.json();
 
         if (json?.success !== true || !json?.data) {
-            throw new SynologyDiscoveryError(response.status, `Could not query the Synology API list: ${this.describeError(json?.error?.code, {})}`);
+            throw new SynologyDiscoveryError(
+                response.status,
+                `Could not query the Synology API list: ${this.describeError(json?.error?.code, {})}`,
+            );
         }
 
         this.apiInfo = json.data as SynologyApiInfoMap;
