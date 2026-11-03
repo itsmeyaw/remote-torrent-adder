@@ -109,11 +109,7 @@ export interface ISaveSettingsMessage extends IMessagable {
 }
 
 export interface ITestNotificationMessage extends IMessagable {
-    title: string;
-    message: string;
     isFailed: boolean;
-    popupDurationMs: number;
-    playSound: boolean;
 }
 
 export interface IPlaySoundMessage extends IMessagable {

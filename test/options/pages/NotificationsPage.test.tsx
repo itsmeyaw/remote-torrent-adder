@@ -10,7 +10,7 @@ vi.mock("../../../src/util/platform", async (importOriginal) => ({
 
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import NotificationsPage from "../../../src/options/pages/NotificationsPage";
-import { GetSettingsMessage, SaveSettingsMessage } from "../../../src/models/messages";
+import { GetSettingsMessage, SaveSettingsMessage, TestNotificationMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
 import { getDefaultSettings } from "../../../src/settings/settings-defaults";
 
@@ -58,5 +58,22 @@ describe("NotificationsPage add-label button toggle", () => {
 
         expect(await screen.findByRole("checkbox", { name: /Play a sound/ })).toBeInTheDocument();
         expect(screen.queryByRole("checkbox", { name: BUTTON_TOGGLE })).not.toBeInTheDocument();
+    });
+});
+
+describe("NotificationsPage test buttons", () => {
+    it.each([
+        ["Test Success Notification", false],
+        ["Test Failed Notification", true],
+    ])("%s sends only the outcome for the background to build the notification", async (buttonName, isFailed) => {
+        respondWithSettings();
+        renderPage();
+
+        await userEvent.click(await screen.findByRole("button", { name: buttonName }));
+
+        const sent = (chrome.runtime.sendMessage as any).mock.calls
+            .map((call: any[]) => call[0])
+            .find((message: any) => message?.action === TestNotificationMessage.action);
+        expect(sent).toEqual({ action: TestNotificationMessage.action, isFailed });
     });
 });

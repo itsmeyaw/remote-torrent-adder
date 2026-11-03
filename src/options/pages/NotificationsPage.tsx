@@ -26,11 +26,7 @@ export default function NotificationsPage() {
   const sendTest = (isFailed: boolean) => {
     sendMessageAndForget({
       action: TestNotificationMessage.action,
-      title: "Test Notification",
-      message: isFailed ? "This is a failed notification." : "This is a successful notification.",
       isFailed,
-      popupDurationMs: settings.notificationsDurationMs,
-      playSound: settings.notificationsSoundEnabled,
     } as ITestNotificationMessage);
   };
 
