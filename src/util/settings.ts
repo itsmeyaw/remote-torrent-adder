@@ -1,11 +1,14 @@
+import { generateId } from "./utils";
 import { ext } from "./browser-api";
 import { type RTASettings } from "../models/settings";
 import { getDefaultSettings } from "./settings-defaults";
 import { migrateSettingsClientIdentifiers } from "./legacy-client-identifiers";
+import { showNotification } from "./notifications";
 import { serializeSettings, deserializeSettings } from "./serializer";
 
 
 export const SETTINGS_KEY: string = "settings";
+const SETTINGS_BACKUP_KEY_PREFIX: string = "settingsBackup:";
 
 export class Settings {
     private _rtaSettings!: RTASettings;
@@ -28,7 +31,10 @@ export class Settings {
             return defaults;
         }
         try {
-            const loaded = deserializeSettings(response[SETTINGS_KEY]) ?? getDefaultSettings();
+            const loaded = deserializeSettings(response[SETTINGS_KEY]);
+            if (loaded === null) {
+                throw new Error("Stored settings are not an object");
+            }
             const merged = { ...getDefaultSettings(), ...loaded };
             const migrated = migrateSettingsClientIdentifiers(merged);
             if (migrated !== merged) {
@@ -36,9 +42,11 @@ export class Settings {
             }
             return migrated;
         } catch (e) {
-            console.error("Failed to deserialize settings, resetting to defaults", e);
+            console.error("Failed to deserialize settings, backing up the stored value and resetting to defaults", e instanceof Error ? e.name : "unknown error");
+            await ext.storage.local.set({ [SETTINGS_BACKUP_KEY_PREFIX + generateId()]: response[SETTINGS_KEY] });
             const defaults = getDefaultSettings();
             await this.saveSettings(defaults);
+            showNotification("Settings were reset", "Your saved settings could not be read, so they were reset to defaults. The old settings were kept in extension storage.");
             return defaults;
         }
     }

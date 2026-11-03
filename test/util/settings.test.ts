@@ -1,11 +1,26 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Settings } from "../../src/util/settings";
-import { serializeSettings } from "../../src/util/serializer";
+import { deserializeSettings, serializeSettings } from "../../src/util/serializer";
 import { getDefaultSettings } from "../../src/util/settings-defaults";
 import { Client } from "../../src/models/clients";
 import { type RTASettings } from "../../src/models/settings";
 import { makeWebUISettings } from "../helpers/fixtures";
 import { at } from "../helpers/assert";
+import { showNotification } from "../../src/util/notifications";
+
+vi.mock("../../src/util/notifications", () => ({ showNotification: vi.fn() }));
+
+beforeEach(() => {
+    vi.mocked(showNotification).mockClear();
+});
+
+function backupKeys(): string[] {
+    return Object.keys((chrome as any).__storage).filter(key => key.startsWith("settingsBackup:"));
+}
+
+function storedSettings(): RTASettings {
+    return deserializeSettings((chrome as any).__storage.settings)!;
+}
 
 describe("Settings.loadSettings", () => {
     it("initializes with defaults and persists them when storage is empty", async () => {
@@ -39,13 +54,39 @@ describe("Settings.loadSettings", () => {
         expect(at(reloaded.webuiSettings, 0).client).toBe(Client.QBittorrentWebUI);
     });
 
-    it("falls back to defaults when stored data cannot be parsed", async () => {
-        (chrome as any).__storage.settings = "{not valid json";
+    it("backs up the corrupt config, resets to defaults and tells the user", async () => {
+        const corrupt = "{not valid json";
+        (chrome as any).__storage.settings = corrupt;
         const loaded = await new Settings().loadSettings();
+
         expect(loaded).toEqual(getDefaultSettings());
+        expect(backupKeys()).toHaveLength(1);
+        expect((chrome as any).__storage[at(backupKeys(), 0)]).toBe(corrupt);
+        expect(storedSettings()).toEqual(getDefaultSettings());
+        expect(showNotification).toHaveBeenCalledTimes(1);
+        expect(at(vi.mocked(showNotification).mock.calls, 0)[0]).toBe("Settings were reset");
     });
 
-    it("treats a config without a WebUI list as having no WebUIs, keeping the rest", async () => {
+    it("treats a stored value that is not an object as corrupt", async () => {
+        (chrome as any).__storage.settings = "null";
+        const loaded = await new Settings().loadSettings();
+
+        expect(loaded).toEqual(getDefaultSettings());
+        expect(backupKeys()).toHaveLength(1);
+        expect(showNotification).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps every earlier backup when the config is corrupted again", async () => {
+        (chrome as any).__storage.settings = "first corrupt";
+        await new Settings().loadSettings();
+        (chrome as any).__storage.settings = "second corrupt";
+        await new Settings().loadSettings();
+
+        const originals = backupKeys().map(key => (chrome as any).__storage[key]);
+        expect(originals.sort()).toEqual(["first corrupt", "second corrupt"]);
+    });
+
+    it("treats a config without a WebUI list as having no WebUIs, without resetting it", async () => {
         const stored = { ...getDefaultSettings(), notificationsDurationMs: 5000 } as Partial<RTASettings>;
         delete stored.webuiSettings;
         (chrome as any).__storage.settings = serializeSettings(stored as RTASettings);
@@ -53,6 +94,8 @@ describe("Settings.loadSettings", () => {
         const loaded = await new Settings().loadSettings();
         expect(loaded.webuiSettings).toEqual([]);
         expect(loaded.notificationsDurationMs).toBe(5000);
+        expect(backupKeys()).toEqual([]);
+        expect(showNotification).not.toHaveBeenCalled();
     });
 
     it("fills keys missing from an older config with defaults and keeps stored values, falsy ones included", async () => {
@@ -67,6 +110,7 @@ describe("Settings.loadSettings", () => {
         expect(loaded.notificationsDurationMs).toBe(5000);
         expect(loaded.notificationsSoundEnabled).toBe(true);
         expect(loaded.linkCatchingEnabled).toBe(false);
+        expect(backupKeys()).toEqual([]);
     });
 });
 
