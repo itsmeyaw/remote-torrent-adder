@@ -1,12 +1,14 @@
 import { useState, type ChangeEvent, type JSX } from "react";
 import Toggle from "../components/Toggle";
 import { useSettings } from "../SettingsContext";
+import { isMatchedByRegexes } from "../../util/utils";
 
 function regexToString(r: RegExp): string {
   return r.source;
 }
 
 function stringToRegex(s: string): RegExp | null {
+  if (s.trim() === "") return null;
   try {
     return new RegExp(s);
   } catch {
@@ -14,10 +16,14 @@ function stringToRegex(s: string): RegExp | null {
   }
 }
 
+function patternError(s: string): string {
+  return s.trim() === "" ? "Pattern cannot be empty." : "Not a valid regular expression.";
+}
+
 /** A stored pattern can be anything the user pasted, so a throw means "no match". */
 function testRegexSafely(regex: RegExp, value: string): boolean {
   try {
-    return regex.test(value);
+    return isMatchedByRegexes(value, [regex]);
   } catch {
     return false;
   }
@@ -26,8 +32,10 @@ function testRegexSafely(regex: RegExp, value: string): boolean {
 export default function LinkCatchingPage(): JSX.Element {
   const { settings, updateSetting, loading } = useSettings();
   const [newRegex, setNewRegex] = useState<string>("");
+  const [addError, setAddError] = useState<string | null>(null);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>("");
+  const [editError, setEditError] = useState<string | null>(null);
   const [testerValue, setTesterValue] = useState<string>("");
 
   if (loading || !settings) return <div>Loading...</div>;
@@ -36,6 +44,7 @@ export default function LinkCatchingPage(): JSX.Element {
 
   const handleAdd = (): void => {
     const reg = stringToRegex(newRegex);
+    setAddError(reg ? null : patternError(newRegex));
     if (reg) {
       updateSetting("linkCatchingRegexes", [...settings.linkCatchingRegexes, reg]);
       setNewRegex("");
@@ -51,10 +60,12 @@ export default function LinkCatchingPage(): JSX.Element {
   const handleEdit = (idx: number): void => {
     setEditIdx(idx);
     setEditValue(regexStrings[idx] ?? "");
+    setEditError(null);
   };
 
   const handleEditSave = (idx: number): void => {
     const reg = stringToRegex(editValue);
+    setEditError(reg ? null : patternError(editValue));
     if (reg) {
       const arr = [...settings.linkCatchingRegexes];
       arr[idx] = reg;
@@ -116,6 +127,7 @@ export default function LinkCatchingPage(): JSX.Element {
                   />
                   <button onClick={() => handleEditSave(idx)} style={{ marginRight: 2, fontSize: 13 }}>✔</button>
                   <button onClick={() => setEditIdx(null)} style={{ fontSize: 13 }}>✖</button>
+                  {editError && <span role="alert" style={{ color: "var(--rta-danger, #B22222)", fontSize: 13, marginLeft: 6 }}>{editError}</span>}
                 </>
               ) : (
                 <>
@@ -156,6 +168,7 @@ export default function LinkCatchingPage(): JSX.Element {
             }}
           >Add</button>
         </div>
+        {addError && <div role="alert" style={{ color: "var(--rta-danger, #B22222)", fontSize: 13, marginTop: 6 }}>{addError}</div>}
       </div>
       <hr style={{ margin: "32px 0 24px 0", border: "none", borderTop: "1px solid var(--rta-border, #b7c9a7)" }} />
       <div style={{ marginBottom: 16 }}>

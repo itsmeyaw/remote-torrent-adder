@@ -17,7 +17,7 @@ export function moveItem<T>(items: T[], from: number, to: number): T[] {
 }
 
 export function isMatchedByRegexes(url: string, regexes: RegExp[]): boolean {
-    return regexes.some(regex => regex.test(url));
+    return regexes.some(regex => regex.source.trim() !== "" && regex.source !== "(?:)" && regex.test(url));
 }
 
 export function getBaseUrl(url: string): string {
