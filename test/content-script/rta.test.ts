@@ -189,7 +189,7 @@ describe("content-script form submit targets", () => {
         });
     });
 
-    it("catches implicit submission from pressing Enter", async () => {
+    it("catches a programmatic submit event from requestSubmit", async () => {
         await start('<form action="https://tracker.example/original.torrent"><input type="text"></form>');
 
         expect(submit(document.querySelector("form")!)).toBe(true);
@@ -197,6 +197,25 @@ describe("content-script form submit targets", () => {
             action: PreAddTorrentMessage.action,
             url: "https://tracker.example/original.torrent",
         });
+    });
+
+    it("catches a form whose action is set to a torrent after insertion", async () => {
+        await start('<form><button>Download</button></form>');
+        const form = document.querySelector("form")!;
+        form.action = "https://tracker.example/late.torrent";
+
+        expect(submit(form)).toBe(true);
+        expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
+            action: PreAddTorrentMessage.action,
+            url: "https://tracker.example/late.torrent",
+        });
+    });
+
+    it("releases submission when the form action never matches", async () => {
+        await start('<form action="https://tracker.example/details/123"><button>Search</button></form>');
+
+        expect(submit(document.querySelector("form")!)).toBe(false);
+        expect(browser.runtime.sendMessage).not.toHaveBeenCalled();
     });
 
     it("sends the current form when a submit button is reassigned", async () => {

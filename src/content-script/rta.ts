@@ -67,33 +67,46 @@ function loadSettingsAndRegisterActions(attemptNumber: number = 0): void {
 
 function registerLinks(linkRegexes: RegExp[]): void {
     observe<HTMLAnchorElement>('a', (element) => {
-        checkUrlAndRegisterAction(element, () => {
-            if (!element.getAttribute('href')?.trim()) {
-                return undefined;
+        const getCurrentUrl = () => element.getAttribute('href')?.trim()
+            ? getMatchingUrl(element.href, linkRegexes)
+            : undefined;
+        const url = getCurrentUrl();
+        if (url) {
+            recordFoundLink(element, url);
+        }
+        element.addEventListener('click', (event: Event) => {
+            const currentUrl = getCurrentUrl();
+            if (!currentUrl) {
+                return;
             }
-            return getMatchingUrl(element.href, linkRegexes);
-        }, 'click', (event, url) => {
             const mouseEvent = event as MouseEvent;
             if (mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
                 console.debug("Clicked a recognized link, but RTA action was prevented due to pressed modifier keys.");
                 return;
             }
             mouseEvent.preventDefault();
-            sendMessageAndForget({ action: PreAddTorrentMessage.action, url } as IPreAddTorrentMessage);
+            sendMessageAndForget({ action: PreAddTorrentMessage.action, url: currentUrl } as IPreAddTorrentMessage);
         });
     });
 }
 
 function registerForms(linkRegexes: RegExp[]): void {
     observe<HTMLFormElement>('form', (form) => {
-        checkUrlAndRegisterAction(form, () => {
-            if (!form.getAttribute('action')?.trim()) {
-                return undefined;
+        // The action is often set after insertion, so the submit listener is always attached.
+        const getCurrentUrl = () => form.getAttribute('action')?.trim()
+            ? getMatchingUrl(form.action, linkRegexes)
+            : undefined;
+        const url = getCurrentUrl();
+        if (url) {
+            recordFoundLink(form, url);
+        }
+        form.addEventListener('submit', (event: Event) => {
+            const currentUrl = getCurrentUrl();
+            if (!currentUrl) {
+                return;
             }
-            return getMatchingUrl(form.action, linkRegexes);
-        }, 'submit', (event, url) => {
             event.preventDefault();
-            sendMessageAndForget({ action: PreAddTorrentMessage.action, url } as IPreAddTorrentMessage);
+            sendMessageAndForget({ action: PreAddTorrentMessage.action, url: currentUrl } as IPreAddTorrentMessage);
         });
     });
 }
@@ -112,25 +125,4 @@ function recordFoundLink(element: Element, url: string): void {
         action: UpdateActionBadgeText.action,
         text: foundLinks.length.toString()
     } as IUpdateActionBadgeTextMessage);
-}
-
-function checkUrlAndRegisterAction(
-    element: Element,
-    getCurrentUrl: () => string | undefined,
-    eventType: 'click' | 'submit',
-    handleEvent: (event: Event, url: string) => void
-): void {
-    const url = getCurrentUrl();
-    if (!url) {
-        return;
-    }
-    recordFoundLink(element, url);
-    console.debug(`Registered action for element: ${element.tagName}, URL: ${url}`);
-    element.addEventListener(eventType, (event: Event) => {
-        const currentUrl = getCurrentUrl();
-        if (!currentUrl) {
-            return;
-        }
-        handleEvent(event, currentUrl);
-    });
 }
