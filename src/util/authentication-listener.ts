@@ -84,4 +84,3 @@ function isRequestForWebUi(url: string, webUi: TorrentWebUI): boolean {
 async function rememberRequest(requestId: string): Promise<void> {
     await ext.storage.session.set({ [AUTH_TRIED_KEY_PREFIX + requestId]: true });
 }
-
