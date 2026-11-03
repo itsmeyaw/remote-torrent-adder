@@ -29,9 +29,9 @@ The same bundle ships to Chrome and Firefox, and this is the newest and most eas
 
 ### MV3 Constraints
 
-- [ ] Service worker (`service_worker.ts`) must be **stateless** between events — no module-level mutable state that persists across invocations. Persist to `ext.storage`; background code reloads settings per event via `new Settings().loadSettings()` rather than caching them.
+- [ ] Service worker (`service_worker.ts`) must be **stateless** between events — no module-level mutable state that persists across invocations. Persist to `ext.storage`; background code reloads settings per event via `loadSettings()` (`src/settings/settings.ts`) rather than caching them.
 - [ ] No `setInterval` or `setTimeout` in the service worker (they're cleared when the worker goes idle). Use `ext.alarms` if periodic tasks are needed.
-- [ ] `ext.runtime.sendMessage` is used for content script ↔ service worker communication — not direct function calls.
+- [ ] Messages between contexts go through `sendMessage` / `sendMessageToTab` / `listenForMessages` in `src/util/messaging.ts`, with the action's request and reply declared once in `MessageContracts` (`src/models/messages.ts`) — no raw `ext.runtime.sendMessage`, no casts of messages or replies, no hand-written `'error' in response` checks.
 - [ ] `declarativeNetRequest` rule IDs must be unique integers — check `cors-tricks.ts` for the current ID allocation scheme before adding new rules.
 - [ ] Offscreen documents (notifications) have strict lifecycle — created before use, destroyed when done — and are Chrome-only, so the call site must be guarded by `canUseOffscreen()`.
 
@@ -62,8 +62,8 @@ For changes in `src/webuis/`:
 ### Settings & Storage
 
 - [ ] New per-client fields added to `WebUISettings` in `src/models/webui.ts`; new global fields to `RTASettings` in `src/models/settings.ts` with a default in `src/settings/settings-defaults.ts`
-- [ ] Default values handled (new fields may be undefined in existing configs — use `??` not `||`, since `false` and `0` are valid values)
-- [ ] Adding a new optional field (`?:`) needs no migration. Renaming, removing, or changing the type of an existing field does — and the only migration path currently in the codebase is `src/settings/legacy-client-identifiers.ts`, which handles client identifiers specifically. A different kind of schema change needs new migration code plus tests
+- [ ] New fields get a default (`getDefaultSettings` / `getDefaultWebUiFields` in `src/settings/settings-defaults.ts`) and a type check in `src/settings/settings-validation.ts`; `parseSettings` fills missing ones on load, save and import, so readers need no `??` fallback
+- [ ] Adding a new field with a default needs no migration. Renaming, removing, or changing the type of an existing field does — and the only migration path currently in the codebase is `src/settings/legacy-client-identifiers.ts`, which handles client identifiers specifically. A different kind of schema change needs new migration code plus tests
 - [ ] New required fields on `WebUISettings` are added to `test/helpers/fixtures.ts` **and** `e2e/fixtures/settings.ts`
 - [ ] A client-only boolean option is declared as a `ClientSpecificSettingDescriptor` on the client class and read with `this.getClientSpecific(key, config)` — **not** as a hand-wired new field on `WebUISettings` with its own control in `WebUIsPage.tsx`. `clientSpecificSettings` is typed `Record<string, unknown>`; reading it directly bypasses the config → stored → default fallback chain
 - [ ] A descriptor's `key` is stable and never changed once shipped — it is persisted in user settings, exactly like the `Client` enum slug

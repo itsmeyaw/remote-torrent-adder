@@ -62,7 +62,7 @@ return {
     myNewSetting: false,
 };
 ```
-Stored settings from older versions won't have the key, so make sure the read path falls back to the default — use `??`, never `||` (`false` and `0` are valid values).
+Stored settings from older versions won't have the key; `parseSettings` (`src/settings/settings-validation.ts`) fills it from this default on load, save and import, so readers use `settings.myNewSetting` directly — no `??` fallback. Add a type check for the field to `SETTING_CHECKS` there.
 
 ### 3. Options UI
 Add the control in the appropriate tab page under `src/options/pages/`:
@@ -76,7 +76,7 @@ Add the control in the appropriate tab page under `src/options/pages/`:
 Follow existing patterns: use `SettingsContext` (`src/options/SettingsContext.tsx`) to read/write, Tailwind for styling, Radix UI primitives for interactive controls.
 
 ### 4. Usage
-Use the setting wherever the behaviour is implemented. Background code loads settings freshly per event — `const settings = await new Settings().loadSettings();` (see `src/background/action.ts`, `src/settings/webuis.ts`, `src/background/messaging.ts`) — because the worker is stateless and must not cache them across invocations. Then read `settings.myNewSetting`.
+Use the setting wherever the behaviour is implemented. Background code loads settings freshly per event — `const settings = await loadSettings();` from `src/settings/settings.ts` (see `src/background/action.ts`, `src/background/messaging.ts`); look a WebUI up with `getWebUi` / `findWebUiSettings` from `src/settings/webuis.ts` — because the worker is stateless and must not cache them across invocations. Then read `settings.myNewSetting`.
 
 ### 5. Tests
 - `test/settings/settings-defaults.test.ts` — assert the new default
@@ -138,25 +138,25 @@ if (this.getClientSpecific("forceStart", config)) {
 Only for a setting that applies to every client, or that is not a boolean. Everything else belongs in the descriptor path above.
 
 ### 1. `src/models/webui.ts`
-Add as optional to `WebUISettings` so existing configs don't break:
+Add it as a required field, give it a default in `getDefaultWebUiFields()` (`src/settings/settings-defaults.ts`), and add a type check to `WEBUI_FIELD_CHECKS` in `src/settings/settings-validation.ts`. Existing configs don't break: a missing field is filled from the default whenever settings are loaded, saved or imported.
 ```typescript
 export interface WebUISettings {
     // existing fields...
-    myClientSetting?: boolean;  // optional — undefined in existing configs
+    myClientSetting: boolean;
 }
 ```
 
 ### 2. Options UI — `src/options/pages/WebUIsPage.tsx`
-Add the control inside the per-client form. Existing fields (`showPerTorrentConfigSelector`, `useAlternativeLabelDirChooser`, `defaultLabel`, …) show the pattern. Use `??` for the default when reading:
+Add the control inside the per-client form. Existing fields (`showPerTorrentConfigSelector`, `useAlternativeLabelDirChooser`, `defaultLabel`, …) show the pattern. The field is always filled, so read it directly:
 ```typescript
-const value = webui.myClientSetting ?? false;
+const value = webui.myClientSetting;
 ```
 
 ### 3. Usage in client classes
-Access via `this._settings.myClientSetting ?? defaultValue`. If many clients need it, add a protected getter to `TorrentWebUI` alongside `getLabel` / `getDirectory` / `getAddPaused`:
+Access via `this._settings.myClientSetting`. If many clients need it, add a protected getter to `TorrentWebUI` alongside `getLabel` / `getDirectory` / `getAddPaused`:
 ```typescript
 protected getMyClientSetting(): boolean {
-    return this._settings.myClientSetting ?? false;
+    return this._settings.myClientSetting;
 }
 ```
 
@@ -187,7 +187,7 @@ export interface TorrentUploadConfig {
 Mirror the existing resolution order — per-torrent config first, then the per-client default, then a hard default:
 ```typescript
 protected getMyField(config: TorrentUploadConfig): boolean | null {
-    return config.myField ?? this._settings.defaultMyField ?? false;
+    return config.myField ?? this._settings.defaultMyField;
 }
 ```
 
