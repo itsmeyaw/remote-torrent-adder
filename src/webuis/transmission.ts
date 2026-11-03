@@ -1,6 +1,6 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type AddResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
-import { blobToBase64 } from "../torrent/converter";
+import { bytesToBase64 } from "../torrent/torrent-bytes";
 
 interface TransmissionRpcResponse {
     result?: string;
@@ -73,7 +73,7 @@ export class TransmissionWebUI extends TorrentWebUI<string> {
             };
         } else {
             payload["arguments"] = {
-                metainfo: await blobToBase64(torrent.data as Blob)
+                metainfo: bytesToBase64(new Uint8Array(await (torrent.data as Blob).arrayBuffer()))
             };
         }
 

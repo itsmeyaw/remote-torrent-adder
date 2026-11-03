@@ -28,8 +28,7 @@ describe("FloodWebUI", () => {
         expect(result.success).toBe(true);
         expect(callArgs(fetch, 1)[0]).toBe("http://h:3000/api/torrents/add-files");
         const payload = JSON.parse(callArgs(fetch, 1)[1].body as string);
-        expect(Array.isArray(payload.files)).toBe(true);
-        expect(payload.files[0]).toBeTypeOf("string");
+        expect(payload.files).toEqual(["AQIDBA=="]);
         expect(payload.start).toBe(true);
         expect(payload.tags).toEqual([]);
     });

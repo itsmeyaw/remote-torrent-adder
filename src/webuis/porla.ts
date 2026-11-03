@@ -1,6 +1,6 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type AddResult, AuthenticationError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
-import { blobToBase64 } from "../torrent/converter";
+import { bytesToBase64 } from "../torrent/torrent-bytes";
 
 export class PorlaWebUI extends TorrentWebUI<string> {
     protected override async login(): Promise<string> {
@@ -101,7 +101,7 @@ export class PorlaWebUI extends TorrentWebUI<string> {
             method: "torrents.add",
             id: Math.floor(Date.now() / 1000),
             params: {
-                ti: await blobToBase64(torrent.data as Blob),
+                ti: bytesToBase64(new Uint8Array(await (torrent.data as Blob).arrayBuffer())),
                 save_path: this.getDirectory(config) ?? "./",
                 ...this.createCategoryParam(config)
             }

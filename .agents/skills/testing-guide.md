@@ -32,7 +32,7 @@ A new required field on `WebUISettings` or `RTASettings` must be added to `fixtu
 - Auth exchanges, including the retry-with-token flows (Transmission's 409, Deluge's JSON-RPC login)
 - Failure mapping — a non-OK response becoming `{ success: false }` with the status propagated
 - Settings defaults, load/save round-trips, and fallback when a stored config predates the field
-- Parsers (`bencode-decode`, `parsers`, `converter`, `serializer`) — including malformed input
+- Parsers (`bencode-decode`, `parsers`, `torrent-bytes`, `serializer`) — including malformed input
 - Auto-label/dir matching rules
 - Options and popup components — that a control renders and its value reaches the outgoing config
 
