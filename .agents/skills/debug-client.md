@@ -123,4 +123,4 @@ Report the failure mode, root cause, and fix in the conversation. A debugging se
 - `src/util/browser-api.ts` / `src/util/platform.ts` — the `ext` shim and the build-time browser constant; first stop for a browser-specific failure
 - `src/background/authentication-listener.ts` — auth event handling
 - `src/torrent/download.ts` — torrent file fetching and parsing
-- `src/background/messaging.ts` — message flow between layers
+- `src/background/messaging.ts` — message flow between layers; `src/background/add.ts` — the Add flow every entry point goes through
