@@ -14,13 +14,13 @@ The file-by-file map and the non-negotiable constraints live in the root [`AGENT
 
 **Build system**: five Vite builds driven by a single `vite.config.ts`, selected through the `RTA_TARGET` environment variable — `worker`, `content-script`, `popup`, `options`, `notifications`. The `worker` and `content-script` targets use Vite's library mode with `formats: ['iife']` because each must be a single standalone file. Output: `dist/<browser>/` (dev), `dist-prod/<browser>/` (prod), where `<browser>` is `chrome` or `firefox`. `scripts/build.ts` drives the whole browser x prod x target matrix; `scripts/browsers.ts` holds the target list and the Firefox exclusions; `scripts/generate-manifest.ts` derives the Firefox manifest from `src/manifest.json`. Full detail in [`skills/build.md`](skills/build.md).
 
-**Conventions not covered by `AGENTS.md`**: React 19 and Tailwind CSS in both UIs; `TorrentWebUI` subclasses named `<Name>WebUI` in `src/webuis/<name>-webui.ts`; the CORS bypass works by having `declarativeNetRequest` remove the `Origin` header and set `Referer` per configured client.
+**Conventions not covered by `AGENTS.md`**: React 19 and Tailwind CSS in both UIs; `TorrentWebUI` subclasses named `<Name>WebUI` in `src/webuis/<name>.ts`; the CORS bypass works by having `declarativeNetRequest` remove the `Origin` header and set `Referer` per configured client.
 
 ## Testing
 
 There **is** an automated test suite, and it has three layers:
 
-- **vitest + jsdom** in `test/`, mirroring the `src/` layout. Every client in `src/webuis/` has a matching `test/webuis/<name>-webui.test.ts`.
+- **vitest + jsdom** in `test/`, mirroring the `src/` layout. Every client in `src/webuis/` has a matching `test/webuis/<name>.test.ts`.
 - **Playwright** in `e2e/`, as two projects: `chrome` loads `dist/chrome/` as an unpacked extension, `firefox` (`e2e/firefox/**`) drives a real Firefox through geckodriver.
 - **A manual browser pass** for what neither runner can reach — real link interception, real client round-trips, desktop notifications, service-worker lifecycle.
 

@@ -4,13 +4,13 @@ Testing happens at three levels: an automated vitest suite that covers logic and
 
 ## Automated tests
 
-The suite lives in `test/`, mirroring the `src/` layout. Every client in `src/webuis/` has a matching `test/webuis/<name>-webui.test.ts`.
+The suite lives in `test/`, mirroring the `src/` layout. Every client in `src/webuis/` has a matching `test/webuis/<name>.test.ts`.
 
 ```bash
 pnpm test              # run once
 pnpm run test:watch    # watch mode
 pnpm run test:coverage # with coverage report → coverage/
-pnpm exec vitest run test/webuis/qbittorrent-webui.test.ts   # a single file
+pnpm exec vitest run test/webuis/qbittorrent.test.ts   # a single file
 ```
 
 Stack: vitest + jsdom, `@testing-library/react` for components, `fake-indexeddb` for `src/util/idb.ts`. Global setup is `test/setup.ts`; config is `vitest.config.ts`.
@@ -197,7 +197,7 @@ For a structured pre-release or post-refactor pass, use `smoke-test-matrix.md`. 
 
 ## Testing a New Client Implementation
 
-1. Write `test/webuis/<name>-webui.test.ts` first — it pins the request shape without needing the client running
+1. Write `test/webuis/<name>.test.ts` first — it pins the request shape without needing the client running
 2. Configure the new client in Options
 3. Start the client's WebUI locally or on a test server
 4. Try adding a `.torrent` file and a magnet link

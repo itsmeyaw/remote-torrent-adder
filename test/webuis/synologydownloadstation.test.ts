@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { callArgs } from "../helpers/assert";
-import { SynologyDownloadStationWebUI } from "../../src/webuis/synologydownloadstation-webui";
+import { SynologyDownloadStationWebUI } from "../../src/webuis/synologydownloadstation";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 

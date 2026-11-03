@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { callArgs } from "../helpers/assert";
-import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
+import { QBittorrentWebUI } from "../../src/webuis/qbittorrent";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 

@@ -91,7 +91,7 @@ For a boolean that only one client understands, declare a descriptor and stop. T
 
 ### 1. Declare the descriptor in the client class
 
-At the top of `src/webuis/<name>-webui.ts` — see `qbittorrent-webui.ts` and `rutorrent-webui.ts` for the two live examples:
+At the top of `src/webuis/<name>.ts` — see `qbittorrent.ts` and `rutorrent.ts` for the two live examples:
 
 ```typescript
 const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> = [
@@ -128,7 +128,7 @@ if (this.getClientSpecific("forceStart", config)) {
 
 ### 3. Tests
 
-- `test/webuis/<name>-webui.test.ts` — the flag on and off changes the outgoing request, and the descriptor's default applies when nothing is stored
+- `test/webuis/<name>.test.ts` — the flag on and off changes the outgoing request, and the descriptor's default applies when nothing is stored
 - `test/popup/popup-data.test.ts` / `test/popup/page.test.tsx` — only if `perTorrent` is true
 
 ---
@@ -161,7 +161,7 @@ protected getMyClientSetting(): boolean {
 ```
 
 ### 4. Tests
-Extend `test/models/webui.test.ts` for a new base-class getter, and the affected `test/webuis/<name>-webui.test.ts` for behaviour that changes per client. `test/helpers/fixtures.ts` builds `WebUISettings` — new **required** fields must be added there, and to `e2e/fixtures/settings.ts`.
+Extend `test/models/webui.test.ts` for a new base-class getter, and the affected `test/webuis/<name>.test.ts` for behaviour that changes per client. `test/helpers/fixtures.ts` builds `WebUISettings` — new **required** fields must be added there, and to `e2e/fixtures/settings.ts`.
 
 ---
 

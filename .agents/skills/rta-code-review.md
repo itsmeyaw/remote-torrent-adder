@@ -52,7 +52,7 @@ For changes in `src/webuis/`:
 
 ### Tests
 
-- [ ] New or changed client behaviour has matching cases in `test/webuis/<name>-webui.test.ts` — every client has one, a new client without one is a gap
+- [ ] New or changed client behaviour has matching cases in `test/webuis/<name>.test.ts` — every client has one, a new client without one is a gap
 - [ ] New settings fields are covered in `test/settings/settings-defaults.test.ts` and `test/settings/settings.test.ts`
 - [ ] New UI has cases in `test/options/` or `test/popup/`
 - [ ] Tests use the helpers in `test/helpers/` (`fetch-mock`, `chrome-mock`, `fixtures`) instead of hand-rolled mocks

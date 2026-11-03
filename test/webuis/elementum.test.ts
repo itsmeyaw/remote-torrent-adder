@@ -1,37 +1,37 @@
 import { describe, it, expect } from "vitest";
 import { callArgs } from "../helpers/assert";
-import { TTorrentWebUI } from "../../src/webuis/ttorrent-webui";
+import { ElementumWebUI } from "../../src/webuis/elementum";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 
-const build = (over = {}) => new TTorrentWebUI(makeWebUISettings({ host: "h", port: 1080, ...over }));
+const build = (over = {}) => new ElementumWebUI(makeWebUISettings({ host: "h", port: 65220, ...over }));
 
-describe("TTorrentWebUI", () => {
-    it("posts a magnet url to /cmd/downloadFromUrl", async () => {
+describe("ElementumWebUI", () => {
+    it("posts a magnet uri to /playuri", async () => {
         const fetch = queueFetch(mockResponse({ status: 200, body: "ok" }));
         const result = await build().sendTorrent(makeMagnetTorrent(), {});
 
         expect(result.success).toBe(true);
         const [url, opts] = callArgs(fetch, 0);
-        expect(url).toBe("http://h:1080/cmd/downloadFromUrl");
-        expect((opts.body as FormData).get("url")).toBe("magnet:?xt=urn:btih:abc123&dn=Cool+Torrent");
+        expect(url).toBe("http://h:65220/playuri");
+        const body = opts.body as FormData;
+        expect(body.get("uri")).toBe("magnet:?xt=urn:btih:abc123&dn=Cool+Torrent");
     });
 
-    it("posts a torrent file to /cmd/downloadTorrent", async () => {
+    it("posts a torrent file blob under the file field", async () => {
         const fetch = queueFetch(mockResponse({ status: 200, body: "ok" }));
         await build().sendTorrent(makeFileTorrent(), {});
 
-        const [url, opts] = callArgs(fetch, 0);
-        expect(url).toBe("http://h:1080/cmd/downloadTorrent");
-        expect((opts.body as FormData).get("torrentfile")).toBeInstanceOf(Blob);
+        const body = callArgs(fetch, 0)[1].body as FormData;
+        expect(body.get("file")).toBeInstanceOf(Blob);
     });
 
     it("reports the real status and body on a non-2xx response", async () => {
-        queueFetch(mockResponse({ status: 401, body: "auth" }));
+        queueFetch(mockResponse({ status: 500, body: "err" }));
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({
             success: false,
-            httpResponseCode: 401,
-            httpResponseBody: "auth",
+            httpResponseCode: 500,
+            httpResponseBody: "err",
         });
     });
 

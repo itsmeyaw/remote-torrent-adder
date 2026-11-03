@@ -8,7 +8,7 @@ const { addLink } = vi.hoisted(() => ({
 vi.mock("../../src/background/add", () => ({ addLink }));
 
 import { refreshContextMenu, registerContextMenuClickListener } from "../../src/background/context-menu";
-import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
+import { QBittorrentWebUI } from "../../src/webuis/qbittorrent";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
 
 const settingsFor = (id: string, name: string) => makeWebUISettings({ id, name, host: "h", port: 8080 });

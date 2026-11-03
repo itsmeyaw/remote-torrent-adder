@@ -22,7 +22,7 @@ import { type WebUISettings } from "../../src/models/webui";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { readBufferedTorrent, saveBufferedTorrent } from "../../src/background/buffered-torrent";
 import { CloudflareChallengeError } from "../../src/torrent/download";
-import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
+import { QBittorrentWebUI } from "../../src/webuis/qbittorrent";
 import { Settings } from "../../src/settings/settings";
 import { loadPopupData } from "../../src/popup/popup-data";
 
