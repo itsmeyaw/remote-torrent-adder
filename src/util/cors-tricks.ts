@@ -47,11 +47,9 @@ export async function registerCorsCircumventionForWebUis(allWebUis: TorrentWebUI
     });
 }
 
-let nextDynamicRuleId = 0;
-
+// Random, not a counter: a restarted worker must not reuse the id of a rule still registered from before the restart.
 function allocateDynamicRuleId(): number {
-    nextDynamicRuleId = (nextDynamicRuleId % 2_000_000_000) + 1;
-    return nextDynamicRuleId;
+    return Math.floor(Math.random() * 2_000_000_000) + 1;
 }
 
 export async function executeMethodWrappedWithOriginStripped<T>(method: () => Promise<T>, baseUrl: string): Promise<T> {

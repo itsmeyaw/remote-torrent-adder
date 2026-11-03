@@ -117,4 +117,29 @@ describe("executeMethodWrappedWithReferer", () => {
         expect(addedIds).toHaveLength(2);
         expect(addedIds[0]).not.toBe(addedIds[1]);
     });
+
+    it("does not reuse the id of a rule still in place after the worker restarts", async () => {
+        const addedIds: number[] = [];
+        (chrome.declarativeNetRequest.updateDynamicRules as any).mockImplementation((arg: any) => {
+            if (arg.addRules) {
+                addedIds.push(arg.addRules[0].id);
+            }
+            return Promise.resolve();
+        });
+        let finishFirst!: () => void;
+        const firstDone = new Promise<void>(resolve => { finishFirst = resolve; });
+        vi.resetModules();
+        const before = await import("../../src/util/cors-tricks");
+        const first = before.executeMethodWrappedWithReferer(() => firstDone.then(() => "a"), "http://t/1", "http://t");
+        await vi.waitFor(() => expect(addedIds).toHaveLength(1));
+
+        vi.resetModules();
+        const restarted = await import("../../src/util/cors-tricks");
+        await restarted.executeMethodWrappedWithReferer(async () => "b", "http://t/2", "http://t");
+        finishFirst();
+        await first;
+
+        expect(addedIds).toHaveLength(2);
+        expect(addedIds[1]).not.toBe(addedIds[0]);
+    });
 });
