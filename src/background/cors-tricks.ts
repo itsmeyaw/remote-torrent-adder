@@ -1,4 +1,4 @@
-import { ext } from "./browser-api";
+import { ext } from "../util/browser-api";
 import { type TorrentWebUI } from "../models/webui";
 
 function hasUsableHost(baseUrl: string): boolean {

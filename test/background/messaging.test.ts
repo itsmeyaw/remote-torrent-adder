@@ -6,13 +6,13 @@ const { showNotification, downloadTorrent } = vi.hoisted(() => ({
     showNotification: vi.fn(),
     downloadTorrent: vi.fn(),
 }));
-vi.mock("../../src/util/notifications", () => ({ showNotification }));
+vi.mock("../../src/background/notifications", () => ({ showNotification }));
 vi.mock("../../src/torrent/download", async (importOriginal) => ({
     ...(await importOriginal<Record<string, unknown>>()),
     downloadTorrent,
 }));
 
-import { registerMessageListener, dispatchPreAddTorrent } from "../../src/util/messaging";
+import { registerMessageListener, dispatchPreAddTorrent } from "../../src/background/messaging";
 import { HandledFailure } from "../../src/util/errors";
 import {
     GetSettingsMessage,
@@ -28,7 +28,7 @@ import { serializeSettings, deserializeSettings } from "../../src/settings/seria
 import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { Client } from "../../src/models/clients";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
-import { readBufferedTorrent, saveBufferedTorrent } from "../../src/util/buffered-torrent";
+import { readBufferedTorrent, saveBufferedTorrent } from "../../src/background/buffered-torrent";
 import { CloudflareChallengeError } from "../../src/torrent/download";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
 import { Settings } from "../../src/settings/settings";

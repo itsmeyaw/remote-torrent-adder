@@ -3,7 +3,7 @@ import {
     registerCorsCircumventionForWebUis,
     executeMethodWrappedWithReferer,
     clearDynamicRules,
-} from "../../src/util/cors-tricks";
+} from "../../src/background/cors-tricks";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
 import { makeWebUISettings } from "../helpers/fixtures";
 
@@ -130,12 +130,12 @@ describe("executeMethodWrappedWithReferer", () => {
         let finishFirst!: () => void;
         const firstDone = new Promise<void>(resolve => { finishFirst = resolve; });
         vi.resetModules();
-        const before = await import("../../src/util/cors-tricks");
+        const before = await import("../../src/background/cors-tricks");
         const first = before.executeMethodWrappedWithReferer(() => firstDone.then(() => "a"), "http://t/1", "http://t");
         await vi.waitFor(() => expect(addedIds).toHaveLength(1));
 
         vi.resetModules();
-        const restarted = await import("../../src/util/cors-tricks");
+        const restarted = await import("../../src/background/cors-tricks");
         await restarted.executeMethodWrappedWithReferer(async () => "b", "http://t/2", "http://t");
         finishFirst();
         await first;

@@ -56,7 +56,7 @@ Before digging into the client's API, rule out the port. In rough order of likel
 ### 3. CORS issues
 
 The extension uses `declarativeNetRequest` to bypass CORS (removes Origin, sets Referer). If CORS is still failing:
-- Check `src/util/cors-tricks.ts` — rules are applied per WebUI base URL. `test/util/cors-tricks.test.ts` asserts the rule shapes and is worth running first
+- Check `src/background/cors-tricks.ts` — rules are applied per WebUI base URL. `test/background/cors-tricks.test.ts` asserts the rule shapes and is worth running first
 - Ensure the WebUI's base URL is correctly formed (check `createBaseUrl()` output — note it drops the port for 80/http and 443/https)
 - Some clients validate the Referer header value — the current code sets it to the base URL
 
@@ -119,8 +119,8 @@ Report the failure mode, root cause, and fix in the conversation. A debugging se
 - `src/webuis/<clientname>-webui.ts` — client implementation
 - `test/webuis/<clientname>-webui.test.ts` — its tests
 - `src/models/webui.ts` — base class with `fetch()` wrapper, `HttpError`, and helpers
-- `src/util/cors-tricks.ts` — CORS bypass implementation
+- `src/background/cors-tricks.ts` — CORS bypass implementation
 - `src/util/browser-api.ts` / `src/util/platform.ts` — the `ext` shim and the build-time browser constant; first stop for a browser-specific failure
-- `src/util/authentication-listener.ts` — auth event handling
+- `src/background/authentication-listener.ts` — auth event handling
 - `src/torrent/download.ts` — torrent file fetching and parsing
-- `src/util/messaging.ts` — message flow between layers
+- `src/background/messaging.ts` — message flow between layers

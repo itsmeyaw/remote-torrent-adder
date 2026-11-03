@@ -7,9 +7,9 @@ const { dispatchPreAddTorrent, addTorrentToWebUiById } = vi.hoisted(() => ({
     dispatchPreAddTorrent: vi.fn(() => Promise.resolve()),
     addTorrentToWebUiById: vi.fn(() => Promise.resolve()),
 }));
-vi.mock("../../src/util/messaging", () => ({ dispatchPreAddTorrent, addTorrentToWebUiById }));
+vi.mock("../../src/background/messaging", () => ({ dispatchPreAddTorrent, addTorrentToWebUiById }));
 
-import { refreshContextMenu, registerContextMenuClickListener } from "../../src/util/context-menu";
+import { refreshContextMenu, registerContextMenuClickListener } from "../../src/background/context-menu";
 import { HandledFailure } from "../../src/util/errors";
 import { PreAddTorrentMessage } from "../../src/models/messages";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";

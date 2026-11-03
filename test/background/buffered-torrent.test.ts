@@ -6,7 +6,7 @@
 // store-and-read path that Chrome performs natively.
 
 import { describe, it, expect } from "vitest";
-import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "../../src/util/buffered-torrent";
+import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "../../src/background/buffered-torrent";
 import { withStore } from "../../src/util/idb";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 

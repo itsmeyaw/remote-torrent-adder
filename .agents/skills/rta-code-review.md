@@ -84,7 +84,7 @@ For changes in `src/webuis/`:
 
 ### Build System
 
-- [ ] New source files in `src/webuis/` or `src/util/` don't need to be added to any build config — Vite resolves imports automatically
+- [ ] New source files anywhere under `src/` don't need to be added to any build config — Vite resolves imports automatically
 - [ ] A new HTML page needs an entry in the `targets` map in `vite.config.ts` **and** its name in `ALL_TARGETS` in `scripts/browsers.ts` (plus `targetsFor` if it is Chrome-only). No new package script is needed — `scripts/build.ts` picks it up
 - [ ] Static assets go in `src/assets/`, which `scripts/build.ts` copies wholesale into the output directory
 

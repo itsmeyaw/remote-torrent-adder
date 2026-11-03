@@ -1,6 +1,6 @@
 import { type Torrent } from "../models/torrent";
 import { type WebUISettings } from "../models/webui";
-import { type IdbStore, withStore } from "./idb";
+import { type IdbStore, withStore } from "../util/idb";
 
 /**
  * The torrent a click handed off to the popup, parked between the service

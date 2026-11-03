@@ -17,7 +17,7 @@ export default defineConfig({
             exclude: [
                 "src/**/*.d.ts",
                 "src/notifications/offscreen.ts",
-                "src/util/play-sound.ts",
+                "src/notifications/play-sound.ts",
             ],
             reporter: ["text", "html"],
         },

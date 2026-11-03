@@ -76,7 +76,7 @@ Add the control in the appropriate tab page under `src/options/pages/`:
 Follow existing patterns: use `SettingsContext` (`src/options/SettingsContext.tsx`) to read/write, Tailwind for styling, Radix UI primitives for interactive controls.
 
 ### 4. Usage
-Use the setting wherever the behaviour is implemented. Background code loads settings freshly per event — `const settings = await new Settings().loadSettings();` (see `src/util/action.ts`, `src/settings/webuis.ts`, `src/util/messaging.ts`) — because the worker is stateless and must not cache them across invocations. Then read `settings.myNewSetting`.
+Use the setting wherever the behaviour is implemented. Background code loads settings freshly per event — `const settings = await new Settings().loadSettings();` (see `src/background/action.ts`, `src/settings/webuis.ts`, `src/background/messaging.ts`) — because the worker is stateless and must not cache them across invocations. Then read `settings.myNewSetting`.
 
 ### 5. Tests
 - `test/settings/settings-defaults.test.ts` — assert the new default

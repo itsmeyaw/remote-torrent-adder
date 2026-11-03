@@ -17,7 +17,7 @@ const BENIGN_WARNINGS: RegExp[] = [
     // src/torrent/download.ts - the normal fallback when no content script answers
     /No content script answered in tab/,
     /The page could not download the torrent/,
-    // src/util/action.ts, src/util/context-menu.ts - expected with empty settings
+    // src/background/action.ts, src/background/context-menu.ts - expected with empty settings
     /Action icon clicked, but no WebUI is configured/,
     /Context menu clicked, but no matching WebUI is configured/,
 ];

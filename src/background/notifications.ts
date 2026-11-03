@@ -1,7 +1,7 @@
-import { ext, sendMessageAndForget } from "./browser-api";
+import { ext, sendMessageAndForget } from "../util/browser-api";
 import { type IPlaySoundMessage, PlaySoundMessage } from "../models/messages";
-import { canUseOffscreen, isFirefox } from "./platform";
-import { playNotificationSound } from "./play-sound";
+import { canUseOffscreen, isFirefox } from "../util/platform";
+import { playNotificationSound } from "../notifications/play-sound";
 import { openSetLabelWindow, openWebUi } from "./action";
 import { loadWebUis } from "../settings/webuis";
 

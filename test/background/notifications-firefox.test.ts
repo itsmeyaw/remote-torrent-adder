@@ -10,9 +10,9 @@ vi.mock("../../src/util/platform", () => ({
     canUseOffscreen: () => false,
 }));
 
-vi.mock("../../src/util/play-sound", () => ({ playNotificationSound }));
+vi.mock("../../src/notifications/play-sound", () => ({ playNotificationSound }));
 
-const { showNotification } = await import("../../src/util/notifications");
+const { showNotification } = await import("../../src/background/notifications");
 
 describe("showNotification without an offscreen API", () => {
     beforeEach(() => playNotificationSound.mockClear());
