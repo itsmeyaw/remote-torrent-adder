@@ -8,7 +8,7 @@ const build = (over = {}) => new QBittorrentWebUI(makeWebUISettings({ host: "h",
 
 describe("QBittorrentWebUI", () => {
     it("authenticates then posts the magnet url to the add endpoint", async () => {
-        const fetch = queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, body: "Ok." }));
+        const fetch = queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Ok." }));
         const result = await build().sendTorrent(makeMagnetTorrent(), {});
 
         expect(result.success).toBe(true);
@@ -21,7 +21,7 @@ describe("QBittorrentWebUI", () => {
     });
 
     it("posts the torrent file with category, savepath and stopped flag", async () => {
-        const fetch = queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, body: "Ok." }));
+        const fetch = queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Ok." }));
         await build().sendTorrent(makeFileTorrent(), { dir: "/downloads", label: "movies", addPaused: true });
 
         const body = callArgs(fetch, 1)[1].body as FormData;
@@ -32,28 +32,28 @@ describe("QBittorrentWebUI", () => {
     });
 
     it("omits the forced flag by default", async () => {
-        const fetch = queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, body: "Ok." }));
+        const fetch = queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Ok." }));
         await build().sendTorrent(makeMagnetTorrent(), {});
 
         expect((callArgs(fetch, 1)[1].body as FormData).get("forced")).toBeNull();
     });
 
     it("sends the forced flag when force start is enabled for the client", async () => {
-        const fetch = queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, body: "Ok." }));
+        const fetch = queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Ok." }));
         await build({ clientSpecificSettings: { forceStart: true } }).sendTorrent(makeMagnetTorrent(), {});
 
         expect((callArgs(fetch, 1)[1].body as FormData).get("forced")).toBe("true");
     });
 
     it("lets the per-torrent config turn force start on for a client that has it off", async () => {
-        const fetch = queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, body: "Ok." }));
+        const fetch = queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Ok." }));
         await build().sendTorrent(makeMagnetTorrent(), { clientSpecificSettings: { forceStart: true } });
 
         expect((callArgs(fetch, 1)[1].body as FormData).get("forced")).toBe("true");
     });
 
     it("lets the per-torrent config turn force start off for a client that has it on", async () => {
-        const fetch = queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, body: "Ok." }));
+        const fetch = queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Ok." }));
         await build({ clientSpecificSettings: { forceStart: true } })
             .sendTorrent(makeMagnetTorrent(), { clientSpecificSettings: { forceStart: false } });
 
@@ -75,8 +75,18 @@ describe("QBittorrentWebUI", () => {
         });
     });
 
+    it("rejects an add before uploading when the login body is Fails.", async () => {
+        const fetch = queueFetch(mockResponse({ status: 200, body: "Fails." }));
+        await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({
+            success: false,
+            httpResponseBody: "qBittorrent rejected the username or password",
+        });
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(callArgs(fetch, 0)[0]).toBe("http://h:8080/api/v2/auth/login");
+    });
+
     it("reports failure when the add endpoint returns the literal Fails. body", async () => {
-        queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, body: "Fails." }));
+        queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Fails." }));
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({
             success: false,
             httpResponseBody: "Fails.",
@@ -84,7 +94,7 @@ describe("QBittorrentWebUI", () => {
     });
 
     it("reports the real status and body on a non-2xx add response", async () => {
-        queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 500, body: "err" }));
+        queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 500, body: "err" }));
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({
             success: false,
             httpResponseCode: 500,
@@ -131,5 +141,22 @@ describe("QBittorrentWebUI", () => {
             mockResponse({ status: 409, body: "Category name does not exist" }),
         );
         await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toMatchObject({ success: false, httpResponseCode: 409 });
+    });
+});
+
+describe("QBittorrentWebUI connection test", () => {
+    it("reports authenticated when the login body is Ok.", async () => {
+        queueFetch(mockResponse({ status: 200, body: "Ok." }));
+        await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: true, httpResponseCode: 200 });
+    });
+
+    it("reports authentication failed when the login body is Fails.", async () => {
+        queueFetch(mockResponse({ status: 200, body: "Fails." }));
+        await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: false, httpResponseCode: 200 });
+    });
+
+    it("reports authentication failed on a non-OK login status", async () => {
+        queueFetch(mockResponse({ status: 403, body: "Your IP address has been banned" }));
+        await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: false, httpResponseCode: 403 });
     });
 });

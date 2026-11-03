@@ -23,7 +23,8 @@ export class QBittorrentWebUI extends TorrentWebUI {
                 headers: { "Content-Type": "application/x-www-form-urlencoded; charset=utf-8" },
                 body
             });
-            return this.toReachableResult(response.ok, response.status);
+            const authenticated = response.ok && (await response.text()).trim() === "Ok.";
+            return this.toReachableResult(authenticated, response.status);
         } catch (error) {
             return this.toUnreachableResult(error);
         }
@@ -84,13 +85,16 @@ export class QBittorrentWebUI extends TorrentWebUI {
         const authenticationBody = new URLSearchParams();
         authenticationBody.append("username", this._settings.username);
         authenticationBody.append("password", this._settings.password);
-        await this.fetch(this.createBaseUrl() + "/api/v2/auth/login", {
+        const response = await this.fetch(this.createBaseUrl() + "/api/v2/auth/login", {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
             },
             body: authenticationBody
         });
+        if ((await response.text()).trim() !== "Ok.") {
+            throw new Error("qBittorrent rejected the username or password");
+        }
     }
 
     private async createTorrentFetchOptions(torrent: Torrent, config: TorrentUploadConfig): Promise<RequestInit> {
