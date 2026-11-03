@@ -30,6 +30,7 @@ import { openActionPopup, openPopupWindow, openWebUi, updateBadgeText } from "./
 import { getAutoDirResult, getAutoLabelResult } from "./auto-label-dir-matcher";
 import { executeMethodWrappedWithOriginStripped } from "./cors-tricks";
 import { CloudflareChallengeError, downloadTorrent, type TorrentDownloadContext } from "./download";
+import { HandledFailure } from "./errors";
 import { computeInfoHash } from "./info-hash";
 import { type NotificationLabelAction, showNotification } from "./notifications";
 import { serializeSettings, serializeObject, deserializeSettings } from "./serializer";
@@ -38,11 +39,8 @@ import { Settings } from "./settings";
 import { initiateWebUis } from "./webuis";
 
 
-/** A failure the user has already been notified about, so the context menu does not notify again. */
-export class NotifiedFailure extends Error {}
-
-function notifiedFailure(error: unknown): NotifiedFailure {
-    return new NotifiedFailure(error instanceof Error ? error.message : String(error));
+function handledFailure(error: unknown): HandledFailure {
+    return new HandledFailure(error instanceof Error ? error.message : String(error), { cause: error });
 }
 
 export function registerMessageListener(): void {
@@ -211,7 +209,7 @@ export async function dispatchPreAddTorrent(message: IPreAddTorrentMessage, wind
         } catch (error) {
             console.error("Error downloading torrent:", error);
             notifyDownloadFailure(error, await settingsProvider.loadSettings(), webUi.settings.id);
-            throw notifiedFailure(error);
+            throw handledFailure(error);
         }
         const bufferedId = await saveBufferedTorrent({ torrent, webUiSettings: webUi.settings });
         if (webUi.settings.useAlternativeLabelDirChooser) {
@@ -268,7 +266,7 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
                 settings.notificationsDurationMs,
                 settings.notificationsSoundEnabled);
         }
-        throw new NotifiedFailure("No WebUI configured");
+        throw new HandledFailure("No WebUI configured");
     }
 
     let torrent: Torrent;
@@ -277,7 +275,7 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
     } catch (error) {
         console.error("Error downloading torrent:", error);
         notifyDownloadFailure(error, settings, webUi.settings.id);
-        throw notifiedFailure(error);
+        throw handledFailure(error);
     }
     const fallbackConfig: TorrentUploadConfig = {
         addPaused: webUi.settings.addPaused,
@@ -409,6 +407,6 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config:
             settings.notificationsSoundEnabled,
             { webUiId: webUi.settings.id });
     }
-    throw new NotifiedFailure(`Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`);
+    throw new HandledFailure(`Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`);
 }
 

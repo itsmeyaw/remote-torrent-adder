@@ -12,7 +12,8 @@ vi.mock("../../src/util/download", async (importOriginal) => ({
     downloadTorrent,
 }));
 
-import { registerMessageListener, dispatchPreAddTorrent, NotifiedFailure } from "../../src/util/messaging";
+import { registerMessageListener, dispatchPreAddTorrent } from "../../src/util/messaging";
+import { HandledFailure } from "../../src/util/errors";
 import {
     GetSettingsMessage,
     SaveSettingsMessage,
@@ -501,7 +502,9 @@ describe("dispatchPreAddTorrent", () => {
         downloadTorrent.mockRejectedValue(new CloudflareChallengeError("https://tracker.org/get/1.torrent"));
 
         await expect(dispatchPreAddTorrent({ action: PreAddTorrentMessage.action, url: "https://tracker.org/get/1.torrent", webUiId: "w1" }, 7))
-            .rejects.toBeInstanceOf(NotifiedFailure);
+            .rejects.toBeInstanceOf(HandledFailure);
+        await expect(dispatchPreAddTorrent({ action: PreAddTorrentMessage.action, url: "https://tracker.org/get/1.torrent", webUiId: "w1" }, 7))
+            .rejects.toHaveProperty("cause", expect.any(CloudflareChallengeError));
     });
 
     it("responds to the message caller with the download error", async () => {

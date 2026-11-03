@@ -4,7 +4,8 @@ import OnClickData = chrome.contextMenus.OnClickData;
 import Tab = chrome.tabs.Tab;
 import { type IPreAddTorrentMessage, PreAddTorrentMessage } from "../models/messages";
 import { type TorrentDownloadContext } from "./download";
-import { addTorrentToWebUiById, dispatchPreAddTorrent, NotifiedFailure } from "./messaging";
+import { HandledFailure } from "./errors";
+import { addTorrentToWebUiById, dispatchPreAddTorrent } from "./messaging";
 import { loadWebUis } from "./webuis";
 import { showNotification } from "./notifications";
 import { Settings } from "./settings";
@@ -100,10 +101,13 @@ async function handleContextMenuClick(onClickData: OnClickData, tab?: Tab): Prom
 
 async function reportContextMenuFailure(error: unknown): Promise<void> {
     console.error("Context menu click failed", error);
-    if (error instanceof NotifiedFailure) {
+    if (error instanceof HandledFailure) {
         return;
     }
-    const settings = await new Settings().loadSettings().catch(() => getDefaultSettings());
+    const settings = await new Settings().loadSettings().catch(error => {
+        console.error("Could not load settings to show the failure; using defaults", error);
+        return getDefaultSettings();
+    });
     if (settings.notificationsEnabled) {
         showNotification("Adding torrent failed",
             error instanceof Error ? error.message : String(error),
