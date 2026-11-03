@@ -9,13 +9,14 @@ interface Waiver {
 }
 
 interface Advisory {
-    url: string;
+    module_name: string;
+    github_advisory_id: string;
     severity: string;
     title: string;
 }
 
 interface AuditReport {
-    vulnerabilities: Record<string, { via: (string | Advisory)[] }>;
+    advisories: Record<string, Advisory>;
 }
 
 interface Finding {
@@ -29,9 +30,9 @@ const ALLOWLIST: Waiver[] = [];
 
 const BLOCKING = new Set(["high", "critical"]);
 
-const result = spawnSync("npm audit --json", { encoding: "utf8", shell: true });
+const result = spawnSync("pnpm audit --json", { encoding: "utf8", shell: true });
 if (!result.stdout) {
-    console.error("npm audit produced no output.");
+    console.error("pnpm audit produced no output.");
     console.error(result.error?.message ?? result.stderr);
     process.exit(1);
 }
@@ -39,14 +40,12 @@ if (!result.stdout) {
 const report: AuditReport = JSON.parse(result.stdout);
 
 const found = new Map<string, Finding>();
-for (const [name, vulnerability] of Object.entries(report.vulnerabilities ?? {})) {
-    for (const via of vulnerability.via) {
-        if (typeof via === "string" || !BLOCKING.has(via.severity)) {
-            continue;
-        }
-        const ghsa = via.url.split("/").pop() ?? via.url;
-        found.set(`${name}:${ghsa}`, { package: name, ghsa, severity: via.severity, title: via.title });
+for (const advisory of Object.values(report.advisories ?? {})) {
+    if (!BLOCKING.has(advisory.severity)) {
+        continue;
     }
+    const { module_name: name, github_advisory_id: ghsa, severity, title } = advisory;
+    found.set(`${name}:${ghsa}`, { package: name, ghsa, severity, title });
 }
 
 const waived = new Set(ALLOWLIST.map(entry => `${entry.package}:${entry.ghsa}`));
