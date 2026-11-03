@@ -65,15 +65,42 @@ describe("Settings.loadSettings", () => {
         expect(storedSettings()).toEqual(getDefaultSettings());
         expect(showNotification).toHaveBeenCalledTimes(1);
         expect(at(vi.mocked(showNotification).mock.calls, 0)[0]).toBe("Settings were reset");
+        expect(at(vi.mocked(showNotification).mock.calls, 0)[1]).toBe("Your stored settings could not be read and were reset to defaults. Re-import an export or set up your WebUIs again.");
     });
 
-    it("treats a stored value that is not an object as corrupt", async () => {
-        (chrome as any).__storage.settings = "null";
+    it.each(["null", "0", "true", "[]", "\"x\""])("treats the stored value %s, which is not a plain object, as corrupt", async (stored) => {
+        (chrome as any).__storage.settings = stored;
         const loaded = await new Settings().loadSettings();
 
         expect(loaded).toEqual(getDefaultSettings());
         expect(backupKeys()).toHaveLength(1);
         expect(showNotification).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not reset or notify when persisting a migration fails, and returns the migrated settings", async () => {
+        const stored = getDefaultSettings();
+        stored.webuiSettings = [makeWebUISettings({ client: "qBittorrent WebUI" as Client })];
+        (chrome as any).__storage.settings = serializeSettings(stored);
+        vi.mocked(chrome.storage.local.set).mockRejectedValueOnce(new Error("QUOTA_BYTES exceeded"));
+
+        const loaded = await new Settings().loadSettings();
+
+        expect(at(loaded.webuiSettings, 0).client).toBe(Client.QBittorrentWebUI);
+        expect(backupKeys()).toEqual([]);
+        expect(showNotification).not.toHaveBeenCalled();
+    });
+
+    it("skips the backup and notification when the same corrupt value is already backed up", async () => {
+        (chrome as any).__storage.settings = "corrupt again";
+        await new Settings().loadSettings();
+        vi.mocked(showNotification).mockClear();
+        (chrome as any).__storage.settings = "corrupt again";
+
+        const loaded = await new Settings().loadSettings();
+
+        expect(loaded).toEqual(getDefaultSettings());
+        expect(backupKeys()).toHaveLength(1);
+        expect(showNotification).not.toHaveBeenCalled();
     });
 
     it("keeps every earlier backup when the config is corrupted again", async () => {
