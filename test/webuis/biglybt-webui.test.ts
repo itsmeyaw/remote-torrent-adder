@@ -77,12 +77,38 @@ describe("BiglyBTWebUI", () => {
         expect(JSON.parse(opts.body as string)).toEqual({ method: "torrent-set", arguments: { ids: ["0123456789abcdef0123456789abcdef01234567".toUpperCase()], labels: ["movies"] } });
     });
 
-    it("adds without the label when the info hash cannot be determined", async () => {
+    it("warns and adds without the label when the info hash cannot be determined", async () => {
         const fetch = queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, json: { result: "success" } }));
         const result = await build().sendTorrent(makeMagnetTorrent(), { label: "movies" });
 
         expect(result.success).toBe(true);
+        expect(result.warning).toContain('Label "movies" was not applied');
         expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps the add's status and body when torrent-set fails, warning instead of failing", async () => {
+        queueFetch(
+            mockResponse({ status: 200 }),
+            mockResponse({ status: 200, body: "<h1>200: OK</h1>" }),
+            mockResponse({ status: 200 }),
+            mockResponse({ status: 200, json: { result: "error" } }),
+        );
+        const result = await build().sendTorrent(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }), { label: "movies" });
+
+        expect(result).toMatchObject({ success: true, httpResponseCode: 200, httpResponseBody: "<h1>200: OK</h1>" });
+        expect(result.warning).toContain('Label "movies" was not applied');
+    });
+
+    it("warns when the session request for the label fails after the add succeeded", async () => {
+        queueFetch(
+            mockResponse({ status: 200 }),
+            mockResponse({ status: 200, json: { result: "success" } }),
+            mockResponse({ status: 500, body: "server error" }),
+        );
+        const result = await build().sendTorrent(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }), { label: "movies" });
+
+        expect(result.success).toBe(true);
+        expect(result.warning).toContain('Label "movies" was not applied');
     });
 
     it("reports failure when torrent-set does not succeed", async () => {

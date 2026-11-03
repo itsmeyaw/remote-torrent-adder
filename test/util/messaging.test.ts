@@ -121,6 +121,22 @@ describe("AddTorrent flow", () => {
         expect(callArgs(showNotification, 0)[0]).toBe("Torrent added successfully");
     });
 
+    it("shows the success notification with the warning when a follow-up step does not apply", async () => {
+        seedWebUi({ client: Client.RqbitWebUI, host: "h", port: 1337 });
+        downloadTorrent.mockResolvedValue(makeMagnetTorrent());
+        (globalThis as any).fetch = vi.fn()
+            .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve('{"id":7}') } as any)
+            .mockResolvedValueOnce({ ok: false, status: 404, text: () => Promise.resolve("not found") } as any);
+
+        const response = await dispatch({ action: AddTorrentMessage.action, webUiId: "w1", url: "magnet:?x", config: { addPaused: true } });
+        await new Promise((r) => setTimeout(r, 0));
+
+        expect(response).toEqual({});
+        expect(callArgs(showNotification, 0)[0]).toBe("Torrent added successfully");
+        expect(callArgs(showNotification, 0)[1]).toContain("Add Paused was not applied");
+        expect(callArgs(showNotification, 0)[2]).toBe(false);
+    });
+
     it("notifies the user when downloading the torrent fails", async () => {
         seedWebUi();
         downloadTorrent.mockRejectedValue(new Error("network down"));

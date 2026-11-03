@@ -28,15 +28,16 @@ export class TransmissionWebUI extends TorrentWebUI {
             const label = this.getLabel(config);
             const addedArguments = responseData?.arguments;
             const hashString = (addedArguments?.["torrent-added"] ?? addedArguments?.["torrent-duplicate"])?.hashString;
-            if (success && label && hashString) {
-                const labelResult = await this.setLabelWithSessionId(hashString, label, sessionId);
-                return { ...labelResult, httpResponseBody: responseText };
+            if (!success || !label) {
+                return { success, httpResponseCode: response.status, httpResponseBody: responseText };
             }
-            return {
-                success,
-                httpResponseCode: response.status,
-                httpResponseBody: responseText,
-            };
+            const warning = await this.runLabelFollowUp(label, () => {
+                if (!hashString) {
+                    throw new Error("the added torrent's hash is missing from the response");
+                }
+                return this.setLabelWithSessionId(hashString, label, sessionId);
+            });
+            return { success, httpResponseCode: response.status, httpResponseBody: responseText, warning };
         } catch (error) {
             return this.toFailureResult(error);
         }
