@@ -4,7 +4,8 @@ import { registerAuthenticationListener } from './background/authentication-list
 import { SETTINGS_BACKUP_KEY_PREFIX, SETTINGS_KEY } from './settings/settings';
 import { registerMessageListener } from './background/messaging';
 import { registerActionClickListener } from './background/action';
-import { loadWebUis } from './settings/webuis';
+import { getWebUis } from './settings/webuis';
+import { loadSettings } from './settings/settings';
 import { clearDynamicRules, registerCorsCircumventionForWebUis } from './background/cors-tricks';
 import { registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners, showNotification } from './background/notifications';
 
@@ -49,7 +50,7 @@ void refreshCorsCircumvention();
 
 async function rebuildContextMenu(): Promise<void> {
     try {
-        await refreshContextMenu(await loadWebUis());
+        await refreshContextMenu(getWebUis(await loadSettings()));
     } catch (error) {
         console.error("Failed to rebuild the context menu", error);
     }
@@ -57,7 +58,7 @@ async function rebuildContextMenu(): Promise<void> {
 
 async function refreshCorsCircumvention(): Promise<void> {
     try {
-        await registerCorsCircumventionForWebUis(await loadWebUis());
+        await registerCorsCircumventionForWebUis(getWebUis(await loadSettings()));
     } catch (error) {
         console.error("Failed to refresh CORS circumvention rules", error);
     }

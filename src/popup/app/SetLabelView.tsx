@@ -6,6 +6,7 @@ import Notice from './Notice';
 import { SetTorrentLabelMessage, type ISetTorrentLabelMessage } from '../../models/messages';
 import { deserializeSettings } from '../../settings/serializer';
 import { requestSerializedSettings } from '../../settings/request-settings';
+import { findWebUiSettings } from '../../settings/webuis';
 import { errorMessage, moveToFront } from '../lib/utils';
 
 interface LabelTarget {
@@ -35,7 +36,7 @@ function SetLabelLoader({ target }: { target: LabelTarget }) {
     void requestSerializedSettings().then((serialized) => {
       if (cancelled) return;
       const settings = serialized ? deserializeSettings(serialized) : null;
-      const webUiSettings = settings?.webuiSettings.find(candidate => candidate.id === target.webUiId);
+      const webUiSettings = settings ? findWebUiSettings(settings, target.webUiId) : undefined;
       setState(webUiSettings
         ? { status: 'ready', webUiName: webUiSettings.name, labelOptions: webUiSettings.labels }
         : { status: 'invalid' });

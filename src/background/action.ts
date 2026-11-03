@@ -1,5 +1,5 @@
 import { ext } from "../util/browser-api";
-import { initiateWebUis, loadWebUis } from "../settings/webuis";
+import { getPrimaryWebUi, getWebUis } from "../settings/webuis";
 import { loadSettings } from "../settings/settings";
 import { rememberWebUiTab } from "./authentication-listener";
 import { type TorrentWebUI } from "../models/webui";
@@ -26,8 +26,7 @@ async function handleActionClick(tab: chrome.tabs.Tab): Promise<void> {
         }
 
         if (iconClickAction === "showWebUiPicker") {
-            const allWebUis = await initiateWebUis(settings);
-            if (allWebUis.length > 1) {
+            if (getWebUis(settings).length > 1) {
                 await openActionPopup(tab.windowId, "picker");
                 return;
             }
@@ -38,7 +37,7 @@ async function handleActionClick(tab: chrome.tabs.Tab): Promise<void> {
 }
 
 export async function openPrimaryWebUi(): Promise<void> {
-    const [primaryWebUi] = await loadWebUis();
+    const primaryWebUi = getPrimaryWebUi(await loadSettings());
     if (!primaryWebUi) {
         await ext.runtime.openOptionsPage();
         return;

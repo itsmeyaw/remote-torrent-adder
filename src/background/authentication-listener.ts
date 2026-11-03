@@ -1,6 +1,7 @@
 import { ext } from "../util/browser-api";
 import { type TorrentWebUI } from "../models/webui";
-import { loadWebUis } from "../settings/webuis";
+import { loadSettings } from "../settings/settings";
+import { getWebUi, getWebUis } from "../settings/webuis";
 
 
 const AUTH_TRIED_KEY_PREFIX = "authTried:";
@@ -57,7 +58,7 @@ export async function resolveAuthCredentials(
 
 async function findAuthorizedWebUi(details: chrome.webRequest.OnAuthRequiredDetails): Promise<TorrentWebUI | undefined> {
     if (details.tabId === -1) {
-        return (await loadWebUis()).find(candidate => isRequestForWebUi(details.url, candidate));
+        return getWebUis(await loadSettings()).find(candidate => isRequestForWebUi(details.url, candidate));
     }
 
     // Only the tab's own navigation: a page the user browsed to later must not get credentials for its subresources
@@ -69,7 +70,8 @@ async function findAuthorizedWebUi(details: chrome.webRequest.OnAuthRequiredDeta
     if (!webUiId) {
         return undefined;
     }
-    return (await loadWebUis()).find(candidate => candidate.settings.id === webUiId && isRequestForWebUi(details.url, candidate));
+    const webUi = getWebUi(await loadSettings(), webUiId);
+    return webUi && isRequestForWebUi(details.url, webUi) ? webUi : undefined;
 }
 
 function isRequestForWebUi(url: string, webUi: TorrentWebUI): boolean {

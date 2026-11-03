@@ -1,13 +1,25 @@
 import { WebUIFactory } from "../models/clients";
 import { type RTASettings } from "../models/settings";
-import { type TorrentWebUI } from "../models/webui";
-import { loadSettings } from "./settings";
+import { type TorrentWebUI, type WebUISettings } from "../models/webui";
 
-export async function initiateWebUis(settings: RTASettings): Promise<TorrentWebUI[]> {
-    const allWebUis = settings.webuiSettings.map(webUiSettings => WebUIFactory.createWebUI(webUiSettings)).filter(webUi => webUi !== null);
-    return allWebUis;
+/** The only place a WebUI is looked up by id. */
+export function findWebUiSettings(settings: RTASettings, id: string | null | undefined): WebUISettings | undefined {
+    if (!id) {
+        return undefined;
+    }
+    return settings.webuiSettings.find(webUi => webUi.id === id);
 }
 
-export async function loadWebUis(): Promise<TorrentWebUI[]> {
-    return initiateWebUis(await loadSettings());
+export function getWebUi(settings: RTASettings, id: string | null | undefined): TorrentWebUI | null {
+    const webUiSettings = findWebUiSettings(settings, id);
+    return webUiSettings ? WebUIFactory.createWebUI(webUiSettings) : null;
+}
+
+/** Every configured WebUI in list order; drafts without a client are skipped. */
+export function getWebUis(settings: RTASettings): TorrentWebUI[] {
+    return settings.webuiSettings.map(webUiSettings => WebUIFactory.createWebUI(webUiSettings)).filter(webUi => webUi !== null);
+}
+
+export function getPrimaryWebUi(settings: RTASettings): TorrentWebUI | null {
+    return getWebUis(settings)[0] ?? null;
 }
