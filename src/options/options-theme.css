@@ -1,6 +1,6 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
-@config "../../tailwind.config.ts";
+@source "./";
 
 /* Remote Torrent Adder Options Page Theme */
 
