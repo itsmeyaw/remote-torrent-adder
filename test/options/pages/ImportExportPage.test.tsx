@@ -110,6 +110,17 @@ describe("ImportExportPage import", () => {
         expect(savedWebUiNames()).toBeUndefined();
     });
 
+    it("shows a problem with a top-level setting and saves nothing", async () => {
+        respondWithSettings();
+        renderPage();
+        const settings = { ...getDefaultSettings(), notificationsDurationMs: -1 };
+
+        await importText(serializeSettings(settings));
+
+        expect(screen.getByRole("alert")).toHaveTextContent("Invalid notificationsDurationMs");
+        expect(savedWebUiNames()).toBeUndefined();
+    });
+
     it("lists every problem in a partially invalid import and saves nothing", async () => {
         respondWithSettings();
         renderPage();

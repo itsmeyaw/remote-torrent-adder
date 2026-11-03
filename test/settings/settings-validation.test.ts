@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { parseSettingsExport } from "../../src/settings/settings-validation";
+import { parseSettings } from "../../src/settings/settings-validation";
 import { serializeSettings } from "../../src/settings/serializer";
 import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { Client } from "../../src/models/clients";
 import { makeWebUISettings } from "../helpers/fixtures";
+
+const NOT_AN_EXPORT = "That JSON is not a Remote Torrent Adder settings export.";
 
 function exportWith(mutate: (raw: any) => void): string {
     const raw = JSON.parse(serializeSettings(getDefaultSettings()));
@@ -13,17 +15,17 @@ function exportWith(mutate: (raw: any) => void): string {
 }
 
 function problemsOf(text: string): string[] {
-    const result = parseSettingsExport(text);
+    const result = parseSettings(text);
     if (result.ok) throw new Error("expected the export to be rejected");
     return result.problems;
 }
 
-describe("parseSettingsExport", () => {
+describe("parseSettings", () => {
     it("accepts an export produced by serializeSettings and restores its WebUIs and patterns", () => {
         const settings = getDefaultSettings();
         settings.webuiSettings = [makeWebUISettings({ id: "w1", name: "Home", host: "nas.local", port: 8080 })];
 
-        const result = parseSettingsExport(serializeSettings(settings));
+        const result = parseSettings(serializeSettings(settings));
 
         expect(result.ok).toBe(true);
         if (!result.ok) return;
@@ -36,7 +38,7 @@ describe("parseSettingsExport", () => {
     });
 
     it.each([["null"], ["[]"], ["\"text\""], ["{}"]])("rejects JSON that is not a settings export: %s", text => {
-        expect(problemsOf(text)).toEqual(["That JSON is not a Remote Torrent Adder settings export."]);
+        expect(problemsOf(text)).toEqual([NOT_AN_EXPORT]);
     });
 
     it("names the WebUI that is missing a required field", () => {
@@ -57,7 +59,7 @@ describe("parseSettingsExport", () => {
     it("accepts a legacy client identifier and migrates it, as stored settings are", () => {
         const text = exportWith(raw => { raw.webuiSettings[0].client = "qBittorrent WebUI"; });
 
-        const result = parseSettingsExport(text);
+        const result = parseSettings(text);
 
         expect(result.ok).toBe(true);
         if (!result.ok) return;
@@ -91,7 +93,7 @@ describe("parseSettingsExport", () => {
     it("uses the default Link Catching Patterns when the export has none", () => {
         const text = exportWith(raw => { delete raw.linkCatchingRegexes; });
 
-        const result = parseSettingsExport(text);
+        const result = parseSettings(text);
 
         expect(result.ok).toBe(true);
         if (!result.ok) return;
@@ -107,20 +109,99 @@ describe("parseSettingsExport", () => {
         const draft = makeWebUISettings({ id: "draft", name: "", client: "" as Client, host: "", port: null, relativePath: "" });
         const text = exportWith(raw => { raw.webuiSettings = [draft]; });
 
-        const result = parseSettingsExport(text);
+        const result = parseSettings(text);
 
         expect(result.ok).toBe(true);
         if (!result.ok) return;
         expect(result.settings.webuiSettings).toEqual([draft]);
     });
 
-    it("accepts an older export whose WebUIs predate Auto Label/Dir Rules and Client-Specific Settings", () => {
+    it("fills the WebUI fields that were added after older exports were made", () => {
+        const text = exportWith(raw => {
+            delete raw.webuiSettings[0].useAlternativeLabelDirChooser;
+            delete raw.webuiSettings[0].autoLabelDirSettings;
+            delete raw.webuiSettings[0].clientSpecificSettings;
+        });
+
+        const result = parseSettings(text);
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.settings.webuiSettings[0]).toMatchObject({
+            useAlternativeLabelDirChooser: false,
+            autoLabelDirSettings: [],
+            clientSpecificSettings: {},
+        });
+    });
+
+    it("keeps the stored values of the WebUI fields added later", () => {
+        const text = exportWith(raw => { raw.webuiSettings[0].useAlternativeLabelDirChooser = true; });
+
+        const result = parseSettings(text);
+
+        expect(result.ok && result.settings.webuiSettings[0]!.useAlternativeLabelDirChooser).toBe(true);
+    });
+
+    it("still rejects WebUI fields added later that have the wrong type", () => {
+        const text = exportWith(raw => {
+            raw.webuiSettings[0].useAlternativeLabelDirChooser = "yes";
+            raw.webuiSettings[0].autoLabelDirSettings = {};
+            raw.webuiSettings[0].clientSpecificSettings = [];
+        });
+        expect(problemsOf(text)).toEqual([
+            'WebUI 1 ("Home"): invalid useAlternativeLabelDirChooser',
+            'WebUI 1 ("Home"): invalid autoLabelDirSettings',
+            'WebUI 1 ("Home"): invalid clientSpecificSettings',
+        ]);
+    });
+
+    it("fills top-level settings missing from the export with their defaults", () => {
+        const text = exportWith(raw => {
+            delete raw.notificationsSoundEnabled;
+            delete raw.iconClickAction;
+            delete raw.notificationsDurationMs;
+        });
+
+        const result = parseSettings(text);
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.settings).toMatchObject({
+            notificationsSoundEnabled: getDefaultSettings().notificationsSoundEnabled,
+            iconClickAction: getDefaultSettings().iconClickAction,
+            notificationsDurationMs: getDefaultSettings().notificationsDurationMs,
+        });
+    });
+
+    it.each([
+        ["notificationsEnabled", "yes"],
+        ["notificationsSoundEnabled", 1],
+        ["notificationsLabelButtonEnabled", null],
+        ["linkCatchingEnabled", "true"],
+        ["notificationsDurationMs", "2000"],
+        ["notificationsDurationMs", -1],
+        ["iconClickAction", "openOptions"],
+    ])("rejects a top-level %s of the wrong type or value (%j)", (field, value) => {
+        const text = exportWith(raw => { raw[field] = value; });
+        expect(problemsOf(text)).toEqual([`Invalid ${field}`]);
+    });
+
+    it("never repeats a WebUI password in a problem message", () => {
+        const password = "s3cret-webui-password";
+        const text = exportWith(raw => {
+            raw.webuiSettings[0] = { ...makeWebUISettings({ id: "w1", name: "Home", password }), port: "8080" };
+            raw.notificationsDurationMs = -1;
+        });
+        expect(problemsOf(text).join("\n")).not.toContain(password);
+    });
+
+    it("accepts an export whose WebUIs predate Auto Label/Dir Rules and Client-Specific Settings", () => {
         const text = exportWith(raw => {
             delete raw.webuiSettings[0].autoLabelDirSettings;
             delete raw.webuiSettings[0].clientSpecificSettings;
         });
 
-        expect(parseSettingsExport(text).ok).toBe(true);
+        expect(parseSettings(text).ok).toBe(true);
     });
 
     it("still rejects Auto Label/Dir Rules and Client-Specific Settings of the wrong type", () => {

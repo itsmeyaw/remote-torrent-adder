@@ -98,15 +98,34 @@ describe("loadSettings", () => {
         expect(originals.sort()).toEqual(["first corrupt", "second corrupt"]);
     });
 
-    it("treats a config without a WebUI list as having no WebUIs, without resetting it", async () => {
+    it("backs up and resets a config without a WebUI list, as it does any other invalid config", async () => {
         const stored = { ...getDefaultSettings(), notificationsDurationMs: 5000 } as Partial<RTASettings>;
         delete stored.webuiSettings;
-        (chrome as any).__storage.settings = serializeSettings(stored as RTASettings);
+        const original = serializeSettings(stored as RTASettings);
+        (chrome as any).__storage.settings = original;
 
         const loaded = await loadSettings();
-        expect(loaded.webuiSettings).toEqual([]);
-        expect(loaded.notificationsDurationMs).toBe(5000);
-        expect(backupKeys()).toEqual([]);
+        expect(loaded).toEqual(getDefaultSettings());
+        expect((chrome as any).__storage[at(backupKeys(), 0)]).toBe(original);
+    });
+
+    it("backs up and resets a config with an invalid value, without repeating the stored value in the log", async () => {
+        const password = "s3cret-webui-password";
+        const stored = { ...getDefaultSettings(), notificationsDurationMs: -1, webuiSettings: [makeWebUISettings({ password })] };
+        const original = serializeSettings(stored);
+        (chrome as any).__storage.settings = original;
+        const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        try {
+            const loaded = await loadSettings();
+
+            expect(loaded).toEqual(getDefaultSettings());
+            expect((chrome as any).__storage[at(backupKeys(), 0)]).toBe(original);
+            expect(JSON.stringify(error.mock.calls)).toContain("Invalid notificationsDurationMs");
+            expect(JSON.stringify(error.mock.calls)).not.toContain(password);
+        } finally {
+            error.mockRestore();
+        }
     });
 
     it("fills keys missing from an older config with defaults and keeps stored values, falsy ones included", async () => {
@@ -123,6 +142,19 @@ describe("loadSettings", () => {
         expect(loaded.linkCatchingEnabled).toBe(false);
         expect(backupKeys()).toEqual([]);
     });
+
+    it("persists the filled-in defaults once, so the next load writes nothing", async () => {
+        const stored = { ...getDefaultSettings() } as Partial<RTASettings>;
+        delete stored.notificationsLabelButtonEnabled;
+        (chrome as any).__storage.settings = serializeSettings(stored as RTASettings);
+        vi.mocked(chrome.storage.local.set).mockClear();
+
+        await loadSettings();
+        expect(storedSettings().notificationsLabelButtonEnabled).toBe(true);
+        await loadSettings();
+
+        expect(chrome.storage.local.set).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe("saveSettings", () => {
@@ -133,6 +165,17 @@ describe("saveSettings", () => {
 
         expect(chrome.storage.local.set).toHaveBeenCalled();
         expect((chrome as any).__storage.settings).toContain("notificationsSoundEnabled");
+    });
+
+    it("rejects settings that fail validation and writes nothing", async () => {
+        const before = (chrome as any).__storage.settings;
+        vi.mocked(chrome.storage.local.set).mockClear();
+        const invalid = { ...getDefaultSettings(), notificationsDurationMs: -1 };
+
+        await expect(saveSettings(invalid)).rejects.toThrow("Settings were not saved: Invalid notificationsDurationMs");
+
+        expect(chrome.storage.local.set).not.toHaveBeenCalled();
+        expect((chrome as any).__storage.settings).toBe(before);
     });
 });
 
