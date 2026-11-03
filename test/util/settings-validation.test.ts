@@ -68,7 +68,7 @@ describe("parseSettingsExport", () => {
         const text = exportWith(raw => {
             raw.webuiSettings = [
                 makeWebUISettings({ id: "w1", name: "Good" }),
-                { ...makeWebUISettings({ id: "w2", name: "Home" }), host: "" },
+                { ...makeWebUISettings({ id: "w2", name: "Home" }), host: undefined },
                 { ...makeWebUISettings({ id: "w3", name: "Office" }), labels: "movies" },
             ];
         });
@@ -96,5 +96,21 @@ describe("parseSettingsExport", () => {
         expect(result.ok).toBe(true);
         if (!result.ok) return;
         expect(result.settings.linkCatchingRegexes.map(r => r.source)).toEqual(getDefaultSettings().linkCatchingRegexes.map(r => r.source));
+    });
+
+    it("rejects a null Link Catching Pattern list instead of storing it", () => {
+        const text = exportWith(raw => { raw.linkCatchingRegexes = null; });
+        expect(problemsOf(text)).toEqual(["Link Catching patterns must be a list."]);
+    });
+
+    it("accepts a draft WebUI, as WebUIsPage stores a new one before a client is chosen", () => {
+        const draft = makeWebUISettings({ id: "draft", name: "", client: "" as Client, host: "", port: null, relativePath: "" });
+        const text = exportWith(raw => { raw.webuiSettings = [draft]; });
+
+        const result = parseSettingsExport(text);
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.settings.webuiSettings).toEqual([draft]);
     });
 });

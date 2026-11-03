@@ -40,10 +40,10 @@ export default function ImportExportPage(): JSX.Element {
       <section className="rta-card">
         <h3 className="rta-card__heading">Export</h3>
         <label className="rta-muted" htmlFor="rta-export">Copy this and keep it somewhere safe.</label>
-        <div className="rta-error" role="note">
+        <div id="rta-export-warning" role="note" className="rta-notice rta-notice--warning">
           Warning: this export contains your WebUI passwords in plain text. Anyone who gets this text can log in to your clients, so only store it somewhere you trust.
         </div>
-        <textarea id="rta-export" className="rta-textarea" readOnly value={serializeSettings(settings)} />
+        <textarea id="rta-export" className="rta-textarea" readOnly value={serializeSettings(settings)} aria-describedby="rta-export-warning" />
         <button
           type="button"
           onClick={handleCopy}

@@ -57,6 +57,15 @@ describe("ImportExportPage export", () => {
         expect(await screen.findByText(/passwords in plain text/i)).toBeInTheDocument();
     });
 
+    it("styles the password warning as a warning and links it to the export text", async () => {
+        respondWithSettings();
+        renderPage();
+
+        const warning = await screen.findByText(/passwords in plain text/i);
+        expect(warning).toHaveClass("rta-notice--warning");
+        expect(screen.getByLabelText(/keep it somewhere safe/i)).toHaveAccessibleDescription(/passwords in plain text/i);
+    });
+
     it("confirms a successful copy", async () => {
         respondWithSettings();
         writeText.mockResolvedValue(undefined);
@@ -107,7 +116,7 @@ describe("ImportExportPage import", () => {
 
         await importText(exportWithWebUis([
             makeWebUISettings({ id: "w1", name: "Good" }),
-            { ...makeWebUISettings({ id: "w2", name: "Home" }), host: "" },
+            { ...makeWebUISettings({ id: "w2", name: "Home" }), host: undefined },
         ]));
 
         expect(screen.getByRole("alert")).toHaveTextContent('WebUI 2 ("Home"): missing host');

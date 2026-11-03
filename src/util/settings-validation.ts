@@ -1,7 +1,7 @@
 import { type RTASettings } from "../models/settings";
 import { type WebUISettings } from "../models/webui";
 import { getDefaultSettings } from "./settings-defaults";
-import { deserializeSettings } from "./serializer";
+import { deserializeSettings, isSerializedRegExp } from "./serializer";
 import { migrateSettingsClientIdentifiers, resolveClientIdentifier } from "./legacy-client-identifiers";
 
 export type SettingsImportResult = { ok: true; settings: RTASettings } | { ok: false; problems: string[] };
@@ -20,13 +20,15 @@ const isStringArray = (value: unknown): boolean => Array.isArray(value) && value
 const isPort = (value: unknown): boolean =>
     value === null || (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 65535);
 const isKnownClient = (value: unknown): boolean => typeof value === "string" && resolveClientIdentifier(value) !== null;
+// A WebUI is stored with an empty client until the user picks one, so an empty client is a draft.
+const isClientOrDraft = (value: unknown): boolean => value === "" || isKnownClient(value);
 
 /** Every field a WebUI needs for the client code, the popup and the options page to work with it. */
 const WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldCheck]> = [
     ["id", isNonEmptyString],
-    ["client", isKnownClient],
+    ["client", isClientOrDraft],
     ["name", isString],
-    ["host", isNonEmptyString],
+    ["host", isString],
     ["port", isPort],
     ["secure", isBoolean],
     ["relativePath", isNullableString],
@@ -50,10 +52,6 @@ function webUiProblems(webUi: unknown, position: number): string[] {
     return WEBUI_FIELD_CHECKS
         .filter(([field, check]) => !check(webUi[field]))
         .map(([field]) => `WebUI ${position}${name}: ${webUi[field] === undefined || webUi[field] === "" ? "missing" : "invalid"} ${field}`);
-}
-
-function isSerializedRegExp(value: unknown): value is { source: string; flags: string } {
-    return isObject(value) && value.__type === "RegExp" && typeof value.source === "string" && typeof value.flags === "string";
 }
 
 function linkCatchingPatternProblem(pattern: unknown, position: number): string | null {
@@ -87,7 +85,7 @@ export function parseSettingsExport(text: string): SettingsImportResult {
         return { ok: false, problems: [NOT_AN_EXPORT] };
     }
 
-    const patterns: unknown = raw.linkCatchingRegexes ?? [];
+    const patterns: unknown = raw.linkCatchingRegexes === undefined ? [] : raw.linkCatchingRegexes;
     const problems = [
         ...raw.webuiSettings.flatMap((webUi, index) => webUiProblems(webUi, index + 1)),
         ...(Array.isArray(patterns)
@@ -98,9 +96,7 @@ export function parseSettingsExport(text: string): SettingsImportResult {
         return { ok: false, problems };
     }
 
-    const settings = deserializeSettings(text);
-    if (!settings) {
-        return { ok: false, problems: [NOT_AN_EXPORT] };
-    }
+    // Parsed again because only the serializer revives RegExp patterns; raw is already known to be an object.
+    const settings = deserializeSettings(text)!;
     return { ok: true, settings: migrateSettingsClientIdentifiers({ ...getDefaultSettings(), ...settings }) };
 }

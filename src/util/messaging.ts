@@ -82,7 +82,7 @@ export function registerMessageListener(): void {
                 case SaveSettingsMessage.action: {
                     const saveSettingsMessage = message as ISaveSettingsMessage & { settings: string };
                     const settings = deserializeSettings(saveSettingsMessage.settings);
-                    if (!settings) {
+                    if (typeof settings !== "object" || settings === null || Array.isArray(settings)) {
                         respondWithError(new Error("SaveSettings payload is not a settings object"));
                         break;
                     }

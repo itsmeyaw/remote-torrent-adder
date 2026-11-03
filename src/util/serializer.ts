@@ -43,14 +43,17 @@ function customReplacer(_key: string, value: unknown): unknown {
     return value;
 }
 
-interface SerializedRegExp {
+export interface SerializedRegExp {
     __type: "RegExp";
     source: string;
     flags: string;
 }
 
-function isSerializedRegExp(value: unknown): value is SerializedRegExp {
-    return typeof value === "object" && value !== null && (value as { __type?: unknown }).__type === "RegExp";
+export function isSerializedRegExp(value: unknown): value is SerializedRegExp {
+    return typeof value === "object" && value !== null
+        && (value as { __type?: unknown }).__type === "RegExp"
+        && typeof (value as { source?: unknown }).source === "string"
+        && typeof (value as { flags?: unknown }).flags === "string";
 }
 
 function customReviver(_key: string, value: unknown): unknown {
