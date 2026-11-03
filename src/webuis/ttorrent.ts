@@ -1,24 +1,20 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, TorrentWebUI } from "../models/webui";
 
 export class TTorrentWebUI extends TorrentWebUI {
-    public override async sendTorrent(torrent: Torrent, _config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            let url = this.createTTorrentBaseUrl();
-            let payload: FormData;
-            if (torrent.isMagnet) {
-                payload = this.createPayloadForMagnet(torrent);
-                url += "/downloadFromUrl";
-            } else {
-                payload = await this.createPayloadForTorrent(torrent);
-                url += "/downloadTorrent";
-            }
-
-            const response = await this.fetch(url, { method: 'POST', body: payload });
-            return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
-        } catch (error) {
-            return this.toFailureResult(error);
+    protected override async add(torrent: Torrent, _config: TorrentUploadConfig): Promise<AddResult> {
+        let url = this.createTTorrentBaseUrl();
+        let payload: FormData;
+        if (torrent.isMagnet) {
+            payload = this.createPayloadForMagnet(torrent);
+            url += "/downloadFromUrl";
+        } else {
+            payload = await this.createPayloadForTorrent(torrent);
+            url += "/downloadTorrent";
         }
+
+        const response = await this.fetch(url, { method: 'POST', body: payload });
+        return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     private createTTorrentBaseUrl(): string {

@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ClientSpecificSettingDescriptor, type ConnectionTestResult, HttpError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, type ClientSpecificSettingDescriptor, type ConnectionTestResult, HttpError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 
 const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> = [
     {
@@ -30,39 +30,29 @@ export class QBittorrentWebUI extends TorrentWebUI {
         }
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            await this.authenticate();
-            const fetchOpts = await this.createTorrentFetchOptions(torrent, config);
-            const response = await this.fetch(this.createBaseUrl() + "/api/v2/torrents/add", fetchOpts);
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
+        const fetchOpts = await this.createTorrentFetchOptions(torrent, config);
+        const response = await this.fetch(this.createBaseUrl() + "/api/v2/torrents/add", fetchOpts);
 
-            const responseBody = await response.text();
-            return {
-                success: responseBody !== "Fails.",
-                httpResponseCode: response.status,
-                httpResponseBody: responseBody,
-            };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+        const responseBody = await response.text();
+        return {
+            success: responseBody !== "Fails.",
+            httpResponseCode: response.status,
+            httpResponseBody: responseBody,
+        };
     }
 
-    public override async setLabel(infoHash: string, label: string): Promise<TorrentAddingResult> {
-        try {
-            await this.authenticate();
-            await this.createCategory(label);
-            const body = new URLSearchParams();
-            body.append("hashes", infoHash.toLowerCase());
-            body.append("category", label);
-            const response = await this.fetch(this.createBaseUrl() + "/api/v2/torrents/setCategory", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded; charset=utf-8" },
-                body
-            });
-            return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+    protected override async applyLabel(_session: unknown, infoHash: string, label: string): Promise<TorrentAddingResult> {
+        await this.createCategory(label);
+        const body = new URLSearchParams();
+        body.append("hashes", infoHash.toLowerCase());
+        body.append("category", label);
+        const response = await this.fetch(this.createBaseUrl() + "/api/v2/torrents/setCategory", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded; charset=utf-8" },
+            body
+        });
+        return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     private async createCategory(category: string): Promise<void> {
@@ -81,7 +71,7 @@ export class QBittorrentWebUI extends TorrentWebUI {
         }
     }
 
-    private async authenticate(): Promise<void> {
+    protected override async login(): Promise<void> {
         const authenticationBody = new URLSearchParams();
         authenticationBody.append("username", this._settings.username);
         authenticationBody.append("password", this._settings.password);
@@ -93,7 +83,7 @@ export class QBittorrentWebUI extends TorrentWebUI {
             body: authenticationBody
         });
         if ((await response.text()).trim() !== "Ok.") {
-            throw new Error("qBittorrent rejected the username or password");
+            throw new AuthenticationError(response.status, "qBittorrent rejected the username or password");
         }
     }
 

@@ -1,8 +1,8 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { blobToBase64 } from "../torrent/converter";
 
-export class PorlaWebUI extends TorrentWebUI {
+export class PorlaWebUI extends TorrentWebUI<string> {
     public override async testConnection(): Promise<ConnectionTestResult> {
         try {
             const response = await fetch(this.createBaseUrl() + "/api/v1/jsonrpc", this.createLoginRequest());
@@ -16,62 +16,52 @@ export class PorlaWebUI extends TorrentWebUI {
         }
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const jsonRpcToken = await this.authenticateForToken();
-            const fetchOpts = await this.createTorrentFetchOptions(jsonRpcToken, torrent, config);
-            const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", fetchOpts);
-
-            const responseText = await response.text();
-            const responseJson = JSON.parse(responseText);
-            return {
-                success: !responseJson.error,
-                httpResponseCode: response.status,
-                httpResponseBody: responseText,
-            };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
-    }
-
-    public override async setLabel(infoHash: string, label: string): Promise<TorrentAddingResult> {
-        try {
-            const jsonRpcToken = await this.authenticateForToken();
-            const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json; charset=UTF-8",
-                    "Authorization": "Bearer " + jsonRpcToken
-                },
-                body: JSON.stringify({
-                    jsonrpc: "2.0",
-                    method: "torrents.properties.set",
-                    id: Math.floor(Date.now() / 1000),
-                    params: {
-                        info_hash: infoHash.toLowerCase(),
-                        category: label
-                    }
-                })
-            });
-            const responseText = await response.text();
-            return {
-                success: !JSON.parse(responseText).error,
-                httpResponseCode: response.status,
-                httpResponseBody: responseText,
-            };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
-    }
-
-    private async authenticateForToken(): Promise<string> {
+    protected override async login(): Promise<string> {
         const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", this.createLoginRequest());
         const json = await response.json();
         const token = json.result?.token;
         if (json.error || !token) {
-            throw new Error(json.error?.message ?? "Authentication failed");
+            throw new AuthenticationError(response.status, json.error?.message);
         }
         return token;
+    }
+
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig, jsonRpcToken: string): Promise<AddResult> {
+        const fetchOpts = await this.createTorrentFetchOptions(jsonRpcToken, torrent, config);
+        const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", fetchOpts);
+
+        const responseText = await response.text();
+        const responseJson = JSON.parse(responseText);
+        return {
+            success: !responseJson.error,
+            httpResponseCode: response.status,
+            httpResponseBody: responseText,
+        };
+    }
+
+    protected override async applyLabel(jsonRpcToken: string, infoHash: string, label: string): Promise<TorrentAddingResult> {
+        const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=UTF-8",
+                "Authorization": "Bearer " + jsonRpcToken
+            },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                method: "torrents.properties.set",
+                id: Math.floor(Date.now() / 1000),
+                params: {
+                    info_hash: infoHash.toLowerCase(),
+                    category: label
+                }
+            })
+        });
+        const responseText = await response.text();
+        return {
+            success: !JSON.parse(responseText).error,
+            httpResponseCode: response.status,
+            httpResponseBody: responseText,
+        };
     }
 
     private createLoginRequest(): RequestInit {

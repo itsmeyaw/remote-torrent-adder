@@ -1,23 +1,23 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, type ConnectionTestResult, TorrentWebUI } from "../models/webui";
 
 export class RqbitWebUI extends TorrentWebUI {
     public override testConnection(): Promise<ConnectionTestResult> {
         return this.probeWithBasicAuth(this.createBaseUrl() + "/torrents");
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const url = this.createBaseUrl() + "/torrents" + this.createQueryString(config);
-            const response = await this.fetch(url, this.createTorrentFetchOptions(torrent));
-            const responseBody = await response.text();
-            const warning = this.getAddPaused(config)
-                ? await this.runFollowUp("Add Paused was not applied", () => this.pauseTorrent(JSON.parse(responseBody).id))
-                : undefined;
-            return {success: true, httpResponseCode: response.status, httpResponseBody: responseBody, warning};
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
+        const url = this.createBaseUrl() + "/torrents" + this.createQueryString(config);
+        const response = await this.fetch(url, this.createTorrentFetchOptions(torrent));
+        const responseBody = await response.text();
+        return { success: true, httpResponseCode: response.status, httpResponseBody: responseBody, torrentId: this.parseTorrentId(responseBody) };
+    }
+
+    protected override async pauseAfterAdd(_session: unknown, torrentId: string): Promise<void> {
+        await this.fetch(this.createBaseUrl() + `/torrents/${torrentId}/pause`, {
+            method: "POST",
+            headers: this.createAuthHeaders(),
+        });
     }
 
     private createQueryString(config: TorrentUploadConfig): string {
@@ -32,11 +32,13 @@ export class RqbitWebUI extends TorrentWebUI {
         return query ? `?${query}` : "";
     }
 
-    private async pauseTorrent(id: number): Promise<void> {
-        await this.fetch(this.createBaseUrl() + `/torrents/${id}/pause`, {
-            method: "POST",
-            headers: this.createAuthHeaders(),
-        });
+    private parseTorrentId(responseBody: string): string | undefined {
+        try {
+            const id: unknown = JSON.parse(responseBody)?.id;
+            return id === undefined || id === null ? undefined : String(id);
+        } catch {
+            return undefined;
+        }
     }
 
     private createTorrentFetchOptions(torrent: Torrent): RequestInit {

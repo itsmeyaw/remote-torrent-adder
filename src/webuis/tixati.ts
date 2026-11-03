@@ -1,23 +1,19 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, type ConnectionTestResult, TorrentWebUI } from "../models/webui";
 
 export class TixatiWebUI extends TorrentWebUI {
     public override testConnection(): Promise<ConnectionTestResult> {
         return this.probeWithBasicAuth(this.createBaseUrl() + "/home");
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const payload = torrent.isMagnet
-                ? this.createPayloadForMagnet(torrent)
-                : await this.createPayloadForTorrent(torrent);
-            payload.append("noautostart", this.getAddPaused(config) === true ? "1" : "0");
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
+        const payload = torrent.isMagnet
+            ? this.createPayloadForMagnet(torrent)
+            : await this.createPayloadForTorrent(torrent);
+        payload.append("noautostart", this.getAddPaused(config) === true ? "1" : "0");
 
-            const response = await this.fetch(this.createTixatiBaseUrl(), { method: 'POST', body: payload });
-            return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+        const response = await this.fetch(this.createTixatiBaseUrl(), { method: 'POST', body: payload });
+        return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     private createTixatiBaseUrl(): string {

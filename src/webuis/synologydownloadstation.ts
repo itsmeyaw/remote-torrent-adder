@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 
 interface SynologyApiInfo {
     path: string;
@@ -8,6 +8,11 @@ interface SynologyApiInfo {
 }
 
 type SynologyApiInfoMap = Record<string, SynologyApiInfo | undefined>;
+
+interface SynologySession {
+    apis: SynologyApiInfoMap;
+    sessionId: string;
+}
 
 class SynologyDiscoveryError extends Error {
     constructor(public readonly httpResponseCode: number, message: string) {
@@ -58,7 +63,7 @@ const TASK_ERRORS: Record<number, string> = {
     408: "File does not exist",
 };
 
-export class SynologyDownloadStationWebUI extends TorrentWebUI {
+export class SynologyDownloadStationWebUI extends TorrentWebUI<SynologySession> {
     private apiInfo: SynologyApiInfoMap | null = null;
     private sessionId: string | null = null;
 
@@ -94,19 +99,17 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI {
         }
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const apis = await this.discoverApis();
-            const sessionId = await this.login(apis);
+    protected override async login(): Promise<SynologySession> {
+        const apis = await this.discoverApis();
+        return { apis, sessionId: await this.authenticate(apis) };
+    }
 
-            const modernApi = apis[TASK2_API];
-            if (modernApi) {
-                return await this.createTaskWithModernApi(modernApi, sessionId, torrent, config);
-            }
-            return await this.createTaskWithLegacyApi(this.requireApi(apis, TASK_API), sessionId, torrent, config);
-        } catch (error) {
-            return this.toFailureResult(error);
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig, { apis, sessionId }: SynologySession): Promise<AddResult> {
+        const modernApi = apis[TASK2_API];
+        if (modernApi) {
+            return await this.createTaskWithModernApi(modernApi, sessionId, torrent, config);
         }
+        return await this.createTaskWithLegacyApi(this.requireApi(apis, TASK_API), sessionId, torrent, config);
     }
 
     private async discoverApis(): Promise<SynologyApiInfoMap> {
@@ -134,7 +137,7 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI {
         return this.apiInfo;
     }
 
-    private async login(apis: SynologyApiInfoMap): Promise<string> {
+    private async authenticate(apis: SynologyApiInfoMap): Promise<string> {
         if (this.sessionId) {
             return this.sessionId;
         }
@@ -143,7 +146,7 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI {
         const json = await response.json();
 
         if (json?.success !== true || !json?.data?.sid) {
-            throw new Error(`Authentication failed: ${this.describeError(json?.error?.code, AUTH_ERRORS)}`);
+            throw new AuthenticationError(response.status, this.describeError(json?.error?.code, AUTH_ERRORS));
         }
 
         this.sessionId = json.data.sid as string;

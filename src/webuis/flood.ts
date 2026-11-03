@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { blobToBase64 } from "../torrent/converter";
 
 export class FloodWebUI extends TorrentWebUI {
@@ -20,63 +20,44 @@ export class FloodWebUI extends TorrentWebUI {
         }
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const url = this.createBaseUrl() + (torrent.isMagnet ? "/api/torrents/add-urls" : "/api/torrents/add-files");
-
-            await this.authenticate();
-            const fetchOpts = await this.createTorrentFetchOptions(torrent, config);
-            const response = await this.fetch(url, fetchOpts);
-
-            const success = response.status === 200 || response.status === 202;
-            return {
-                success,
-                httpResponseCode: response.status,
-                httpResponseBody: success ? null : await response.text(),
-            };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
-    }
-
-    public override async setLabel(infoHash: string, label: string): Promise<TorrentAddingResult> {
-        try {
-            await this.authenticate();
-            const response = await this.fetch(this.createBaseUrl() + "/api/torrents/tags", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json; charset=UTF-8" },
-                body: JSON.stringify({ hashes: [infoHash.toUpperCase()], tags: [label] })
-            });
-            return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
-    }
-
-    private authenticate(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const authenticationUrl = this.createBaseUrl() + "/api/auth/authenticate";
-            this.fetch(authenticationUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json; charset=UTF-8"
-                },
-                body: JSON.stringify({
-                    username: this._settings.username,
-                    password: this._settings.password
-                })
-            }).then(response =>
-                response.json()
-            ).then((json) => {
-                if (json.success) {
-                    resolve();
-                } else {
-                    reject(new Error("Authentication failed"));
-                }
-            }).catch(error => {
-                reject(error);
-            });
+    protected override async login(): Promise<void> {
+        const response = await this.fetch(this.createBaseUrl() + "/api/auth/authenticate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=UTF-8"
+            },
+            body: JSON.stringify({
+                username: this._settings.username,
+                password: this._settings.password
+            })
         });
+        const json = await response.json();
+        if (!json.success) {
+            throw new AuthenticationError(response.status);
+        }
+    }
+
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
+        const url = this.createBaseUrl() + (torrent.isMagnet ? "/api/torrents/add-urls" : "/api/torrents/add-files");
+
+        const fetchOpts = await this.createTorrentFetchOptions(torrent, config);
+        const response = await this.fetch(url, fetchOpts);
+
+        const success = response.status === 200 || response.status === 202;
+        return {
+            success,
+            httpResponseCode: response.status,
+            httpResponseBody: success ? null : await response.text(),
+        };
+    }
+
+    protected override async applyLabel(_session: unknown, infoHash: string, label: string): Promise<TorrentAddingResult> {
+        const response = await this.fetch(this.createBaseUrl() + "/api/torrents/tags", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json; charset=UTF-8" },
+            body: JSON.stringify({ hashes: [infoHash.toUpperCase()], tags: [label] })
+        });
+        return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     private async createTorrentFetchOptions(torrent: Torrent, config: TorrentUploadConfig): Promise<RequestInit> {

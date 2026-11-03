@@ -1,64 +1,53 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { computeInfoHash } from "../torrent/info-hash";
 import { isTransmissionSessionHandshake } from "./transmission";
 
-export class BiglyBTWebUI extends TorrentWebUI {
+export class BiglyBTWebUI extends TorrentWebUI<string> {
     public override testConnection(): Promise<ConnectionTestResult> {
         return this.probeWithBasicAuth(this.createBaseUrl() + "/transmission/rpc", isTransmissionSessionHandshake);
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const url = this.createBiglyBTBaseUrl(torrent, config);
-
-            await this.fetchSessionCookie(url);
-
-            const payload = torrent.isMagnet
-                ? this.createPayloadForMagnet(torrent.data as string, config)
-                : this.createPayloadForTorrent(torrent);
-
-            const response = await this.fetch(url, { method: 'POST', body: payload });
-            const responseBody = await response.text();
-            const success = this.isSuccessResponse(responseBody);
-            const label = this.getLabel(config);
-            if (!success || !label) {
-                return { success, httpResponseCode: response.status, httpResponseBody: responseBody };
-            }
-            const warning = await this.runLabelFollowUp(label, async () => {
-                const infoHash = await computeInfoHash(torrent);
-                if (!infoHash) {
-                    throw new Error("the info hash could not be computed");
-                }
-                return this.setLabel(infoHash, label);
-            });
-            return { success, httpResponseCode: response.status, httpResponseBody: responseBody, warning };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+    protected override async login(): Promise<string> {
+        const response = await this.fetchAllowing(this.createBaseUrl() + "/transmission/rpc", { method: "POST", body: "" }, [409]);
+        return response.headers.get("X-Transmission-Session-Id") ?? "";
     }
 
-    public override async setLabel(infoHash: string, label: string): Promise<TorrentAddingResult> {
-        try {
-            const rpcUrl = this.createBaseUrl() + "/transmission/rpc";
-            const sessionResponse = await this.fetchSessionCookie(rpcUrl);
-            const response = await this.fetch(rpcUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json; charset=UTF-8",
-                    "X-Transmission-Session-Id": sessionResponse.headers.get("X-Transmission-Session-Id") ?? ""
-                },
-                body: JSON.stringify({ method: "torrent-set", arguments: { ids: [infoHash.toUpperCase()], labels: [label] } })
-            });
-            const responseText = await response.text();
-            return {
-                success: this.isSuccessResponse(responseText),
-                httpResponseCode: response.status,
-                httpResponseBody: responseText,
-            };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
+        const url = this.createBiglyBTBaseUrl(torrent, config);
+
+        const payload = torrent.isMagnet
+            ? this.createPayloadForMagnet(torrent.data as string, config)
+            : this.createPayloadForTorrent(torrent);
+
+        const response = await this.fetch(url, { method: 'POST', body: payload });
+        const responseBody = await response.text();
+        return { success: this.isSuccessResponse(responseBody), httpResponseCode: response.status, httpResponseBody: responseBody };
+    }
+
+    protected override async addedTorrentId(_added: AddResult, torrent: Torrent): Promise<string | undefined> {
+        return (await computeInfoHash(torrent)) ?? undefined;
+    }
+
+    protected override async applyLabel(sessionId: string, infoHash: string, label: string): Promise<TorrentAddingResult> {
+        const response = await this.fetch(this.createBaseUrl() + "/transmission/rpc", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=UTF-8",
+                "X-Transmission-Session-Id": sessionId
+            },
+            body: JSON.stringify({ method: "torrent-set", arguments: { ids: [infoHash.toUpperCase()], labels: [label] } })
+        });
+        const responseText = await response.text();
+        return {
+            success: this.isSuccessResponse(responseText),
+            httpResponseCode: response.status,
+            httpResponseBody: responseText,
+        };
+    }
+
+    protected override labelAfterAdd(sessionId: string, torrentId: string, label: string): Promise<TorrentAddingResult> {
+        return this.applyLabel(sessionId, torrentId, label);
     }
 
     createBiglyBTBaseUrl(torrent: Torrent, config: TorrentUploadConfig): string {
@@ -68,10 +57,6 @@ export class BiglyBTWebUI extends TorrentWebUI {
             torrent.isMagnet ? "rpc" : "upload", 
             !torrent.isMagnet && this.getAddPaused(config) ? "?paused=true" : "",
         ].join("");
-    }
-
-    async fetchSessionCookie(apiBaseUrl: string): Promise<Response> {
-        return this.fetchAllowing(apiBaseUrl, undefined, [409]);
     }
 
     createPayloadForMagnet(magnetUri: string, config: TorrentUploadConfig): string {
