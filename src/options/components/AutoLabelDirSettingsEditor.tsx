@@ -31,27 +31,27 @@ function CriteriaEditor({ criteria, onChange }: { criteria: AutoLabelDirCriterio
     onChange(arr);
   };
   return (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Criteria</label>
-      <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 13, marginBottom: 6 }}>
+    <div className="mb-3">
+      <label className="block mb-1 font-medium">Criteria</label>
+      <div className="text-rta-text-muted text-[13px] mb-1.5">
         All criteria of a rule must match (AND). For alternatives, create one rule per case — the first matching rule wins.
       </div>
       {criteria.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, minHeight: 32 }}>
+        <div className="flex flex-wrap gap-2 min-h-8">
           {criteria.map((c, idx) => (
-            <span key={idx} style={{ display: "inline-flex", alignItems: "center", background: "var(--rta-chip-bg, #eaf5ea)", border: "1px solid var(--rta-chip-border, #b7c9a7)", borderRadius: 16, padding: "4px 12px", fontFamily: "monospace", fontSize: 15 }}>
-              <span style={{ marginRight: 8 }}>{fieldLabel(c.field)}:</span>
-              <span style={{ marginRight: 8 }}>{c.value}</span>
-              <button onClick={() => handleRemove(idx)} style={{ fontSize: 13, marginLeft: 2 }}>🗑</button>
+            <span key={idx} className="inline-flex items-center bg-rta-chip-bg border border-rta-chip-border rounded-[16px] py-1 px-3 font-[monospace] text-[15px]">
+              <span className="mr-2">{fieldLabel(c.field)}:</span>
+              <span className="mr-2">{c.value}</span>
+              <button onClick={() => handleRemove(idx)} className="text-[13px] ml-0.5">🗑</button>
             </span>
           ))}
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: criteria.length > 0 ? 8 : 0 }}>
+      <div className={`flex items-center gap-2 ${criteria.length > 0 ? "mt-2" : "mt-0"}`}>
         <select
           value={field}
           onChange={e => setField(e.target.value as CriterionField)}
-          style={{ fontSize: 15, borderRadius: 8, padding: "4px 10px", border: "1px solid var(--rta-border, #b7c9a7)", background: "var(--rta-input-bg, #fff)", color: "var(--rta-text, #1b241d)" }}>
+          className="text-[15px] rounded-[8px] py-1 px-2.5 border border-rta-border bg-rta-input-bg text-rta-text">
           {CRITERIA_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
         <input
@@ -59,9 +59,9 @@ function CriteriaEditor({ criteria, onChange }: { criteria: AutoLabelDirCriterio
           value={value}
           onChange={e => setValue(e.target.value)}
           placeholder={CRITERIA_FIELDS.find(f => f.value === field)?.placeholder}
-          style={{ flex: 1, minWidth: 0, fontFamily: "monospace", fontSize: 15, border: "1px solid var(--rta-border, #b7c9a7)", background: "var(--rta-input-bg, #fff)", color: "var(--rta-text, #1b241d)", borderRadius: 8, padding: "4px 10px" }}
+          className="flex-1 min-w-0 font-[monospace] text-[15px] border border-rta-border bg-rta-input-bg text-rta-text rounded-[8px] py-1 px-2.5"
         />
-        <button onClick={handleAdd} style={{ background: "var(--rta-accent, #b7c9a7)", color: "var(--rta-green-dark, #4e6a57)", border: "none", borderRadius: 8, padding: "4px 12px", fontWeight: 500, cursor: "pointer" }}>Add</button>
+        <button onClick={handleAdd} className="bg-rta-accent text-rta-green-dark border-none rounded-[8px] py-1 px-3 font-medium cursor-pointer">Add</button>
       </div>
     </div>
   );
@@ -91,39 +91,28 @@ function AutoLabelDirSettingsEditor({ value, onChange, showLabel, showDir, label
   return (
     <SettingsGroup
       title="Auto Label/Dir Settings"
-      actions={<button onClick={handleAdd} style={{ background: "var(--rta-success, #228B22)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 16px", fontWeight: 500, cursor: "pointer" }}>Add Rule</button>}
+      actions={<button onClick={handleAdd} className="bg-rta-success text-white border-none rounded-[8px] py-1.5 px-4 font-medium cursor-pointer">Add Rule</button>}
     >
-      {value.length === 0 && <div style={{ color: "var(--rta-text-muted, #888)", marginBottom: 8 }}>No rules defined yet.</div>}
+      {value.length === 0 && <div className="text-rta-text-muted mb-2">No rules defined yet.</div>}
       {value.map((setting, idx) => (
-        <div key={idx} style={{ marginBottom: 18, padding: 12, border: "1px solid var(--rta-border, #b7c9a7)", borderRadius: 8, background: "var(--rta-surface, #fff)", position: "relative" }}>
+        <div key={idx} className="mb-4.5 p-3 border border-rta-border rounded-[8px] bg-rta-surface relative">
           <button
             onClick={() => handleRemove(idx)}
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              background: "var(--rta-danger, #B22222)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "4px 10px",
-              fontWeight: 500,
-              cursor: "pointer"
-            }}
+            className="absolute top-2 right-2 bg-rta-danger text-white border-none rounded-[8px] py-1 px-2.5 font-medium cursor-pointer"
             title="Remove rule"
           >🗑</button>
-          <div style={{ display: "flex", gap: 32, alignItems: "flex-start" }}>
-            <div style={{ flex: 1 }}>
+          <div className="flex gap-8 items-start">
+            <div className="flex-1">
               <CriteriaEditor criteria={setting.criteria} onChange={c => handleCriteriaChange(idx, c)} />
             </div>
-            <div style={{ flex: 1 }}>
+            <div className="flex-1">
               {showLabel && (
-                <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Label</label>
+                <div className="mb-2.5">
+                  <label className="block mb-1 font-medium">Label</label>
                   <select
                     value={setting.label ?? ""}
                     onChange={e => handleLabelChange(idx, e.target.value === "" ? null : e.target.value)}
-                    style={{ fontSize: 15, borderRadius: 8, padding: "4px 10px", border: "1px solid var(--rta-border, #b7c9a7)", background: "var(--rta-input-bg, #fff)", color: "var(--rta-text, #1b241d)", minWidth: 120 }}>
+                    className="text-[15px] rounded-[8px] py-1 px-2.5 border border-rta-border bg-rta-input-bg text-rta-text min-w-[120px]">
                     <option value="">(none)</option>
                     {[...(labels.includes(setting.label ?? "") || !setting.label ? labels : [setting.label, ...labels])]
                       .filter((l, i, arr) => l && arr.indexOf(l) === i)
@@ -132,12 +121,12 @@ function AutoLabelDirSettingsEditor({ value, onChange, showLabel, showDir, label
                 </div>
               )}
               {showDir && (
-                <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Directory</label>
+                <div className="mb-2.5">
+                  <label className="block mb-1 font-medium">Directory</label>
                   <select
                     value={setting.dir ?? ""}
                     onChange={e => handleDirChange(idx, e.target.value === "" ? null : e.target.value)}
-                    style={{ fontSize: 15, borderRadius: 8, padding: "4px 10px", border: "1px solid var(--rta-border, #b7c9a7)", background: "var(--rta-input-bg, #fff)", color: "var(--rta-text, #1b241d)", minWidth: 120 }}>
+                    className="text-[15px] rounded-[8px] py-1 px-2.5 border border-rta-border bg-rta-input-bg text-rta-text min-w-[120px]">
                     <option value="">(none)</option>
                     {[...(dirs.includes(setting.dir ?? "") || !setting.dir ? dirs : [setting.dir, ...dirs])]
                       .filter((d, i, arr) => d && arr.indexOf(d) === i)
