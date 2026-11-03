@@ -72,8 +72,8 @@ export async function loadPopupData(bufferedId: string): Promise<PopupData | nul
             paused: resolved.config.addPaused ?? false,
         },
         auto: {
-            label: resolved.fromRule.label,
-            directory: resolved.fromRule.dir,
+            label: resolved.source.label === "rule",
+            directory: resolved.source.dir === "rule",
         },
         labelOptions: webUiSettings.labels,
         directoryOptions: webUiSettings.dirs,

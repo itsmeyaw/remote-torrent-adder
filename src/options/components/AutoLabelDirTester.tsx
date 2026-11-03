@@ -7,6 +7,7 @@ import {
   type AutoLabelDirRuleEvaluation
 } from "../../torrent/auto-label-dir-matcher";
 import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../torrent/torrent-source";
+import { resolveUploadConfig, type UploadConfigSource } from "../../torrent/upload-config";
 import { fieldLabel } from "./auto-label-dir-fields";
 import { primaryButtonClass } from "../ui-classes";
 
@@ -14,6 +15,8 @@ interface AutoLabelDirTesterProps {
   settings: AutoLabelDirSetting[];
   defaultLabel: string | null;
   defaultDir: string | null;
+  labels: string[];
+  dirs: string[];
   showLabel: boolean;
   showDir: boolean;
 }
@@ -124,7 +127,7 @@ function TorrentContents({ torrent }: { torrent: Torrent }) {
   );
 }
 
-function AutoLabelDirTester({ settings, defaultLabel, defaultDir, showLabel, showDir }: AutoLabelDirTesterProps) {
+function AutoLabelDirTester({ settings, defaultLabel, defaultDir, labels, dirs, showLabel, showDir }: AutoLabelDirTesterProps) {
   const [torrent, setTorrent] = useState<Torrent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [magnetLink, setMagnetLink] = useState("");
@@ -172,10 +175,21 @@ function AutoLabelDirTester({ settings, defaultLabel, defaultDir, showLabel, sho
   };
 
   const winningRule = explanation?.winningRuleIndex != null ? explanation.winningRuleIndex + 1 : null;
-  const effectiveLabel = explanation?.label ?? defaultLabel ?? null;
-  const effectiveDir = explanation?.dir ?? defaultDir ?? null;
-  const labelSource = explanation?.label != null ? `from rule ${winningRule}` : (defaultLabel ? "from the default label" : null);
-  const dirSource = explanation?.dir != null ? `from rule ${winningRule}` : (defaultDir ? "from the default directory" : null);
+  const resolved = torrent
+    ? resolveUploadConfig(torrent, { autoLabelDirSettings: settings, defaultLabel, defaultDir, labels, dirs, addPaused: false })
+    : null;
+  const describeSource = (source: UploadConfigSource | null | undefined, kind: "label" | "directory"): string | null => {
+    switch (source) {
+      case "rule": return `from rule ${winningRule}`;
+      case "default": return `from the default ${kind}`;
+      case "list": return `from the ${kind} list`;
+      default: return null;
+    }
+  };
+  const effectiveLabel = resolved?.config.label ?? null;
+  const effectiveDir = resolved?.config.dir ?? null;
+  const labelSource = describeSource(resolved?.source.label, "label");
+  const dirSource = describeSource(resolved?.source.dir, "directory");
   const hasFileCriteria = settings.some(setting => setting.criteria.some(criterion => criterion.field === "filePath"));
   const hasNameCriteria = settings.some(setting => setting.criteria.some(criterion => criterion.field === "torrentName"));
 
