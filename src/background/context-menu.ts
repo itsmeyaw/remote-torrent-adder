@@ -2,23 +2,22 @@ import { ext } from "../util/browser-api";
 import { type TorrentWebUI } from "../models/webui";
 import OnClickData = chrome.contextMenus.OnClickData;
 import Tab = chrome.tabs.Tab;
-import { type IPreAddTorrentMessage, PreAddTorrentMessage } from "../models/messages";
 import { type TorrentDownloadContext } from "../torrent/download";
-import { HandledFailure } from "../util/errors";
-import { addTorrentToWebUiById, dispatchPreAddTorrent } from "./messaging";
-import { loadWebUis } from "../settings/webuis";
-import { showNotification } from "./notifications";
-import { Settings } from "../settings/settings";
-import { getDefaultSettings } from "../settings/settings-defaults";
+import { addLink, type AddTarget } from "./add";
 
 const PARENT_MENU_ID = "server-main";
 const SEND_ALL_MENU_ID = "server-all";
 const SEPARATOR_MENU_ID = "sendall-separator";
-const PER_SERVER_MENU_PREFIX = "server-";
+const PER_SERVER_MENU_PREFIX = "server-webui-";
 
 export function registerContextMenuClickListener(): void {
     ext.contextMenus.onClicked.addListener((onClickData: OnClickData, tab?: Tab) => {
-        handleContextMenuClick(onClickData, tab).catch(reportContextMenuFailure);
+        const target = resolveAddTarget(onClickData.menuItemId.toString());
+        if (!target) {
+            return;
+        }
+        addLink(onClickData.linkUrl ?? "", target, { ...resolveDownloadContext(onClickData, tab), windowId: tab?.windowId })
+            .catch(error => console.error("Context menu click failed", error));
     });
 }
 
@@ -42,9 +41,9 @@ async function rebuildContextMenu(allWebUis: TorrentWebUI[]): Promise<void> {
     });
 
     if (allWebUis.length > 1) {
-        allWebUis.forEach((webUi, index) => {
+        allWebUis.forEach(webUi => {
             createMenuItem({
-                id: `${PER_SERVER_MENU_PREFIX}${index}`,
+                id: `${PER_SERVER_MENU_PREFIX}${webUi.settings.id}`,
                 title: webUi.name,
                 contexts: ["link"],
                 parentId: PARENT_MENU_ID
@@ -68,65 +67,17 @@ function createMenuItem(properties: chrome.contextMenus.CreateProperties): void 
     });
 }
 
-async function handleContextMenuClick(onClickData: OnClickData, tab?: Tab): Promise<void> {
-    const menuItemId = onClickData.menuItemId.toString();
-    if (!menuItemId.startsWith(PER_SERVER_MENU_PREFIX)) {
-        return;
-    }
-
-    const targetWebUis = resolveTargetWebUis(menuItemId, await loadWebUis());
-    if (targetWebUis.length === 0) {
-        throw new Error("No WebUI matches the clicked menu entry.");
-    }
-
-    const url = onClickData.linkUrl ?? "";
-    const context = resolveDownloadContext(onClickData, tab);
-
-    const [singleTarget] = targetWebUis;
-    if (targetWebUis.length === 1 && singleTarget) {
-        const preAddTorrentMessage: IPreAddTorrentMessage = {
-            action: PreAddTorrentMessage.action,
-            webUiId: singleTarget.settings.id,
-            url
-        };
-        await dispatchPreAddTorrent(preAddTorrentMessage, await resolveWindowId(tab), context);
-        return;
-    }
-
-    targetWebUis.forEach(webUi => {
-        addTorrentToWebUiById(webUi.settings.id, url, null, context)
-            .catch(reportContextMenuFailure);
-    });
-}
-
-async function reportContextMenuFailure(error: unknown): Promise<void> {
-    console.error("Context menu click failed", error);
-    if (error instanceof HandledFailure) {
-        return;
-    }
-    const settings = await new Settings().loadSettings().catch(error => {
-        console.error("Could not load settings to show the failure; using defaults", error);
-        return getDefaultSettings();
-    });
-    if (settings.notificationsEnabled) {
-        showNotification("Adding torrent failed",
-            error instanceof Error ? error.message : String(error),
-            true,
-            settings.notificationsDurationMs,
-            settings.notificationsSoundEnabled);
-    }
-}
-
-function resolveTargetWebUis(menuItemId: string, allWebUis: TorrentWebUI[]): TorrentWebUI[] {
+function resolveAddTarget(menuItemId: string): AddTarget | null {
     if (menuItemId === PARENT_MENU_ID) {
-        return allWebUis.slice(0, 1);
+        return {};
     }
     if (menuItemId === SEND_ALL_MENU_ID) {
-        return allWebUis;
+        return { sendToAll: true };
     }
-    const index = Number.parseInt(menuItemId.slice(PER_SERVER_MENU_PREFIX.length), 10);
-    const webUiAtIndex = Number.isInteger(index) ? allWebUis[index] : undefined;
-    return webUiAtIndex ? [webUiAtIndex] : [];
+    if (menuItemId.startsWith(PER_SERVER_MENU_PREFIX)) {
+        return { webUiId: menuItemId.slice(PER_SERVER_MENU_PREFIX.length) };
+    }
+    return null;
 }
 
 function resolveDownloadContext(onClickData: OnClickData, tab?: Tab): TorrentDownloadContext {
@@ -135,11 +86,4 @@ function resolveDownloadContext(onClickData: OnClickData, tab?: Tab): TorrentDow
         frameId: onClickData.frameId ?? 0,
         pageUrl: onClickData.frameUrl ?? onClickData.pageUrl ?? tab?.url ?? null
     };
-}
-
-async function resolveWindowId(tab?: Tab): Promise<number> {
-    if (tab?.windowId !== undefined) {
-        return tab.windowId;
-    }
-    return (await ext.windows.getLastFocused()).id ?? 0;
 }

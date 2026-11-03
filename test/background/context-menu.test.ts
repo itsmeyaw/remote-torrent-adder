@@ -1,22 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { callArgs } from "../helpers/assert";
 
-// Stub out the messaging module so we can observe dispatched torrents without
-// pulling in the whole service-worker dependency graph.
-const { dispatchPreAddTorrent, addTorrentToWebUiById } = vi.hoisted(() => ({
-    dispatchPreAddTorrent: vi.fn(() => Promise.resolve()),
-    addTorrentToWebUiById: vi.fn(() => Promise.resolve()),
+// Stub out the Add module so we can observe what each click asks for.
+const { addLink } = vi.hoisted(() => ({
+    addLink: vi.fn(() => Promise.resolve()),
 }));
-vi.mock("../../src/background/messaging", () => ({ dispatchPreAddTorrent, addTorrentToWebUiById }));
+vi.mock("../../src/background/add", () => ({ addLink }));
 
 import { refreshContextMenu, registerContextMenuClickListener } from "../../src/background/context-menu";
-import { HandledFailure } from "../../src/util/errors";
-import { PreAddTorrentMessage } from "../../src/models/messages";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
-import { getDefaultSettings } from "../../src/settings/settings-defaults";
-import { serializeSettings } from "../../src/settings/serializer";
-import { SETTINGS_KEY } from "../../src/settings/settings";
 
 const settingsFor = (id: string, name: string) => makeWebUISettings({ id, name, host: "h", port: 8080 });
 const webUi = (id: string, name: string) => new QBittorrentWebUI(settingsFor(id, name));
@@ -31,17 +24,15 @@ function clickListener() {
     return calls[calls.length - 1][0];
 }
 
-/** Registers the listener, seeds the given webuis, then fires one menu click. */
-async function click(menuItemId: string, webuis: ReturnType<typeof settingsFor>[]) {
-    seedWebUISettings(webuis);
+/** Registers the listener, then fires one menu click. */
+async function click(menuItemId: string) {
     registerContextMenuClickListener();
     clickListener()(clickData(menuItemId), tab);
     await flush();
 }
 
 beforeEach(() => {
-    dispatchPreAddTorrent.mockClear();
-    addTorrentToWebUiById.mockClear();
+    addLink.mockClear();
 });
 
 describe("refreshContextMenu", () => {
@@ -51,20 +42,20 @@ describe("refreshContextMenu", () => {
         expect(created).toEqual(["server-main"]);
     });
 
-    it("creates per-server, separator and send-all entries for multiple webuis", async () => {
+    it("creates per-webui, separator and send-all entries for multiple webuis", async () => {
         await refreshContextMenu([webUi("a", "Server A"), webUi("b", "Server B")]);
         const created = (chrome.contextMenus.create as any).mock.calls.map((c: any[]) => c[0].id);
-        expect(created).toContain("server-0");
-        expect(created).toContain("server-1");
+        expect(created).toContain("server-webui-a");
+        expect(created).toContain("server-webui-b");
         expect(created).toContain("sendall-separator");
         expect(created).toContain("server-all");
     });
 
-    it("lists the per-server entries in the order the webuis are given", async () => {
+    it("lists the per-webui entries in the order the webuis are given", async () => {
         await refreshContextMenu([webUi("a", "Server A"), webUi("b", "Server B"), webUi("c", "Server C")]);
         const perServer = (chrome.contextMenus.create as any).mock.calls
             .map((c: any[]) => c[0])
-            .filter((item: any) => /^server-\d+$/.test(item.id));
+            .filter((item: any) => item.id.startsWith("server-webui-"));
         expect(perServer.map((item: any) => item.title)).toEqual(["Server A", "Server B", "Server C"]);
     });
 
@@ -155,119 +146,60 @@ describe("registerContextMenuClickListener", () => {
         expect(chrome.storage.local.get).not.toHaveBeenCalled();
     });
 
-    it("dispatches a pre-add for the first webui on the main entry", async () => {
-        await click("server-main", [settingsFor("a", "Server A")]);
-        expect(dispatchPreAddTorrent).toHaveBeenCalledTimes(1);
-        const [message, windowId] = callArgs(dispatchPreAddTorrent, 0);
-        expect(message.action).toBe(PreAddTorrentMessage.action);
-        expect(message.webUiId).toBe("a");
-        expect(message.url).toBe("http://x/file.torrent");
-        expect(windowId).toBe(11);
+    it("adds to the Primary WebUI on the main entry", async () => {
+        await click("server-main");
+
+        expect(addLink).toHaveBeenCalledTimes(1);
+        expect(callArgs(addLink, 0)[0]).toBe("http://x/file.torrent");
+        expect(callArgs(addLink, 0)[1]).toEqual({});
+        expect(callArgs(addLink, 0)[2]).toEqual(expect.objectContaining({ windowId: 11 }));
     });
 
-    it("dispatches a pre-add for the indexed webui", async () => {
-        await click("server-1", [settingsFor("a", "A"), settingsFor("b", "B")]);
-        expect(callArgs(dispatchPreAddTorrent, 0)[0].webUiId).toBe("b");
+    it("adds to the webui the clicked per-webui entry names", async () => {
+        await click("server-webui-b");
+
+        expect(addLink).toHaveBeenCalledTimes(1);
+        expect(callArgs(addLink, 0)[1]).toEqual({ webUiId: "b" });
     });
 
-    it("adds the torrent directly to every webui on send-all, bypassing the selector", async () => {
-        await click("server-all", [settingsFor("a", "A"), settingsFor("b", "B")]);
-        expect(addTorrentToWebUiById).toHaveBeenCalledTimes(2);
-        expect(addTorrentToWebUiById.mock.calls.map((c: any[]) => c[0])).toEqual(["a", "b"]);
-        expect(dispatchPreAddTorrent).not.toHaveBeenCalled();
+    it("adds to every webui on send-all in a single call, so the link is downloaded once", async () => {
+        await click("server-all");
+
+        expect(addLink).toHaveBeenCalledTimes(1);
+        expect(callArgs(addLink, 0)[1]).toEqual({ sendToAll: true });
     });
 
-    it("keeps sending to the other webuis when one fails on send-all", async () => {
-        addTorrentToWebUiById.mockImplementationOnce(() => Promise.reject(new Error("a is down")));
-        await click("server-all", [settingsFor("a", "A"), settingsFor("b", "B")]);
-        await flush();
-        expect(addTorrentToWebUiById).toHaveBeenCalledTimes(2);
-    });
-
-    it("picks up webuis added after the listener was registered", async () => {
-        registerContextMenuClickListener();
-        seedWebUISettings([settingsFor("late", "Added Later")]);
-        clickListener()(clickData("server-main"), tab);
-        await flush();
-        expect(callArgs(dispatchPreAddTorrent, 0)[0].webUiId).toBe("late");
-    });
-
-    it("falls back to the last focused window when the click carries no tab", async () => {
+    it("loads no settings on a click, leaving that to the Add module", async () => {
         seedWebUISettings([settingsFor("a", "A")]);
+        vi.mocked(chrome.storage.local.get).mockClear();
+
+        await click("server-main");
+
+        expect(chrome.storage.local.get).not.toHaveBeenCalled();
+    });
+
+    it("passes no window when the click carries no tab", async () => {
         registerContextMenuClickListener();
         clickListener()(clickData("server-main"), undefined);
         await flush();
-        expect(callArgs(dispatchPreAddTorrent, 0)[1]).toBe(1);
+
+        expect(callArgs(addLink, 0)[2]).toEqual(expect.objectContaining({ windowId: undefined }));
     });
 
     it("ignores clicks on unrelated menu entries", async () => {
-        await click("some-other-extension-item", [settingsFor("a", "A")]);
-        expect(dispatchPreAddTorrent).not.toHaveBeenCalled();
-        expect(addTorrentToWebUiById).not.toHaveBeenCalled();
+        await click("some-other-extension-item");
+
+        expect(addLink).not.toHaveBeenCalled();
     });
 
-    it("ignores a per-server click whose index no longer exists", async () => {
-        await click("server-7", [settingsFor("a", "A")]);
-        expect(dispatchPreAddTorrent).not.toHaveBeenCalled();
-        expect(addTorrentToWebUiById).not.toHaveBeenCalled();
-    });
+    it("logs a rejected add and shows no notification of its own, since the Add module reports it", async () => {
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+        addLink.mockRejectedValueOnce(new Error("storage is down"));
 
-    describe("failures", () => {
-        const notifications = () => (chrome.notifications.create as any).mock.calls.map((c: any[]) => c[1]);
+        await click("server-main");
 
-        it("notifies when the clicked entry matches no webui", async () => {
-            await click("server-7", [settingsFor("a", "A")]);
-            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed", message: "No WebUI matches the clicked menu entry." })]);
-        });
-
-        it("notifies when no window can be found for the add", async () => {
-            (chrome.windows.getLastFocused as any).mockRejectedValueOnce(new Error("no window"));
-            seedWebUISettings([settingsFor("a", "A")]);
-            registerContextMenuClickListener();
-            clickListener()(clickData("server-main"), undefined);
-            await flush();
-            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed", message: "no window" })]);
-        });
-
-        it("notifies when a single-webui add fails before anything was notified", async () => {
-            dispatchPreAddTorrent.mockRejectedValueOnce(new Error("storage is down"));
-            await click("server-main", [settingsFor("a", "A")]);
-            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed", message: "storage is down" })]);
-        });
-
-        it("notifies a send-all failure that was not notified downstream", async () => {
-            addTorrentToWebUiById.mockRejectedValueOnce(new Error("storage is down"));
-            await click("server-all", [settingsFor("a", "A"), settingsFor("b", "B")]);
-            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed" })]);
-        });
-
-        it("does not notify again a failure the messaging layer already notified", async () => {
-            dispatchPreAddTorrent.mockRejectedValueOnce(new HandledFailure("Torrent adding failed"));
-            await click("server-main", [settingsFor("a", "A")]);
-            expect(notifications()).toEqual([]);
-        });
-
-        it("logs the storage error before notifying with defaults when settings cannot be read", async () => {
-            const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-            vi.mocked(chrome.storage.local.get).mockRejectedValue(new Error("storage unavailable"));
-            registerContextMenuClickListener();
-            clickListener()(clickData("server-main"), tab);
-            await flush();
-            expect(errorSpy).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ message: "storage unavailable" }));
-            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed" })]);
-            errorSpy.mockRestore();
-        });
-
-        it("does not notify when notifications are disabled", async () => {
-            const settings = getDefaultSettings();
-            settings.notificationsEnabled = false;
-            settings.webuiSettings = [settingsFor("a", "A")];
-            (chrome as any).__storage[SETTINGS_KEY] = serializeSettings(settings);
-            dispatchPreAddTorrent.mockRejectedValueOnce(new Error("storage is down"));
-            registerContextMenuClickListener();
-            clickListener()(clickData("server-main"), tab);
-            await flush();
-            expect(notifications()).toEqual([]);
-        });
+        expect(consoleError).toHaveBeenCalledWith("Context menu click failed", expect.objectContaining({ message: "storage is down" }));
+        expect(chrome.notifications.create).not.toHaveBeenCalled();
+        consoleError.mockRestore();
     });
 });

@@ -108,8 +108,8 @@ describe("service worker boot on a configured profile", () => {
         expect(duplicateMenuIds()).toEqual([]);
         expect([...(chrome as any).__contextMenuIds]).toEqual([
             "server-main",
-            "server-0",
-            "server-1",
+            "server-webui-a",
+            "server-webui-b",
             "sendall-separator",
             "server-all",
         ]);
@@ -144,8 +144,8 @@ describe("service worker boot on a configured profile", () => {
         expect(consoleError).not.toHaveBeenCalled();
         expect([...(chrome as any).__contextMenuIds]).toEqual([
             "server-main",
-            "server-0",
-            "server-1",
+            "server-webui-a",
+            "server-webui-b",
             "sendall-separator",
             "server-all",
         ]);
