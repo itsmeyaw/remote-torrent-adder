@@ -71,9 +71,9 @@ export async function openActionPopup(windowId: number, mode?: PopupMode): Promi
     }
 }
 
-export function openPopupWindow(mode?: PopupMode): void {
+export function openPopupWindow(mode?: PopupMode): Promise<chrome.windows.Window | undefined> {
     const url = mode ? `${POPUP_PAGE}?mode=${mode}` : POPUP_PAGE;
-    void ext.windows.create({
+    return ext.windows.create({
         url,
         type: "popup",
         width: 420,

@@ -5,7 +5,7 @@ import { callArgs } from "../helpers/assert";
 // pulling in the whole service-worker dependency graph.
 const { dispatchPreAddTorrent, addTorrentToWebUiById } = vi.hoisted(() => ({
     dispatchPreAddTorrent: vi.fn(),
-    addTorrentToWebUiById: vi.fn(),
+    addTorrentToWebUiById: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("../../src/util/messaging", () => ({ dispatchPreAddTorrent, addTorrentToWebUiById }));
 
@@ -171,6 +171,13 @@ describe("registerContextMenuClickListener", () => {
         expect(addTorrentToWebUiById).toHaveBeenCalledTimes(2);
         expect(addTorrentToWebUiById.mock.calls.map((c: any[]) => c[0])).toEqual(["a", "b"]);
         expect(dispatchPreAddTorrent).not.toHaveBeenCalled();
+    });
+
+    it("keeps sending to the other webuis when one fails on send-all", async () => {
+        addTorrentToWebUiById.mockImplementationOnce(() => Promise.reject(new Error("a is down")));
+        await click("server-all", [settingsFor("a", "A"), settingsFor("b", "B")]);
+        await flush();
+        expect(addTorrentToWebUiById).toHaveBeenCalledTimes(2);
     });
 
     it("picks up webuis added after the listener was registered", async () => {
