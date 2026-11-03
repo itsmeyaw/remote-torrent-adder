@@ -73,3 +73,17 @@ This project keeps a detailed guide per task in `.agents/skills/`. They are plai
 Project background and the release process: [`.agents/README.md`](.agents/README.md).
 
 Some harnesses can load these automatically and don't need the table — Claude Code has stubs in `.claude/skills/`, GitHub Copilot has prompt files in `.github/prompts/`. Those are thin pointers to the files above, which stay the single place to edit.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five default triage labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repo uses a single-context layout. See `docs/agents/domain.md`.
