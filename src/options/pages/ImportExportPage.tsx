@@ -1,12 +1,12 @@
 import { useState, type JSX } from "react";
 import { useSettings } from "../SettingsContext";
-import { serializeSettings, deserializeSettings } from "../../util/serializer";
-import { migrateSettingsClientIdentifiers } from "../../util/legacy-client-identifiers";
+import { serializeSettings } from "../../util/serializer";
+import { parseSettingsExport } from "../../util/settings-validation";
 
 export default function ImportExportPage(): JSX.Element {
   const { settings, setSettings, loading } = useSettings();
   const [importValue, setImportValue] = useState<string>("");
-  const [importError, setImportError] = useState<string>("");
+  const [importErrors, setImportErrors] = useState<string[]>([]);
   const [copied, setCopied] = useState<boolean>(false);
 
   if (loading || !settings) return <div>Loading...</div>;
@@ -18,22 +18,13 @@ export default function ImportExportPage(): JSX.Element {
   };
 
   const handleImport = (): void => {
-    setImportError("");
-    // Pasted text is arbitrary: both a parse failure and a parse that yields
-    // something which is not a settings export have to be reported, rather
-    // than thrown out of the click handler.
-    let imported;
-    try {
-      imported = deserializeSettings(importValue);
-    } catch {
-      setImportError("That is not valid JSON.");
+    const result = parseSettingsExport(importValue);
+    if (!result.ok) {
+      setImportErrors(result.problems);
       return;
     }
-    if (!imported || !Array.isArray(imported.webuiSettings)) {
-      setImportError("That JSON is not a Remote Torrent Adder settings export.");
-      return;
-    }
-    setSettings(migrateSettingsClientIdentifiers(imported));
+    setImportErrors([]);
+    setSettings(result.settings);
     setImportValue("");
   };
 
@@ -61,13 +52,17 @@ export default function ImportExportPage(): JSX.Element {
           value={importValue}
           onChange={e => setImportValue(e.target.value)}
           placeholder="Paste exported settings JSON here..."
-          aria-describedby={importError ? "rta-import-error" : undefined}
-          aria-invalid={importError ? true : undefined}
+          aria-describedby={importErrors.length > 0 ? "rta-import-error" : undefined}
+          aria-invalid={importErrors.length > 0 ? true : undefined}
         />
         <button type="button" onClick={handleImport} className="rta-button">
           Import settings
         </button>
-        {importError && <div id="rta-import-error" role="alert" className="rta-error">{importError}</div>}
+        {importErrors.length > 0 && (
+          <div id="rta-import-error" role="alert" className="rta-error">
+            {importErrors.map(problem => <div key={problem}>{problem}</div>)}
+          </div>
+        )}
       </section>
     </div>
   );
