@@ -7,6 +7,16 @@ import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 const build = (over = {}) => new BiglyBTWebUI(makeWebUISettings({ host: "h", port: 9091, ...over }));
 
 describe("BiglyBTWebUI", () => {
+    it("reports authenticated when the rpc endpoint answers 409 with a session id", async () => {
+        queueFetch(mockResponse({ status: 409, headers: { "X-Transmission-Session-Id": "sess-123" } }));
+        await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: true });
+    });
+
+    it("reports an authentication failure when the rpc endpoint answers 401", async () => {
+        queueFetch(mockResponse({ status: 401 }));
+        await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: false });
+    });
+
     it("targets the rpc endpoint for magnets and sends torrent-add json", async () => {
         const fetch = queueFetch(
             mockResponse({ status: 200 }), // session cookie

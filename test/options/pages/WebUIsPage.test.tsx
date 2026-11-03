@@ -3,18 +3,24 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import WebUIsPage from "../../../src/options/pages/WebUIsPage";
-import { GetSettingsMessage, SaveSettingsMessage } from "../../../src/models/messages";
+import { GetSettingsMessage, SaveSettingsMessage, TestConnectionMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/util/serializer";
 import { getDefaultSettings } from "../../../src/util/settings-defaults";
-import { type WebUISettings } from "../../../src/models/webui";
+import { type ConnectionTestResult, type WebUISettings } from "../../../src/models/webui";
 import { makeWebUISettings } from "../../helpers/fixtures";
 
-function respondWithWebUIs(webuiSettings = [makeWebUISettings({ id: "a", name: "Alpha" }), makeWebUISettings({ id: "b", name: "Beta" })]) {
+function respondWithWebUIs(
+    webuiSettings = [makeWebUISettings({ id: "a", name: "Alpha" }), makeWebUISettings({ id: "b", name: "Beta" })],
+    connectionTest?: ConnectionTestResult,
+) {
     const settings = getDefaultSettings();
     settings.webuiSettings = webuiSettings;
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
         if (message.action === GetSettingsMessage.action) {
             return Promise.resolve(serializeSettings(settings));
+        }
+        if (message.action === TestConnectionMessage.action && connectionTest) {
+            return Promise.resolve(connectionTest);
         }
         return Promise.resolve();
     });
@@ -167,5 +173,29 @@ describe("WebUIsPage", () => {
         expect(within(labelsAndDirs).getByText("Labels for per-torrent selection")).toBeInTheDocument();
         expect(within(labelsAndDirs).getByText("Default Directory")).toBeInTheDocument();
         expect(within(labelsAndDirs).getByText("Directories for per-torrent selection")).toBeInTheDocument();
+    });
+
+    it("shows a warning when the connection is reachable but not verified", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })], {
+            reachable: true, authenticated: null, httpResponseCode: 500, message: "Reachable, but the server answered HTTP 500; credentials could not be verified",
+        });
+        renderPage();
+
+        const general = await screen.findByRole("region", { name: "General" });
+        await userEvent.click(within(general).getByRole("button", { name: "Test connection" }));
+
+        expect(await within(general).findByText(/^⚠ Reachable, but the server answered HTTP 500/)).toBeInTheDocument();
+    });
+
+    it("shows a check mark when the connection is authenticated", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })], {
+            reachable: true, authenticated: true, httpResponseCode: 200, message: "Reachable & authenticated",
+        });
+        renderPage();
+
+        const general = await screen.findByRole("region", { name: "General" });
+        await userEvent.click(within(general).getByRole("button", { name: "Test connection" }));
+
+        expect(await within(general).findByText("✅ Reachable & authenticated")).toBeInTheDocument();
     });
 });

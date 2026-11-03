@@ -2,9 +2,13 @@ import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { blobToBase64 } from "../util/converter";
 
+/** Transmission answers an authenticated request without a session id with 409 + the session id header. */
+export const isTransmissionSessionHandshake = (response: Response): boolean =>
+    response.status === 409 && response.headers.get("X-Transmission-Session-Id") !== null;
+
 export class TransmissionWebUI extends TorrentWebUI {
     public override testConnection(): Promise<ConnectionTestResult> {
-        return this.probeWithBasicAuth(this.createBaseUrl() + "/transmission/rpc");
+        return this.probeWithBasicAuth(this.createBaseUrl() + "/transmission/rpc", isTransmissionSessionHandshake);
     }
 
     public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {

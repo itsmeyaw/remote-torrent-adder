@@ -3,6 +3,7 @@ import { TorrentWebUI } from "../../src/models/webui";
 import type { ClientSpecificSettingDescriptor, TorrentAddingResult } from "../../src/models/webui";
 import type { TorrentUploadConfig } from "../../src/models/torrent";
 import { makeWebUISettings } from "../helpers/fixtures";
+import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 
 /**
  * Minimal concrete subclass that exposes the protected helpers so the base
@@ -41,6 +42,9 @@ class TestWebUI extends TorrentWebUI {
     }
     publicFetch(url: string, options?: RequestInit) {
         return this.fetch(url, options);
+    }
+    publicProbeWithBasicAuth(url: string, isAuthenticated?: (response: Response) => boolean) {
+        return this.probeWithBasicAuth(url, isAuthenticated);
     }
 }
 
@@ -178,5 +182,47 @@ describe("fetch", () => {
             status: 500,
             body: "boom",
         });
+    });
+});
+
+describe("probeWithBasicAuth", () => {
+    const probeWithStatus = (status: number) => {
+        queueFetch(mockResponse({ status }));
+        return build().publicProbeWithBasicAuth("http://x/");
+    };
+
+    it("reports authenticated on a 2xx response", async () => {
+        expect(await probeWithStatus(200)).toEqual({
+            reachable: true,
+            authenticated: true,
+            httpResponseCode: 200,
+            message: "Reachable & authenticated",
+        });
+    });
+
+    it("reports an authentication failure on 401 and 403", async () => {
+        for (const status of [401, 403]) {
+            expect(await probeWithStatus(status)).toMatchObject({ reachable: true, authenticated: false, httpResponseCode: status });
+        }
+    });
+
+    it("reports reachable but not verified on 404 and 500", async () => {
+        for (const status of [404, 500]) {
+            expect(await probeWithStatus(status)).toMatchObject({
+                reachable: true,
+                authenticated: null,
+                httpResponseCode: status,
+            });
+        }
+    });
+
+    it("reports reachable but not verified with a message that does not blame the path on 5xx", async () => {
+        expect((await probeWithStatus(500)).message).toBe("Reachable, but the server answered HTTP 500; credentials could not be verified");
+    });
+
+    it("accepts a response the client itself recognises as authenticated", async () => {
+        const isAuthenticated = (response: Response) => response.status === 409;
+        queueFetch(mockResponse({ status: 409 }));
+        expect(await build().publicProbeWithBasicAuth("http://x/", isAuthenticated)).toMatchObject({ reachable: true, authenticated: true });
     });
 });
