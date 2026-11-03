@@ -44,6 +44,7 @@ describe("mode routing", () => {
         render(<Home />);
 
         expect(await screen.findByText("Nothing to add")).toBeInTheDocument();
+        expect(loadPopupData).toHaveBeenCalledWith("");
     });
 
     it("renders the WebUI picker when mode=picker", () => {

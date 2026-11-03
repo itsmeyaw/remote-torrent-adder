@@ -9,6 +9,8 @@ import { describe, it, expect } from "vitest";
 import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "../../src/util/buffered-torrent";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 
+const HOUR_MS = 60 * 60 * 1000;
+
 describe("buffered torrent store", () => {
     it("returns null when no torrent is buffered under that id", async () => {
         expect(await readBufferedTorrent("unknown")).toBeNull();
@@ -77,6 +79,37 @@ describe("buffered torrent store", () => {
 
         expect(await readBufferedTorrent(first)).toBeNull();
         expect((await readBufferedTorrent(second))!.torrent.name).toBe("second");
+    });
+
+    it("keeps a record saved less than 24 hours ago when a later one is saved", async () => {
+        vi.useFakeTimers({ toFake: ["Date"] });
+        try {
+            const savedAt = Date.now();
+            vi.setSystemTime(savedAt);
+            const older = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "older" }), webUiSettings: makeWebUISettings() });
+            vi.setSystemTime(savedAt + 23 * HOUR_MS);
+            await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "later" }), webUiSettings: makeWebUISettings() });
+
+            expect((await readBufferedTorrent(older))!.torrent.name).toBe("older");
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it("prunes a record older than 24 hours on the next save", async () => {
+        vi.useFakeTimers({ toFake: ["Date"] });
+        try {
+            const savedAt = Date.now();
+            vi.setSystemTime(savedAt);
+            const expired = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "expired" }), webUiSettings: makeWebUISettings() });
+            vi.setSystemTime(savedAt + 25 * HOUR_MS);
+            const fresh = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "fresh" }), webUiSettings: makeWebUISettings() });
+
+            expect(await readBufferedTorrent(expired)).toBeNull();
+            expect((await readBufferedTorrent(fresh))!.torrent.name).toBe("fresh");
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it("tolerates clearing when nothing is buffered", async () => {

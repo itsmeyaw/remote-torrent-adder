@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, vi } from "vitest";
-import { IDBFactory } from "fake-indexeddb";
+import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
 import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { createChromeMock } from "./helpers/chrome-mock";
@@ -12,6 +12,7 @@ beforeEach(() => {
     (globalThis as any).chrome = createChromeMock();
     (globalThis as any).fetch = vi.fn();
     (globalThis as any).indexedDB = new IDBFactory();
+    (globalThis as any).IDBKeyRange = IDBKeyRange;
 });
 
 // Unmount anything a component test rendered, so the next test starts on an

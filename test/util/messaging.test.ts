@@ -306,6 +306,7 @@ describe("AddTorrent flow", () => {
         });
         await new Promise((r) => setTimeout(r, 0));
 
+        expect(await readBufferedTorrent(bufferedId)).toBeNull();
     });
 
     it("reports an error when the popup adds with nothing buffered", async () => {
