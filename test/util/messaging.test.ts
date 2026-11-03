@@ -84,6 +84,13 @@ describe("registerMessageListener routing", () => {
         expect(deserializeSettings((chrome as any).__storage.settings)!.notificationsSoundEnabled).toBe(true);
     });
 
+    it.each([[""], ["null"]])("rejects a SaveSettings payload that is not a settings object (%j) and keeps the stored settings", async (settings) => {
+        const before = (chrome as any).__storage.settings;
+        const response = await dispatch({ action: SaveSettingsMessage.action, settings });
+        expect(response).toEqual({ error: "SaveSettings payload is not a settings object" });
+        expect((chrome as any).__storage.settings).toBe(before);
+    });
+
     it("shows a notification for TestNotification", async () => {
         await dispatch({
             action: TestNotificationMessage.action,
