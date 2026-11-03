@@ -28,16 +28,20 @@ export class DelugeWebUI extends TorrentWebUI {
                 ? (torrent.data as string)
                 : await this.uploadTorrentFile(torrent);
 
-            let result = await this.startUploadedTorrent(pathOrMagnet, config);
+            const result = await this.startUploadedTorrent(pathOrMagnet, config);
 
             const label = this.getLabel(config);
-            if (result.success && label) {
-                const torrentId: string = JSON.parse(result.httpResponseBody ?? "")["result"][0][1];
-                const labelResult = await this.setLabelOnAuthenticatedSession(torrentId, label);
-                result = { ...labelResult, httpResponseBody: result.httpResponseBody };
+            if (!result.success || !label) {
+                return result;
             }
-
-            return result;
+            const warning = await this.runFollowUp(`Label "${label}" was not applied`, () => {
+                const torrentId: string | undefined = JSON.parse(result.httpResponseBody ?? "")["result"][0][1];
+                if (!torrentId) {
+                    throw new Error("the added torrent's id is missing from the response");
+                }
+                return this.setLabelOnAuthenticatedSession(torrentId, label);
+            });
+            return { ...result, warning };
         } catch (error) {
             return this.toFailureResult(error);
         }

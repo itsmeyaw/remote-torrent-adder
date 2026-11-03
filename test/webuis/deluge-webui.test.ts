@@ -70,6 +70,40 @@ describe("DelugeWebUI", () => {
         expect(labelAdd.params).toEqual(["shows"]); // default label, lower-cased
     });
 
+    it("keeps the add a success and warns when the label cannot be added", async () => {
+        queueFetch(
+            authOk(),
+            addOk(),
+            mockResponse({ status: 500, body: "server error" }), // label.add
+        );
+        const result = await build().sendTorrent(makeMagnetTorrent(), { label: "Movies" });
+
+        expect(result).toMatchObject({ success: true, httpResponseCode: 200 });
+        expect(result.warning).toContain('Label "Movies" was not applied');
+    });
+
+    it("keeps the add a success and warns when label.set_torrent reports an error", async () => {
+        queueFetch(
+            authOk(),
+            addOk(),
+            mockResponse({ status: 200, json: {} }), // label.add
+            mockResponse({ status: 200, json: { result: null, error: { message: "Unknown Torrent" } } }),
+        );
+        const result = await build().sendTorrent(makeMagnetTorrent(), { label: "Movies" });
+
+        expect(result.success).toBe(true);
+        expect(result.warning).toContain('Label "Movies" was not applied');
+    });
+
+    it("keeps the add a success and warns without sending a label when the add response has no torrent id", async () => {
+        const fetch = queueFetch(authOk(), mockResponse({ status: 200, json: { result: [[true]] } }));
+        const result = await build().sendTorrent(makeMagnetTorrent(), { label: "Movies" });
+
+        expect(result.success).toBe(true);
+        expect(result.warning).toContain('Label "Movies" was not applied');
+        expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
     it("reports failure when authentication result is false", async () => {
         queueFetch(mockResponse({ status: 200, json: { result: false } }));
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({ success: false });
