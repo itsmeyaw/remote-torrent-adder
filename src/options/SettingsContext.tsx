@@ -18,18 +18,26 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<RTASettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   // Serialized settings this page sent and has not seen echoed back by storage yet.
   const pendingSaves = useRef<string[]>([]);
 
   // Fetch settings from service worker on mount
   useEffect(() => {
     let cancelled = false;
-    void requestSerializedSettings().then((serializedSettings) => {
-      if (cancelled) return;
-      const settings: RTASettings | null = serializedSettings ? deserializeSettings(serializedSettings) : null;
-      setSettings(settings);
-      setLoading(false);
-    });
+    void requestSerializedSettings()
+      .then((serializedSettings) => {
+        const settings = serializedSettings ? deserializeSettings(serializedSettings) : null;
+        if (!settings) throw new Error("The service worker returned no settings.");
+        if (!cancelled) setSettings(settings);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed loading settings", error);
+        if (!cancelled) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -68,7 +76,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <SettingsContext.Provider value={{ settings, setSettings: saveSettings, updateSetting, loading }}>
-      {children}
+      {loadFailed ? (
+        <div role="alert" className="rta-error">
+          Could not load settings. Reload this page to try again.
+        </div>
+      ) : children}
     </SettingsContext.Provider>
   );
 };

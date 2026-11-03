@@ -142,6 +142,22 @@ describe("SettingsContext", () => {
         expect(screen.getByTestId("duration")).toHaveTextContent("9999");
     });
 
+    it("shows an error instead of loading forever when settings cannot be read", async () => {
+        renderProbe();
+
+        expect(await screen.findByRole("alert")).toHaveTextContent("Could not load settings");
+        expect(screen.queryByText("loading")).not.toBeInTheDocument();
+        expect(screen.queryByTestId("duration")).not.toBeInTheDocument();
+    });
+
+    it("shows the same error when the stored settings cannot be parsed", async () => {
+        (chrome.runtime.sendMessage as any).mockImplementation(() => Promise.resolve("{not json"));
+
+        renderProbe();
+
+        expect(await screen.findByRole("alert")).toHaveTextContent("Could not load settings");
+    });
+
     it("throws when used outside a provider, rather than silently returning nothing", () => {
         expect(() => render(<Probe />)).toThrow(/must be used within a SettingsProvider/);
     });
