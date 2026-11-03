@@ -1,9 +1,10 @@
-import { sendMessageAndForget } from "../util/browser-api";
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { ext, sendMessageAndForget } from "../util/browser-api";
+import React, { createContext, useContext, useRef, useState, useEffect } from "react";
 import type { RTASettings } from "../models/settings";
 import { SaveSettingsMessage } from "../models/messages";
 import { deserializeSettings, serializeSettings } from "../util/serializer";
 import { requestSerializedSettings } from "../util/request-settings";
+import { SETTINGS_KEY } from "../util/settings";
 
 interface SettingsContextType {
   settings: RTASettings | null;
@@ -14,28 +15,60 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
+type StorageChangedListener = Parameters<typeof ext.storage.local.onChanged.addListener>[0];
+
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<RTASettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Serialized settings this page sent and has not seen echoed back by storage yet.
+  const pendingSaves = useRef<string[]>([]);
 
   // Fetch settings from service worker on mount
   useEffect(() => {
     let cancelled = false;
-    void requestSerializedSettings().then((serializedSettings) => {
-      if (cancelled) return;
-      const settings: RTASettings | null = serializedSettings ? deserializeSettings(serializedSettings) : null;
-      setSettings(settings);
-      setLoading(false);
-    });
+    void requestSerializedSettings()
+      .then((serializedSettings) => {
+        const settings = serializedSettings ? deserializeSettings(serializedSettings) : null;
+        if (!settings) throw new Error("The service worker returned no settings.");
+        if (!cancelled) setSettings(settings);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed loading settings", error);
+        if (!cancelled) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
   }, []);
 
+  // The background writes settings too (e.g. new Label/Directory Lists), so take those
+  // in; the echo of this page's own saves is skipped, or it would undo a newer edit.
+  useEffect(() => {
+    const onChanged: StorageChangedListener = (changes) => {
+      const newValue = changes[SETTINGS_KEY]?.newValue as string | undefined;
+      if (newValue === undefined) return;
+      const echoIndex = pendingSaves.current.indexOf(newValue);
+      if (echoIndex >= 0) {
+        pendingSaves.current.splice(0, echoIndex + 1);
+        return;
+      }
+      const next = deserializeSettings(newValue);
+      if (next) setSettings(next);
+    };
+    ext.storage.local.onChanged.addListener(onChanged);
+    return () => ext.storage.local.onChanged.removeListener(onChanged);
+  }, []);
+
   // Save settings to service worker whenever they change
   const saveSettings = (newSettings: RTASettings) => {
     setSettings(newSettings);
-    sendMessageAndForget({ action: SaveSettingsMessage.action, settings: serializeSettings(newSettings) });
+    const serialized = serializeSettings(newSettings);
+    pendingSaves.current.push(serialized);
+    sendMessageAndForget({ action: SaveSettingsMessage.action, settings: serialized });
   };
 
   const updateSetting = <K extends keyof RTASettings>(key: K, value: RTASettings[K]) => {
@@ -46,7 +79,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <SettingsContext.Provider value={{ settings, setSettings: saveSettings, updateSetting, loading }}>
-      {children}
+      {loadFailed ? (
+        <div role="alert" className="rta-error">
+          Could not load settings. Reload this page to try again.
+        </div>
+      ) : children}
     </SettingsContext.Provider>
   );
 };
