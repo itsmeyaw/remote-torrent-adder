@@ -310,7 +310,8 @@ async function addBufferedTorrent(message: IAddTorrentMessageWithLabelAndDir, se
     }
 
     await sendTorrentToWebUi(webUi, buffered.torrent, message.config);
-    await clearBufferedTorrent();
+    // The Add already succeeded; failing here would invite a retry that adds the torrent twice.
+    await clearBufferedTorrent().catch(e => console.error("Failed clearing the buffered torrent", e));
     await updateWebUiSettingsForWebUi(settingsProvider, message.webUiId, message.labels, message.directories)
         .catch(e => console.error("Failed updating labels/dirs", e));
 }
