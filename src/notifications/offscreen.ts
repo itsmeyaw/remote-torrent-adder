@@ -1,6 +1,6 @@
 import { ext } from "../util/browser-api";
 import { type IPlaySoundMessage, PlaySoundMessage } from "../models/messages";
-import { playNotificationSound } from "../util/play-sound";
+import { playNotificationSound } from "./play-sound";
 
 ext.runtime.onMessage.addListener(message => {
     if (message.action === PlaySoundMessage.action) {

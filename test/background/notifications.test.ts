@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { showNotification, registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from "../../src/util/notifications";
+import { showNotification, registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from "../../src/background/notifications";
 import { BROWSER } from "../../src/util/platform";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
 
@@ -114,7 +114,7 @@ describe("showNotification", () => {
         await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
 
         vi.resetModules();
-        const restarted = await import("../../src/util/notifications");
+        const restarted = await import("../../src/background/notifications");
         restarted.registerNotificationClickListener();
         const onClicked = (chrome.notifications.onClicked.addListener as any).mock.calls[0][0];
 
@@ -170,7 +170,7 @@ describe("showNotification", () => {
         await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalledTimes(2));
 
         vi.resetModules();
-        const restarted = await import("../../src/util/notifications");
+        const restarted = await import("../../src/background/notifications");
         restarted.registerNotificationCleanupListeners();
         firedAlarm("notification-cleanup:notif-id");
 
@@ -185,7 +185,7 @@ describe("showNotification", () => {
         await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalledTimes(2));
 
         vi.resetModules();
-        const restarted = await import("../../src/util/notifications");
+        const restarted = await import("../../src/background/notifications");
         restarted.registerNotificationCleanupListeners();
         const onClosed = (chrome.notifications.onClosed.addListener as any).mock.calls[0][0];
         onClosed("notif-id", true);

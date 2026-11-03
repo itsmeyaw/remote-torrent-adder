@@ -1,12 +1,12 @@
 import { ext } from './util/browser-api';
-import { refreshContextMenu, registerContextMenuClickListener } from './util/context-menu';
-import { registerAuthenticationListener } from './util/authentication-listener';
+import { refreshContextMenu, registerContextMenuClickListener } from './background/context-menu';
+import { registerAuthenticationListener } from './background/authentication-listener';
 import { SETTINGS_KEY } from './settings/settings';
-import { registerMessageListener } from './util/messaging';
-import { registerActionClickListener } from './util/action';
+import { registerMessageListener } from './background/messaging';
+import { registerActionClickListener } from './background/action';
 import { loadWebUis } from './settings/webuis';
-import { clearDynamicRules, registerCorsCircumventionForWebUis } from './util/cors-tricks';
-import { registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from './util/notifications';
+import { clearDynamicRules, registerCorsCircumventionForWebUis } from './background/cors-tricks';
+import { registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from './background/notifications';
 
 
 registerMessageListener();

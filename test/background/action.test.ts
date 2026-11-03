@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { registerActionClickListener, openPrimaryWebUi, updateBadgeText, addTrailingSlash } from "../../src/util/action";
+import { registerActionClickListener, openPrimaryWebUi, updateBadgeText, addTrailingSlash } from "../../src/background/action";
 import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { serializeSettings } from "../../src/settings/serializer";
 import { SETTINGS_KEY } from "../../src/settings/settings";

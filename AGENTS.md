@@ -33,8 +33,13 @@ For Firefox, `pnpm run dev:firefox` launches a scratch profile with `dist/firefo
 - **`src/webuis/<name>-webui.ts`** — one class per BitTorrent client (13), extends `TorrentWebUI`
 - **`src/models/clients.ts`** — `Client` enum + `ClientDisplayName` + `ClientClassByClient` + `WebUIFactory`
 - **`src/models/webui.ts`** — abstract `TorrentWebUI` base class
+- **`src/background/`** — code only the service worker runs: messaging, context menu, action, notifications, auth listener, CORS rules, Buffered Torrent storage
+- **`src/torrent/`** — reading a Torrent: bencode, Declared Name/Tracker parsing, Torrent File download, Info Hash, Auto Label/Dir matching
+- **`src/settings/`** — settings load/save, serializer, defaults, validation, WebUI setup
+- **`src/notifications/`** — the offscreen document that plays notification sounds (`play-sound.ts`, `sound-storage.ts`)
 - **`src/util/browser-api.ts`** — the `ext` shim; **all** extension API calls go through it
 - **`src/util/platform.ts`** — build-time browser constant (`isFirefox()`, `canUseOffscreen()`)
+- **`src/util/errors.ts`** / **`src/util/idb.ts`** — `HandledFailure`; the IndexedDB promise wrapper
 - **`scripts/build.ts` / `scripts/browsers.ts` / `scripts/generate-manifest.ts`** — the build matrix and the derived Firefox manifest
 - **`test/`** — vitest suite mirroring `src/`; every client has a `test/webuis/<name>-webui.test.ts`
 - **`e2e/`** — Playwright drives Chrome; `e2e/firefox/` drives real Firefox through geckodriver

@@ -1,7 +1,7 @@
 import { ext } from "../util/browser-api";
 import { type RTASettings } from "../models/settings";
 import { migrateSettingsClientIdentifiers } from "./legacy-client-identifiers";
-import { showNotification } from "../util/notifications";
+import { showNotification } from "../background/notifications";
 import { serializeSettings, deserializeSettings } from "./serializer";
 import { getDefaultSettings } from "./settings-defaults";
 

@@ -2,13 +2,13 @@
 
 Project-specific security checklist for Remote Torrent Adder. The built-in `/security-review` is generic; this one targets the surfaces this extension actually has. Use alongside `rta-code-review.md`.
 
-Several of these properties are already asserted by the test suite — `test/util/cors-tricks.test.ts` covers rule scoping and cleanup, `test/settings/settings.test.ts` covers credential storage round-trips, and `test/torrent/parsers.test.ts` / `test/torrent/download.test.ts` cover malformed torrent input. Run `pnpm test` first, and when you find a gap here, close it with a test rather than only a note.
+Several of these properties are already asserted by the test suite — `test/background/cors-tricks.test.ts` covers rule scoping and cleanup, `test/settings/settings.test.ts` covers credential storage round-trips, and `test/torrent/parsers.test.ts` / `test/torrent/download.test.ts` cover malformed torrent input. Run `pnpm test` first, and when you find a gap here, close it with a test rather than only a note.
 
 ## Attack surfaces in this extension
 
 - **Content script** runs on `<all_urls>` (`src/content-script/rta.ts`, declared in `src/manifest.json`). Any compromise here runs on every site the user visits.
 - **Service worker** holds decrypted client credentials in memory while processing a request, has `<all_urls>` host permissions, and can issue arbitrary `fetch()` to user-configured hosts.
-- **`declarativeNetRequest`** rules strip `Origin` and set `Referer` per configured WebUI (`src/util/cors-tricks.ts`). Mis-scoped rules turn the extension into a CORS-bypass oracle for arbitrary sites.
+- **`declarativeNetRequest`** rules strip `Origin` and set `Referer` per configured WebUI (`src/background/cors-tricks.ts`). Mis-scoped rules turn the extension into a CORS-bypass oracle for arbitrary sites.
 - **Stored credentials** (host/port/username/password per WebUI) live in `ext.storage.local` (`storage.local` on both browsers, reached through the `ext` shim).
 - **Torrent file parsing**: bencode is parsed from URLs the user clicks (`src/torrent/download.ts`, `src/torrent/parsers.ts`).
 - **Link-catching regexes** are user-editable (`linkCatchingRegexes`) and tested against URLs in the content script.
@@ -38,7 +38,7 @@ Several of these properties are already asserted by the test suite — `test/uti
 - [ ] No module-level mutable state caching credentials between events (MV3 stateless rule — also a security property: a compromise in one event-handler frame doesn't leak into the next).
 - [ ] Error messages bubbled into notifications/UI do not include the full response body when it might contain session tokens or other secrets. (`TorrentAddingResult.httpResponseBody` is shown to the user — acceptable for HTTP error pages, but flag if it would include credentials echoed back.)
 
-### CORS bypass (`src/util/cors-tricks.ts`)
+### CORS bypass (`src/background/cors-tricks.ts`)
 
 - [ ] Each `declarativeNetRequest` rule's `condition.urlFilter` / `regexFilter` is scoped to the user's configured WebUI base URL — never `<all_urls>` or `*://*/*`.
 - [ ] Rule IDs are unique integers and removed when the WebUI is deleted. A leaked rule that applies to a host the user no longer trusts is a real risk.

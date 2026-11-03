@@ -1,4 +1,4 @@
-import { ext } from "./browser-api";
+import { ext } from "../util/browser-api";
 import {
     AddTorrentMessage,
     GetSettingsMessage,
@@ -30,7 +30,7 @@ import { openActionPopup, openPopupWindow, openWebUi, updateBadgeText } from "./
 import { getAutoDirResult, getAutoLabelResult } from "../torrent/auto-label-dir-matcher";
 import { executeMethodWrappedWithOriginStripped } from "./cors-tricks";
 import { CloudflareChallengeError, downloadTorrent, type TorrentDownloadContext } from "../torrent/download";
-import { HandledFailure } from "./errors";
+import { HandledFailure } from "../util/errors";
 import { computeInfoHash } from "../torrent/info-hash";
 import { type NotificationLabelAction, showNotification } from "./notifications";
 import { serializeSettings, serializeObject, deserializeSettings } from "../settings/serializer";

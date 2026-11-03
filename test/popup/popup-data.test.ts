@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { loadPopupData, submitTorrent } from "../../src/popup/popup-data";
-import { saveBufferedTorrent } from "../../src/util/buffered-torrent";
+import { saveBufferedTorrent } from "../../src/background/buffered-torrent";
 import { AddTorrentMessageWithLabelAndDir } from "../../src/models/messages";
 import { Client } from "../../src/models/clients";
 import { makeMagnetTorrent, makeWebUISettings } from "../helpers/fixtures";

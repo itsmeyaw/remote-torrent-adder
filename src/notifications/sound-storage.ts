@@ -6,7 +6,7 @@
 // extension contexts of the same origin (options page, offscreen document),
 // so the offscreen player can read a sound back and play it directly.
 
-import { type IdbStore, withStore } from "./idb";
+import { type IdbStore, withStore } from "../util/idb";
 
 export type SoundKind = "success" | "failure";
 

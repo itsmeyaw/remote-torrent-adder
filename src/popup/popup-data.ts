@@ -4,7 +4,7 @@ import { AddTorrentMessageWithLabelAndDir, type IAddTorrentMessageWithLabelAndDi
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ClientSpecificSettingDescriptor, resolveClientSpecificSetting, type WebUISettings } from "../models/webui";
 import { getAutoDirResult, getAutoLabelResult } from "../torrent/auto-label-dir-matcher";
-import { readBufferedTorrent } from "../util/buffered-torrent";
+import { readBufferedTorrent } from "../background/buffered-torrent";
 
 /**
  * Everything the popup needs, resolved once before the form is rendered, so the

@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const { withStore } = vi.hoisted(() => ({ withStore: vi.fn() }));
 vi.mock("../../src/util/idb", () => ({ withStore }));
 
-import { readBufferedTorrent } from "../../src/util/buffered-torrent";
+import { readBufferedTorrent } from "../../src/background/buffered-torrent";
 import { makeWebUISettings, makeFileTorrent, makeMagnetTorrent } from "../helpers/fixtures";
 
 describe("readBufferedTorrent detaching the payload", () => {

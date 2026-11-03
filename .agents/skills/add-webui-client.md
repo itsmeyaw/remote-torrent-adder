@@ -229,6 +229,6 @@ Adding a client touches several files and is usually worth a `.tmp/add-client-<c
 ## Notes
 
 - The CORS bypass (removing Origin, setting Referer) is applied automatically by `cors-tricks.ts` for each configured WebUI — you don't need to handle this in the client class.
-- If the client needs custom state persisted across service-worker restarts, use the IndexedDB helper in `src/util/idb.ts`, not `ext.storage.session` — the session area is size-capped, which is why `src/util/buffered-torrent.ts` avoids it. And never reach for the bare `chrome` namespace: everything goes through `ext` from `src/util/browser-api.ts`.
+- If the client needs custom state persisted across service-worker restarts, use the IndexedDB helper in `src/util/idb.ts`, not `ext.storage.session` — the session area is size-capped, which is why `src/background/buffered-torrent.ts` avoids it. And never reach for the bare `chrome` namespace: everything goes through `ext` from `src/util/browser-api.ts`.
 - Extra per-client options go through the **descriptor** system, not a new `WebUISettings` field: declare a `ClientSpecificSettingDescriptor` on the class and read it with `this.getClientSpecific(key, config)`. The options page and (when `perTorrent` is true) the popup render it automatically — see `qbittorrent-webui.ts`, `rutorrent-webui.ts`, and `.agents/skills/add-setting.md`.
 - The supported-client list and count appear in `.agents/README.md`, the root `README.md`, `AGENTS.md`, and the row table in `.agents/skills/smoke-test-matrix.md`. Update all four, or they go stale.

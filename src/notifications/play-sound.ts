@@ -1,4 +1,4 @@
-import { ext } from "./browser-api";
+import { ext } from "../util/browser-api";
 import { getCustomSound, type SoundKind } from "./sound-storage";
 
 export async function playNotificationSound(isFailed: boolean): Promise<void> {

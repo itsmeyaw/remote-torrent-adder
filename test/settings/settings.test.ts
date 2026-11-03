@@ -6,9 +6,9 @@ import { Client } from "../../src/models/clients";
 import { type RTASettings } from "../../src/models/settings";
 import { makeWebUISettings } from "../helpers/fixtures";
 import { at } from "../helpers/assert";
-import { showNotification } from "../../src/util/notifications";
+import { showNotification } from "../../src/background/notifications";
 
-vi.mock("../../src/util/notifications", () => ({ showNotification: vi.fn() }));
+vi.mock("../../src/background/notifications", () => ({ showNotification: vi.fn() }));
 
 beforeEach(() => {
     vi.mocked(showNotification).mockClear();

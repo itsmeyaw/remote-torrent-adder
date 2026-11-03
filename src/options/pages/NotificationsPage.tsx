@@ -2,7 +2,7 @@ import { sendMessageAndForget } from "../../util/browser-api";
 import { useEffect, useRef, useState } from "react";
 import { useSettings } from "../SettingsContext";
 import { type ITestNotificationMessage, TestNotificationMessage } from "../../models/messages";
-import { deleteCustomSound, getCustomSound, saveCustomSound, type SoundKind } from "../../util/sound-storage";
+import { deleteCustomSound, getCustomSound, saveCustomSound, type SoundKind } from "../../notifications/sound-storage";
 import Toggle from "../components/Toggle";
 import { isFirefox } from "../../util/platform";
 

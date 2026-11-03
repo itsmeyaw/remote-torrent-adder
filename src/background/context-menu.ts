@@ -1,10 +1,10 @@
-import { ext } from "./browser-api";
+import { ext } from "../util/browser-api";
 import { type TorrentWebUI } from "../models/webui";
 import OnClickData = chrome.contextMenus.OnClickData;
 import Tab = chrome.tabs.Tab;
 import { type IPreAddTorrentMessage, PreAddTorrentMessage } from "../models/messages";
 import { type TorrentDownloadContext } from "../torrent/download";
-import { HandledFailure } from "./errors";
+import { HandledFailure } from "../util/errors";
 import { addTorrentToWebUiById, dispatchPreAddTorrent } from "./messaging";
 import { loadWebUis } from "../settings/webuis";
 import { showNotification } from "./notifications";

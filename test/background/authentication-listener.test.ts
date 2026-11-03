@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { registerAuthenticationListener, rememberWebUiTab, resolveAuthCredentials } from "../../src/util/authentication-listener";
+import { registerAuthenticationListener, rememberWebUiTab, resolveAuthCredentials } from "../../src/background/authentication-listener";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
 
 const webUiSettings = (over = {}) => makeWebUISettings({ host: "h", port: 8080, ...over });
@@ -159,7 +159,7 @@ describe("resolveAuthCredentials", () => {
         });
 
         vi.resetModules();
-        const restarted = await import("../../src/util/authentication-listener");
+        const restarted = await import("../../src/background/authentication-listener");
 
         expect(await restarted.resolveAuthCredentials(details)).toEqual({});
     });
