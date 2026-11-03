@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type JSX } from "react";
 import Toggle from "../components/Toggle";
 import { useSettings } from "../SettingsContext";
 import { isMatchedByRegexes } from "../../util/utils";
+import { chipClass, chipInputClass, inputClass, monoInputClass, primaryButtonClass } from "../ui-classes";
 
 function regexToString(r: RegExp): string {
   return r.source;
@@ -81,31 +82,20 @@ export default function LinkCatchingPage(): JSX.Element {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="mb-4">
         <Toggle
           checked={settings.linkCatchingEnabled}
           onChange={v => updateSetting("linkCatchingEnabled", v)}
           label="Enable link catching"
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ fontWeight: 500, marginBottom: 8, display: "block" }}>Link matching regexes:</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, minHeight: 40 }}>
+      <div className="mb-4">
+        <label className="block mb-2 font-medium">Link matching regexes:</label>
+        <div className="flex flex-wrap gap-2 min-h-10">
           {regexStrings.map((r, idx) => (
             <span
               key={idx}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                background: "var(--rta-chip-bg, #eaf5ea)",
-                border: "1px solid var(--rta-chip-border, #b7c9a7)",
-                borderRadius: 16,
-                padding: "4px 12px",
-                fontFamily: "monospace",
-                fontSize: 15,
-                boxShadow: "0 1px 4px rgba(110,139,116,0.08)",
-                transition: "box-shadow 0.2s"
-              }}
+              className={`${chipClass} shadow-[0_1px_4px_rgba(110,139,116,0.08)] transition-[box-shadow] duration-200`}
             >
               {editIdx === idx ? (
                 <>
@@ -113,82 +103,56 @@ export default function LinkCatchingPage(): JSX.Element {
                     type="text"
                     value={editValue}
                     onChange={e => setEditValue(e.target.value)}
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: 15,
-                      border: "none",
-                      outline: "none",
-                      background: "var(--rta-input-bg, #fff)",
-                      color: "var(--rta-text, #1b241d)",
-                      borderRadius: 8,
-                      padding: "2px 8px",
-                      marginRight: 4
-                    }}
+                    className={chipInputClass}
                   />
-                  <button onClick={() => handleEditSave(idx)} style={{ marginRight: 2, fontSize: 13 }}>✔</button>
-                  <button onClick={() => setEditIdx(null)} style={{ fontSize: 13 }}>✖</button>
-                  {editError && <span role="alert" style={{ color: "var(--rta-danger, #B22222)", fontSize: 13, marginLeft: 6 }}>{editError}</span>}
+                  <button onClick={() => handleEditSave(idx)} className="mr-0.5 text-[13px]">✔</button>
+                  <button onClick={() => setEditIdx(null)} className="text-[13px]">✖</button>
+                  {editError && <span role="alert" className="text-rta-danger text-[13px] ml-1.5">{editError}</span>}
                 </>
               ) : (
                 <>
                   <span>{r}</span>
-                  <button onClick={() => handleEdit(idx)} style={{ marginLeft: 6, fontSize: 13 }}>✎</button>
-                  <button onClick={() => handleRemove(idx)} style={{ marginLeft: 2, fontSize: 13 }}>🗑</button>
+                  <button onClick={() => handleEdit(idx)} className="ml-1.5 text-[13px]">✎</button>
+                  <button onClick={() => handleRemove(idx)} className="ml-0.5 text-[13px]">🗑</button>
                 </>
               )}
             </span>
           ))}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
+        <div className="flex items-center gap-2 mt-3">
           <input
             type="text"
             value={newRegex}
             onChange={e => setNewRegex(e.target.value)}
             placeholder="Add new regex"
-            style={{
-              fontFamily: "monospace",
-              fontSize: 15,
-              border: "1px solid var(--rta-border, #b7c9a7)",
-              background: "var(--rta-input-bg, #fff)",
-              color: "var(--rta-text, #1b241d)",
-              borderRadius: 8,
-              padding: "4px 10px"
-            }}
+            className={monoInputClass}
           />
           <button
             onClick={handleAdd}
-            style={{
-              background: "var(--rta-accent, #b7c9a7)",
-              color: "var(--rta-green-dark, #4e6a57)",
-              border: "none",
-              borderRadius: 8,
-              padding: "4px 12px",
-              fontWeight: 500,
-              cursor: "pointer"
-            }}
+            className={primaryButtonClass}
           >Add</button>
         </div>
-        {addError && <div role="alert" style={{ color: "var(--rta-danger, #B22222)", fontSize: 13, marginTop: 6 }}>{addError}</div>}
+        {addError && <div role="alert" className="text-rta-danger text-[13px] mt-1.5">{addError}</div>}
       </div>
-      <hr style={{ margin: "32px 0 24px 0", border: "none", borderTop: "1px solid var(--rta-border, #b7c9a7)" }} />
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ fontWeight: 500, marginBottom: 8, display: "block" }}>Test your regexes:</label>
+      <hr className="mt-8 mb-6 mx-0 border-0 border-t border-rta-border" />
+      <div className="mb-4">
+        <label className="block mb-2 font-medium">Test your regexes:</label>
         <input
           type="text"
           placeholder="Paste a link to test..."
           value={testerValue}
           onChange={handleTesterChange}
-          style={{ width: "100%", maxWidth: 400, fontSize: 15, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--rta-border, #b7c9a7)", background: "var(--rta-input-bg, #fff)", color: "var(--rta-text, #1b241d)", marginBottom: 12 }}
+          className={`w-full max-w-[400px] mb-3 ${inputClass}`}
         />
         <div>
           {testerValue && (
-            <ul style={{ paddingLeft: 20 }}>
+            <ul className="pl-5">
               {settings.linkCatchingRegexes.map((reg: RegExp, idx: number) => {
                 const match = testRegexSafely(reg, testerValue);
                 return (
-                  <li key={idx} style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: match ? "var(--rta-success, #228B22)" : "var(--rta-danger, #B22222)" }}>
-                    <span style={{ fontFamily: "monospace" }}>{reg.source}</span>
-                    {match ? <span style={{ color: "var(--rta-success, #228B22)" }}>✔</span> : <span style={{ color: "var(--rta-danger, #B22222)" }}>✖</span>}
+                  <li key={idx} className={`flex items-center gap-2 font-semibold ${match ? "text-rta-success" : "text-rta-danger"}`}>
+                    <span className="font-[monospace]">{reg.source}</span>
+                    {match ? <span className="text-rta-success">✔</span> : <span className="text-rta-danger">✖</span>}
                   </li>
                 );
               })}
@@ -196,9 +160,9 @@ export default function LinkCatchingPage(): JSX.Element {
               {(() => {
                 const magnetMatch = testerValue.startsWith && testerValue.startsWith('magnet:');
                 return (
-                  <li style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: magnetMatch ? "var(--rta-success, #228B22)" : "var(--rta-danger, #B22222)" }}>
-                    <span style={{ fontFamily: "monospace" }}>magnet:</span>
-                    {magnetMatch ? <span style={{ color: "var(--rta-success, #228B22)" }}>✔</span> : <span style={{ color: "var(--rta-danger, #B22222)" }}>✖</span>}
+                  <li className={`flex items-center gap-2 font-semibold ${magnetMatch ? "text-rta-success" : "text-rta-danger"}`}>
+                    <span className="font-[monospace]">magnet:</span>
+                    {magnetMatch ? <span className="text-rta-success">✔</span> : <span className="text-rta-danger">✖</span>}
                   </li>
                 );
               })()}

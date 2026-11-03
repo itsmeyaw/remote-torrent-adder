@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { AutoLabelDirSetting } from "../../models/webui";
 import type { Torrent } from "../../models/torrent";
 import {
@@ -8,6 +8,7 @@ import {
 } from "../../util/auto-label-dir-matcher";
 import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../util/torrent-source";
 import { fieldLabel } from "./auto-label-dir-fields";
+import { primaryButtonClass } from "../ui-classes";
 
 interface AutoLabelDirTesterProps {
   settings: AutoLabelDirSetting[];
@@ -19,22 +20,16 @@ interface AutoLabelDirTesterProps {
 
 const MAX_TORRENT_BYTES = 10 * 1024 * 1024;
 
-const monospace: React.CSSProperties = {
-  fontFamily: "monospace",
-  background: "var(--rta-chip-bg, #eaf5ea)",
-  border: "1px solid var(--rta-chip-border, #b7c9a7)",
-  borderRadius: 6,
-  padding: "1px 6px"
-};
+const monospace = "font-[monospace] bg-rta-chip-bg border border-rta-chip-border rounded-md py-px px-1.5";
 
 function Outcome({ caption, value, source }: { caption: string; value: string | null; source: string | null }) {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-      <span style={{ fontWeight: 500, minWidth: 74 }}>{caption}</span>
-      <span style={value ? { ...monospace, fontSize: 15 } : { color: "var(--rta-text-muted, #888)" }}>
+    <div className="flex items-baseline gap-2">
+      <span className="font-medium min-w-[74px]">{caption}</span>
+      <span className={value ? `${monospace} text-[15px]` : "text-rta-text-muted"}>
         {value || "(none)"}
       </span>
-      {source && <span style={{ color: "var(--rta-text-muted, #888)", fontSize: 13 }}>{source}</span>}
+      {source && <span className="text-rta-text-muted text-[13px]">{source}</span>}
     </div>
   );
 }
@@ -44,26 +39,26 @@ function CriterionRow({ evaluation }: { evaluation: AutoLabelDirCriterionEvaluat
 
   const verdict = () => {
     if (invalidPattern) {
-      return <span style={{ color: "var(--rta-danger, #B22222)" }}>❌ invalid regular expression</span>;
+      return <span className="text-rta-danger">❌ invalid regular expression</span>;
     }
     if (!criterion.value) {
-      return <span style={{ color: "var(--rta-text-muted, #888)" }}>✅ empty pattern, always matches</span>;
+      return <span className="text-rta-text-muted">✅ empty pattern, always matches</span>;
     }
     if (!matched) {
-      return <span style={{ color: "var(--rta-danger, #B22222)" }}>❌ no match</span>;
+      return <span className="text-rta-danger">❌ no match</span>;
     }
     const extra = matchedCandidates.length - 1;
     return (
-      <span style={{ color: "var(--rta-success, #228B22)" }}>
+      <span className="text-rta-success">
         ✅ {matchedCandidates[0]}{extra > 0 ? ` (+${extra} more)` : ""}
       </span>
     );
   };
 
   return (
-    <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap", fontSize: 14, marginTop: 4 }}>
-      <span style={{ color: "var(--rta-text-muted, #888)", minWidth: 96 }}>{fieldLabel(criterion.field)}</span>
-      <span style={monospace}>{criterion.value || "(empty)"}</span>
+    <div className="flex gap-2 items-baseline flex-wrap text-[14px] mt-1">
+      <span className="text-rta-text-muted min-w-[96px]">{fieldLabel(criterion.field)}</span>
+      <span className={monospace}>{criterion.value || "(empty)"}</span>
       {verdict()}
     </div>
   );
@@ -83,25 +78,19 @@ function RuleRow({ rule, winningRuleIndex, showLabel, showDir }: {
   if (showDir) outcomeParts.push(`dir ${rule.setting.dir ? `"${rule.setting.dir}"` : "(none)"}`);
 
   return (
-    <div style={{
-      padding: "8px 10px",
-      marginTop: 8,
-      borderRadius: 8,
-      background: "var(--rta-surface, #fff)",
-      border: `1px solid ${isWinner ? "var(--rta-success, #228B22)" : "var(--rta-border, #b7c9a7)"}`
-    }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-        <span style={{ fontWeight: 600 }}>Rule {rule.index + 1}</span>
-        {isWinner && <span style={{ color: "var(--rta-success, #228B22)", fontWeight: 500 }}>✅ applied → {outcomeParts.join(", ")}</span>}
+    <div className={`py-2 px-2.5 mt-2 rounded-lg bg-rta-surface border ${isWinner ? "border-rta-success" : "border-rta-border"}`}>
+      <div className="flex gap-2 items-baseline flex-wrap">
+        <span className="font-semibold">Rule {rule.index + 1}</span>
+        {isWinner && <span className="text-rta-success font-medium">✅ applied → {outcomeParts.join(", ")}</span>}
         {isShadowed && (
-          <span style={{ color: "var(--rta-text-muted, #888)" }}>
+          <span className="text-rta-text-muted">
             ✅ matches, but rule {(winningRuleIndex ?? 0) + 1} wins
           </span>
         )}
-        {!rule.matched && <span style={{ color: "var(--rta-text-muted, #888)" }}>❌ does not match</span>}
+        {!rule.matched && <span className="text-rta-text-muted">❌ does not match</span>}
       </div>
       {rule.criteria.length === 0
-        ? <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 14, marginTop: 4 }}>No criteria — a rule without criteria never matches.</div>
+        ? <div className="text-rta-text-muted text-[14px] mt-1">No criteria — a rule without criteria never matches.</div>
         : rule.criteria.map((evaluation, idx) => <CriterionRow key={idx} evaluation={evaluation} />)}
     </div>
   );
@@ -113,22 +102,22 @@ function TorrentContents({ torrent }: { torrent: Torrent }) {
   const files = torrent.files ?? [];
 
   return (
-    <div style={{ marginTop: 12 }}>
+    <div className="mt-3">
       <button
         onClick={() => setOpen(!open)}
-        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--rta-info, #4682b4)", fontSize: 14 }}>
+        className="bg-transparent border-none p-0 cursor-pointer text-rta-info text-[14px]">
         {open ? "▾" : "▸"} Torrent contents ({trackers.length} {trackers.length === 1 ? "tracker" : "trackers"}, {files.length} {files.length === 1 ? "file" : "files"})
       </button>
       {open && (
-        <div style={{ marginTop: 8, maxHeight: 260, overflowY: "auto", border: "1px solid var(--rta-border, #b7c9a7)", borderRadius: 8, padding: 10, background: "var(--rta-surface, #fff)" }}>
-          <div style={{ fontWeight: 500, marginBottom: 4 }}>Trackers</div>
+        <div className="mt-2 max-h-[260px] overflow-y-auto border border-rta-border rounded-lg p-2.5 bg-rta-surface">
+          <div className="font-medium mb-1">Trackers</div>
           {trackers.length === 0
-            ? <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 14 }}>None.</div>
-            : trackers.map((tracker, idx) => <div key={idx} style={{ fontFamily: "monospace", fontSize: 13 }}>{tracker}</div>)}
-          <div style={{ fontWeight: 500, margin: "10px 0 4px" }}>Files</div>
+            ? <div className="text-rta-text-muted text-[14px]">None.</div>
+            : trackers.map((tracker, idx) => <div key={idx} className="font-[monospace] text-[13px]">{tracker}</div>)}
+          <div className="font-medium mt-2.5 mb-1">Files</div>
           {files.length === 0
-            ? <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 14 }}>None.</div>
-            : files.map((file, idx) => <div key={idx} style={{ fontFamily: "monospace", fontSize: 13 }}>{file}</div>)}
+            ? <div className="text-rta-text-muted text-[14px]">None.</div>
+            : files.map((file, idx) => <div key={idx} className="font-[monospace] text-[13px]">{file}</div>)}
         </div>
       )}
     </div>
@@ -191,9 +180,9 @@ function AutoLabelDirTester({ settings, defaultLabel, defaultDir, showLabel, sho
   const hasNameCriteria = settings.some(setting => setting.criteria.some(criterion => criterion.field === "torrentName"));
 
   return (
-    <div style={{ marginTop: 16, borderTop: "1px solid var(--rta-border, #b7c9a7)", paddingTop: 14 }}>
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>Test these rules</div>
-      <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 13, marginBottom: 10 }}>
+    <div className="mt-4 border-t border-rta-border pt-3.5">
+      <div className="font-semibold mb-1">Test these rules</div>
+      <div className="text-rta-text-muted text-[13px] mb-2.5">
         Drop a .torrent file or paste a magnet link to see which rules would match it. Nothing is uploaded or added to your client.
       </div>
 
@@ -201,17 +190,11 @@ function AutoLabelDirTester({ settings, defaultLabel, defaultDir, showLabel, sho
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files?.[0]); }}
-        style={{
-          border: `2px dashed ${dragging ? "var(--rta-success, #228B22)" : "var(--rta-border, #b7c9a7)"}`,
-          background: dragging ? "var(--rta-chip-bg, #eaf5ea)" : "var(--rta-surface, #fff)",
-          borderRadius: 10,
-          padding: "16px 12px",
-          textAlign: "center"
-        }}>
-        <span style={{ marginRight: 8 }}>Drop a .torrent file here</span>
+        className={`border-2 border-dashed ${dragging ? "border-rta-success bg-rta-chip-bg" : "border-rta-border bg-rta-surface"} rounded-[10px] py-4 px-3 text-center`}>
+        <span className="mr-2">Drop a .torrent file here</span>
         <button
           onClick={() => fileInputRef.current?.click()}
-          style={{ background: "var(--rta-accent, #b7c9a7)", color: "var(--rta-green-dark, #4e6a57)", border: "none", borderRadius: 8, padding: "4px 12px", fontWeight: 500, cursor: "pointer" }}>
+          className={primaryButtonClass}>
           Choose file…
         </button>
         <input
@@ -219,53 +202,53 @@ function AutoLabelDirTester({ settings, defaultLabel, defaultDir, showLabel, sho
           type="file"
           accept=".torrent,application/x-bittorrent"
           onChange={e => handleFile(e.target.files?.[0])}
-          style={{ display: "none" }}
+          className="hidden"
         />
       </div>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+      <div className="flex gap-2 items-center mt-2">
         <input
           type="text"
           value={magnetLink}
           onChange={e => setMagnetLink(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") handleMagnet(); }}
           placeholder="…or paste a magnet link"
-          style={{ flex: 1, minWidth: 0, fontFamily: "monospace", fontSize: 14, border: "1px solid var(--rta-border, #b7c9a7)", background: "var(--rta-input-bg, #fff)", color: "var(--rta-text, #1b241d)", borderRadius: 8, padding: "4px 10px" }}
+          className="flex-1 min-w-0 font-[monospace] text-[14px] border border-rta-border bg-rta-input-bg text-rta-text rounded-lg py-1 px-2.5"
         />
         <button
           onClick={handleMagnet}
-          style={{ background: "var(--rta-accent, #b7c9a7)", color: "var(--rta-green-dark, #4e6a57)", border: "none", borderRadius: 8, padding: "4px 12px", fontWeight: 500, cursor: "pointer" }}>
+          className={primaryButtonClass}>
           Test
         </button>
       </div>
 
-      {error && <div style={{ color: "var(--rta-danger, #B22222)", marginTop: 10 }}>{error}</div>}
+      {error && <div className="text-rta-danger mt-2.5">{error}</div>}
 
       {torrent && explanation && (
-        <div style={{ marginTop: 14, border: "1px solid var(--rta-border, #b7c9a7)", borderRadius: 10, padding: 12, background: "var(--rta-surface-alt, #f7faf7)" }}>
-          <div style={{ display: "flex", gap: 12, alignItems: "baseline", justifyContent: "space-between" }}>
-            <span style={{ fontWeight: 600, wordBreak: "break-all" }}>{torrent.name}</span>
+        <div className="mt-3.5 border border-rta-border rounded-[10px] p-3 bg-rta-surface-alt">
+          <div className="flex gap-3 items-baseline justify-between">
+            <span className="font-semibold break-all">{torrent.name}</span>
             <button
               onClick={clear}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--rta-text-muted, #888)", fontSize: 13 }}>
+              className="bg-transparent border-none cursor-pointer text-rta-text-muted text-[13px]">
               Clear
             </button>
           </div>
 
-          <div style={{ marginTop: 8, marginBottom: 4 }}>
+          <div className="mt-2 mb-1">
             {showLabel && <Outcome caption="Label" value={effectiveLabel} source={labelSource} />}
             {showDir && <Outcome caption="Directory" value={effectiveDir} source={dirSource} />}
           </div>
 
           {torrent.isMagnet && hasFileCriteria && (
-            <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 13, marginTop: 8 }}>
+            <div className="text-rta-text-muted text-[13px] mt-2">
               This is a magnet link, so it carries trackers but no file list — file criteria can never match it.
               {torrent.declaredName ? " Torrent name and tracker criteria still work." : ""}
             </div>
           )}
 
           {!torrent.declaredName && hasNameCriteria && (
-            <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 13, marginTop: 8 }}>
+            <div className="text-rta-text-muted text-[13px] mt-2">
               This torrent declares no name of its own, so torrent name criteria can never match it — “{torrent.name}” is only a stand-in for display.
             </div>
           )}

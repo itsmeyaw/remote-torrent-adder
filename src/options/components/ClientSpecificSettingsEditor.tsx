@@ -12,8 +12,8 @@ interface ClientSpecificSettingsEditorProps {
 const ClientSpecificSettingsEditor: React.FC<ClientSpecificSettingsEditorProps> = ({ descriptors, value, onChange }) => (
   <SettingsGroup title="Client-specific settings">
     {descriptors.map(descriptor => (
-      <div key={descriptor.key} style={{ marginBottom: 12 }}>
-        <span style={{ display: "inline-flex" }} title={descriptor.description}>
+      <div key={descriptor.key} className="mb-3">
+        <span className="inline-flex" title={descriptor.description}>
           <Toggle
             checked={resolveClientSpecificSetting(descriptor.key, descriptors, value)}
             onChange={v => onChange({ ...value, [descriptor.key]: v })}

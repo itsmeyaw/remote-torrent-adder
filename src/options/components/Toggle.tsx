@@ -7,39 +7,22 @@ interface ToggleProps {
 }
 
 const Toggle: React.FC<ToggleProps> = ({ checked, onChange, label }) => (
-  <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-    <span style={{ position: "relative", width: 44, height: 24, display: "inline-block" }}>
+  <label className="flex items-center gap-3 cursor-pointer">
+    <span className="relative inline-block w-11 h-6">
       <input
         type="checkbox"
         checked={checked}
         onChange={e => onChange(e.target.checked)}
-        style={{ opacity: 0, width: 44, height: 24, position: "absolute", left: 0, top: 0, margin: 0, cursor: "pointer" }}
+        className="absolute left-0 top-0 m-0 w-11 h-6 opacity-0 cursor-pointer"
       />
       <span
-        style={{
-          display: "block",
-          width: "100%",
-          height: "100%",
-          borderRadius: 16,
-          background: checked ? "var(--rta-success, #228B22)" : "var(--rta-neutral, #ccc)",
-          transition: "background 0.2s",
-        }}
+        className={`block w-full h-full rounded-2xl transition-colors duration-200 ${checked ? "bg-rta-success" : "bg-rta-neutral"}`}
       ></span>
       <span
-        style={{
-          position: "absolute",
-          top: 2,
-          left: checked ? 20 : 4,
-          width: 20,
-          height: 20,
-          borderRadius: "50%",
-          background: "var(--rta-surface, #fff)",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-          transition: "left 0.2s",
-        }}
+        className={`absolute top-0.5 w-5 h-5 rounded-full bg-rta-surface shadow-[0_1px_4px_rgba(0,0,0,0.4)] transition-[left] duration-200 ${checked ? "left-5" : "left-1"}`}
       ></span>
     </span>
-    <span style={{ fontWeight: 500 }}>{label}</span>
+    <span className="font-medium">{label}</span>
   </label>
 );
 

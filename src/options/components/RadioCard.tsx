@@ -13,19 +13,13 @@ interface RadioCardProps {
 
 const RadioCard: React.FC<RadioCardProps> = ({ name, value, checked, disabled, label, description, note, onChange }) => (
   <label
-    style={{
-      display: "flex",
-      gap: 12,
-      alignItems: "flex-start",
-      padding: "12px 16px",
-      borderRadius: 10,
-      border: `1px solid ${checked ? "var(--rta-accent, #8fae7c)" : "var(--rta-border, #d8e2d3)"}`,
-      background: checked ? "var(--rta-chip-bg, #eaf5ea)" : "var(--rta-surface, #fff)",
-      boxShadow: checked ? "0 1px 4px rgba(110,139,116,0.15)" : "none",
-      opacity: disabled ? 0.5 : 1,
-      cursor: disabled ? "not-allowed" : "pointer",
-      transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s",
-    }}
+    className={[
+      "flex gap-3 items-start py-3 px-4 rounded-[10px] border transition-[border-color,background,box-shadow] duration-150",
+      checked
+        ? "border-rta-accent bg-rta-chip-bg shadow-[0_1px_4px_rgba(110,139,116,0.15)]"
+        : "border-rta-border bg-rta-surface",
+      disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+    ].join(" ")}
   >
     <input
       type="radio"
@@ -34,15 +28,15 @@ const RadioCard: React.FC<RadioCardProps> = ({ name, value, checked, disabled, l
       checked={checked}
       disabled={disabled}
       onChange={() => onChange(value)}
-      style={{ marginTop: 3, accentColor: "var(--rta-green-dark, #4e6a57)" }}
+      className="mt-0.75 accent-rta-green-dark"
     />
     <span>
-      <span style={{ fontWeight: 600, display: "block", color: "var(--rta-text, #1b241d)" }}>{label}</span>
-      <span style={{ color: "var(--rta-text-muted, #6b7a70)", fontSize: 13, display: "block", marginTop: 2, maxWidth: 440 }}>
+      <span className="font-semibold block text-rta-text">{label}</span>
+      <span className="text-rta-text-muted text-[13px] block mt-0.5 max-w-[440px]">
         {description}
       </span>
       {note && (
-        <span style={{ color: "var(--rta-text-muted, #6b7a70)", fontSize: 12, fontStyle: "italic", display: "block", marginTop: 4 }}>
+        <span className="text-rta-text-muted text-[12px] italic block mt-1">
           {note}
         </span>
       )}

@@ -1,5 +1,5 @@
 import { sendMessageAndForget } from "../../util/browser-api";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSettings } from "../SettingsContext";
 import { type ITestNotificationMessage, TestNotificationMessage } from "../../models/messages";
 import { deleteCustomSound, getCustomSound, saveCustomSound, type SoundKind } from "../../util/sound-storage";
@@ -10,48 +10,13 @@ import { isFirefox } from "../../util/platform";
 // into memory to play, so cap the size to keep things snappy.
 const MAX_SOUND_BYTES = 1024 * 1024; // 1 MB
 
-const sectionStyle: CSSProperties = {
-  background: "var(--rta-surface-alt, #f7faf7)",
-  border: "1px solid var(--rta-border, #b7c9a7)",
-  borderRadius: 12,
-  padding: 18,
-  marginBottom: 18,
-};
+const sectionClass = "bg-rta-surface-alt border border-rta-border rounded-xl p-4.5 mb-4.5";
 
-const sectionTitleStyle: CSSProperties = {
-  margin: "0 0 14px 0",
-  fontSize: 13,
-  fontWeight: 700,
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-  color: "var(--rta-green-dark, #4e6a57)",
-};
+const sectionTitleClass = "mt-0 mb-3.5 mx-0 text-[13px] font-bold tracking-[0.6px] uppercase text-rta-green-dark";
 
-const rowStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 12,
-  marginBottom: 14,
-};
+const rowClass = "flex items-center gap-3";
 
-const buttonStyle: CSSProperties = {
-  border: "1px solid var(--rta-border, #b7c9a7)",
-  borderRadius: 8,
-  padding: "6px 14px",
-  background: "var(--rta-surface, #fff)",
-  color: "var(--rta-text, #1b241d)",
-  fontWeight: 500,
-  cursor: "pointer",
-};
-
-const inputStyle: CSSProperties = {
-  width: 110,
-  background: "var(--rta-input-bg, #fff)",
-  color: "var(--rta-text, #1b241d)",
-  border: "1px solid var(--rta-border, #b7c9a7)",
-  borderRadius: 8,
-  padding: "6px 10px",
-};
+const buttonClass = "border border-rta-border rounded-lg py-1.5 px-3.5 bg-rta-surface text-rta-text font-medium cursor-pointer";
 
 export default function NotificationsPage() {
   const { settings, updateSetting, loading } = useSettings();
@@ -70,17 +35,17 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div style={{ maxWidth: 640 }}>
-      <section style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Notifications</h3>
-        <div style={rowStyle}>
+    <div className="max-w-[640px]">
+      <section className={sectionClass}>
+        <h3 className={sectionTitleClass}>Notifications</h3>
+        <div className={`${rowClass} mb-3.5`}>
           <Toggle
             checked={settings.notificationsEnabled}
             onChange={v => updateSetting("notificationsEnabled", v)}
             label="Show notifications"
           />
         </div>
-        <div style={rowStyle}>
+        <div className={`${rowClass} mb-3.5`}>
           <Toggle
             checked={settings.notificationsSoundEnabled}
             onChange={v => updateSetting("notificationsSoundEnabled", v)}
@@ -88,7 +53,7 @@ export default function NotificationsPage() {
           />
         </div>
         {!isFirefox() && (
-          <div style={rowStyle}>
+          <div className={`${rowClass} mb-3.5`}>
             <Toggle
               checked={settings.notificationsLabelButtonEnabled ?? true}
               onChange={v => updateSetting("notificationsLabelButtonEnabled", v)}
@@ -96,7 +61,7 @@ export default function NotificationsPage() {
             />
           </div>
         )}
-        <div style={{ ...rowStyle, marginBottom: 0 }}>
+        <div className={rowClass}>
           <label htmlFor="notif-duration">Display duration</label>
           <input
             id="notif-duration"
@@ -104,16 +69,16 @@ export default function NotificationsPage() {
             min={0}
             value={settings.notificationsDurationMs}
             onChange={e => updateSetting("notificationsDurationMs", Number(e.target.value))}
-            style={inputStyle}
+            className="w-[110px] bg-rta-input-bg text-rta-text border border-rta-border rounded-lg py-1.5 px-2.5"
           />
-          <span style={{ color: "var(--rta-text-muted, #888)" }}>ms</span>
+          <span className="text-rta-text-muted">ms</span>
         </div>
       </section>
 
       {settings.notificationsSoundEnabled && (
-        <section style={sectionStyle}>
-          <h3 style={sectionTitleStyle}>Custom sounds</h3>
-          <p style={{ marginTop: 0, marginBottom: 16, color: "var(--rta-text-muted, #888)", fontSize: 13 }}>
+        <section className={sectionClass}>
+          <h3 className={sectionTitleClass}>Custom sounds</h3>
+          <p className="mt-0 mb-4 text-rta-text-muted text-[13px]">
             Pick your own audio files to play when a torrent is added or fails. Leave a slot empty to use the built-in default.
           </p>
           <SoundPicker kind="success" label="Success sound" />
@@ -121,16 +86,16 @@ export default function NotificationsPage() {
         </section>
       )}
 
-      <div style={{ display: "flex", gap: 12 }}>
+      <div className="flex gap-3">
         <button
           onClick={() => sendTest(false)}
-          style={{ ...buttonStyle, background: "var(--rta-success, #228B22)", color: "#fff", border: "none", padding: "9px 18px" }}
+          className="bg-rta-success text-white border-none rounded-lg py-[9px] px-[18px] font-medium cursor-pointer"
         >
           Test Success Notification
         </button>
         <button
           onClick={() => sendTest(true)}
-          style={{ ...buttonStyle, background: "var(--rta-danger, #B22222)", color: "#fff", border: "none", padding: "9px 18px" }}
+          className="bg-rta-danger text-white border-none rounded-lg py-[9px] px-[18px] font-medium cursor-pointer"
         >
           Test Failed Notification
         </button>
@@ -201,36 +166,28 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
   };
 
   return (
-    <div style={{ ...rowStyle, marginBottom: 12 }}>
-      <span style={{ width: 110, fontWeight: 500 }}>{label}</span>
+    <div className={`${rowClass} mb-3`}>
+      <span className="w-[110px] font-medium">{label}</span>
 
       <span
-        style={{
-          flex: 1,
-          minWidth: 0,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          color: fileName ? "var(--rta-text, #1b241d)" : "var(--rta-text-muted, #888)",
-          fontStyle: fileName ? "normal" : "italic",
-        }}
+        className={`flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${fileName ? "text-rta-text not-italic" : "text-rta-text-muted italic"}`}
         title={fileName ?? "Default sound"}
       >
         {busy ? "…" : fileName ?? "Default sound"}
       </span>
 
-      <button type="button" style={buttonStyle} onClick={preview} disabled={busy} title="Preview">
+      <button type="button" className={buttonClass} onClick={preview} disabled={busy} title="Preview">
         ▶
       </button>
 
-      <button type="button" style={buttonStyle} onClick={() => fileInputRef.current?.click()} disabled={busy}>
+      <button type="button" className={buttonClass} onClick={() => fileInputRef.current?.click()} disabled={busy}>
         Choose…
       </button>
 
       {fileName && (
         <button
           type="button"
-          style={{ ...buttonStyle, color: "var(--rta-danger, #B22222)" }}
+          className="border border-rta-border rounded-lg py-1.5 px-3.5 bg-rta-surface text-rta-danger font-medium cursor-pointer"
           onClick={reset}
           disabled={busy}
           title="Reset to default"
@@ -244,7 +201,7 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
         type="file"
         accept="audio/*"
         onChange={e => handleFile(e.target.files?.[0])}
-        style={{ display: "none" }}
+        className="hidden"
       />
     </div>
   );

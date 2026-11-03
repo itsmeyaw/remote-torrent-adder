@@ -1,4 +1,34 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@source "./";
+
 /* Remote Torrent Adder Options Page Theme */
+
+/* No preflight: the About page renders bare headings and paragraphs, and
+   resetting them would change how that page looks. */
+
+/* Tailwind colours that follow the theme below, so dark mode needs no `dark:` variants. */
+@theme inline {
+  --color-rta-bg: var(--rta-bg);
+  --color-rta-surface: var(--rta-surface);
+  --color-rta-surface-alt: var(--rta-surface-alt);
+  --color-rta-green: var(--rta-green);
+  --color-rta-green-dark: var(--rta-green-dark);
+  --color-rta-accent: var(--rta-accent);
+  --color-rta-border: var(--rta-border);
+  --color-rta-chip-bg: var(--rta-chip-bg);
+  --color-rta-chip-border: var(--rta-chip-border);
+  --color-rta-input-bg: var(--rta-input-bg);
+  --color-rta-text: var(--rta-text);
+  --color-rta-text-muted: var(--rta-text-muted);
+  --color-rta-success: var(--rta-success);
+  --color-rta-danger: var(--rta-danger);
+  --color-rta-danger-dark: var(--rta-danger-dark);
+  --color-rta-info: var(--rta-info);
+  --color-rta-neutral: var(--rta-neutral);
+  --color-rta-warning: #b8860b;
+}
+
 /* Light theme (default) */
 :root {
   --rta-bg: #eaf5ea;
