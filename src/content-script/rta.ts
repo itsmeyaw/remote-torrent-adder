@@ -119,7 +119,7 @@ function checkUrlAndRegisterAction(element: Element, getCurrentUrl: () => string
     element.addEventListener('click', (event: Event) => {
         const mouseEvent = event as MouseEvent;
         if (mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
-            console.log("Clicked a recognized link, but RTA action was prevented due to pressed modifier keys.");
+            console.debug("Clicked a recognized link, but RTA action was prevented due to pressed modifier keys.");
             return;
         }
         const currentUrl = getCurrentUrl();
