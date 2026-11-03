@@ -249,7 +249,12 @@ export abstract class TorrentWebUI {
     }
 
     protected getClientSpecific(key: string, config: TorrentUploadConfig): boolean {
-        return resolveClientSpecificSetting(key, this.clientSpecificSettingDescriptors, this.settings.clientSpecificSettings, config.clientSpecificSettings);
+        return resolveClientSpecificSetting(
+            key,
+            this.clientSpecificSettingDescriptors,
+            this.settings.clientSpecificSettings,
+            config.clientSpecificSettings,
+        );
     }
 
 }
