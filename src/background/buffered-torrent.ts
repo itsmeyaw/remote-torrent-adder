@@ -68,7 +68,6 @@ export async function readBufferedTorrent(id: string): Promise<BufferedTorrent |
     if (!buffered) {
         return null;
     }
-    // shortcut: records written before webUiId existed have no id and read back as undefined, which callers report as "No WebUI found"; they expire within 24 hours, so no migration.
     return { ...buffered, torrent: await detachTorrentData(buffered.torrent) };
 }
 
@@ -82,5 +81,10 @@ async function detachTorrentData(torrent: Torrent): Promise<Torrent> {
 
 export function clearBufferedTorrent(id: string): Promise<void> {
     return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.delete(id))
+        .then(() => undefined);
+}
+
+export function clearAllBufferedTorrents(): Promise<void> {
+    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.clear())
         .then(() => undefined);
 }
