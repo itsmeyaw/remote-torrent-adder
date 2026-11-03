@@ -38,6 +38,13 @@ import { Settings } from "./settings";
 import { initiateWebUis } from "./webuis";
 
 
+/** A failure the user has already been notified about, so the context menu does not notify again. */
+export class NotifiedFailure extends Error {}
+
+function notifiedFailure(error: unknown): NotifiedFailure {
+    return new NotifiedFailure(error instanceof Error ? error.message : String(error));
+}
+
 export function registerMessageListener(): void {
     ext.runtime.onMessage.addListener((message: IMessagable, sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => {
         let willRespondAsync = false;
@@ -204,7 +211,7 @@ export async function dispatchPreAddTorrent(message: IPreAddTorrentMessage, wind
         } catch (error) {
             console.error("Error downloading torrent:", error);
             notifyDownloadFailure(error, await settingsProvider.loadSettings(), webUi.settings.id);
-            throw error;
+            throw notifiedFailure(error);
         }
         const bufferedId = await saveBufferedTorrent({ torrent, webUiSettings: webUi.settings });
         if (webUi.settings.useAlternativeLabelDirChooser) {
@@ -261,7 +268,7 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
                 settings.notificationsDurationMs,
                 settings.notificationsSoundEnabled);
         }
-        throw new Error("No WebUI configured");
+        throw new NotifiedFailure("No WebUI configured");
     }
 
     let torrent: Torrent;
@@ -270,7 +277,7 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
     } catch (error) {
         console.error("Error downloading torrent:", error);
         notifyDownloadFailure(error, settings, webUi.settings.id);
-        throw error;
+        throw notifiedFailure(error);
     }
     const fallbackConfig: TorrentUploadConfig = {
         addPaused: webUi.settings.addPaused,
@@ -402,6 +409,6 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config:
             settings.notificationsSoundEnabled,
             { webUiId: webUi.settings.id });
     }
-    throw new Error(`Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`);
+    throw new NotifiedFailure(`Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`);
 }
 

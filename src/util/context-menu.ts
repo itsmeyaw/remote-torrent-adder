@@ -4,8 +4,11 @@ import OnClickData = chrome.contextMenus.OnClickData;
 import Tab = chrome.tabs.Tab;
 import { type IPreAddTorrentMessage, PreAddTorrentMessage } from "../models/messages";
 import { type TorrentDownloadContext } from "./download";
-import { addTorrentToWebUiById, dispatchPreAddTorrent } from "./messaging";
+import { addTorrentToWebUiById, dispatchPreAddTorrent, NotifiedFailure } from "./messaging";
 import { loadWebUis } from "./webuis";
+import { showNotification } from "./notifications";
+import { Settings } from "./settings";
+import { getDefaultSettings } from "./settings-defaults";
 
 const PARENT_MENU_ID = "server-main";
 const SEND_ALL_MENU_ID = "server-all";
@@ -14,8 +17,7 @@ const PER_SERVER_MENU_PREFIX = "server-";
 
 export function registerContextMenuClickListener(): void {
     ext.contextMenus.onClicked.addListener((onClickData: OnClickData, tab?: Tab) => {
-        handleContextMenuClick(onClickData, tab)
-            .catch(error => console.error("Context menu click failed", error));
+        handleContextMenuClick(onClickData, tab).catch(reportContextMenuFailure);
     });
 }
 
@@ -73,8 +75,7 @@ async function handleContextMenuClick(onClickData: OnClickData, tab?: Tab): Prom
 
     const targetWebUis = resolveTargetWebUis(menuItemId, await loadWebUis());
     if (targetWebUis.length === 0) {
-        console.warn("Context menu clicked, but no matching WebUI is configured.", menuItemId);
-        return;
+        throw new Error("No WebUI matches the clicked menu entry.");
     }
 
     const url = onClickData.linkUrl ?? "";
@@ -93,8 +94,23 @@ async function handleContextMenuClick(onClickData: OnClickData, tab?: Tab): Prom
 
     targetWebUis.forEach(webUi => {
         addTorrentToWebUiById(webUi.settings.id, url, null, context)
-            .catch(error => console.error(`Adding to ${webUi.name} failed`, error));
+            .catch(reportContextMenuFailure);
     });
+}
+
+async function reportContextMenuFailure(error: unknown): Promise<void> {
+    console.error("Context menu click failed", error);
+    if (error instanceof NotifiedFailure) {
+        return;
+    }
+    const settings = await new Settings().loadSettings().catch(() => getDefaultSettings());
+    if (settings.notificationsEnabled) {
+        showNotification("Adding torrent failed",
+            error instanceof Error ? error.message : String(error),
+            true,
+            settings.notificationsDurationMs,
+            settings.notificationsSoundEnabled);
+    }
 }
 
 function resolveTargetWebUis(menuItemId: string, allWebUis: TorrentWebUI[]): TorrentWebUI[] {
