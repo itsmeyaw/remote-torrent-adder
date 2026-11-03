@@ -8,11 +8,18 @@ export default function ImportExportPage(): JSX.Element {
   const [importValue, setImportValue] = useState<string>("");
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [copied, setCopied] = useState<boolean>(false);
+  const [copyError, setCopyError] = useState<string>("");
 
   if (loading || !settings) return <div>Loading...</div>;
 
-  const handleCopy = (): void => {
-    navigator.clipboard.writeText(serializeSettings(settings));
+  const handleCopy = async (): Promise<void> => {
+    setCopyError("");
+    try {
+      await navigator.clipboard.writeText(serializeSettings(settings));
+    } catch {
+      setCopyError("Could not copy to the clipboard. Select the text above and copy it by hand.");
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -33,6 +40,9 @@ export default function ImportExportPage(): JSX.Element {
       <section className="rta-card">
         <h3 className="rta-card__heading">Export</h3>
         <label className="rta-muted" htmlFor="rta-export">Copy this and keep it somewhere safe.</label>
+        <div className="rta-error" role="note">
+          Warning: this export contains your WebUI passwords in plain text. Anyone who gets this text can log in to your clients, so only store it somewhere you trust.
+        </div>
         <textarea id="rta-export" className="rta-textarea" readOnly value={serializeSettings(settings)} />
         <button
           type="button"
@@ -41,6 +51,7 @@ export default function ImportExportPage(): JSX.Element {
         >
           {copied ? "Copied!" : "Copy to clipboard"}
         </button>
+        {copyError && <div role="alert" className="rta-error">{copyError}</div>}
       </section>
 
       <section className="rta-card">

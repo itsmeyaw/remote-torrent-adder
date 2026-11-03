@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import ImportExportPage from "../../../src/options/pages/ImportExportPage";
@@ -37,6 +37,48 @@ async function importText(text: string) {
     fireEvent.change(await screen.findByLabelText(/Paste a previously exported/i, { selector: "textarea" }), { target: { value: text } });
     fireEvent.click(screen.getByRole("button", { name: "Import settings" }));
 }
+
+describe("ImportExportPage export", () => {
+    const writeText = vi.fn();
+
+    beforeEach(() => {
+        writeText.mockReset();
+        Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    });
+
+    afterEach(() => {
+        Reflect.deleteProperty(navigator, "clipboard");
+    });
+
+    it("warns that the export contains passwords in plain text", async () => {
+        respondWithSettings();
+        renderPage();
+
+        expect(await screen.findByText(/passwords in plain text/i)).toBeInTheDocument();
+    });
+
+    it("confirms a successful copy", async () => {
+        respondWithSettings();
+        writeText.mockResolvedValue(undefined);
+        renderPage();
+
+        fireEvent.click(await screen.findByRole("button", { name: "Copy to clipboard" }));
+
+        expect(await screen.findByRole("button", { name: "Copied!" })).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("shows an error and does not claim success when the copy fails", async () => {
+        respondWithSettings();
+        writeText.mockRejectedValue(new Error("denied"));
+        renderPage();
+
+        fireEvent.click(await screen.findByRole("button", { name: "Copy to clipboard" }));
+
+        expect(await screen.findByRole("alert")).toHaveTextContent("Could not copy to the clipboard");
+        expect(screen.queryByRole("button", { name: "Copied!" })).toBeNull();
+    });
+});
 
 describe("ImportExportPage import", () => {
     it("imports a valid export and saves its WebUIs", async () => {
