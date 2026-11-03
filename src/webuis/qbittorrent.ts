@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type AddResult, AuthenticationError, type ClientSpecificSettingDescriptor, type ConnectionTestResult, HttpError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, type ClientSpecificSettingDescriptor, HttpError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 
 const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> = [
     {
@@ -13,23 +13,6 @@ const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> =
 ];
 
 export class QBittorrentWebUI extends TorrentWebUI {
-    public override async testConnection(): Promise<ConnectionTestResult> {
-        try {
-            const body = new URLSearchParams();
-            body.append("username", this._settings.username);
-            body.append("password", this._settings.password);
-            const response = await fetch(this.createBaseUrl() + "/api/v2/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded; charset=utf-8" },
-                body
-            });
-            const authenticated = response.ok && (await response.text()).trim() === "Ok.";
-            return this.toReachableResult(authenticated, response.status);
-        } catch (error) {
-            return this.toUnreachableResult(error);
-        }
-    }
-
     protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
         const fetchOpts = await this.createTorrentFetchOptions(torrent, config);
         const response = await this.fetch(this.createBaseUrl() + "/api/v2/torrents/add", fetchOpts);
