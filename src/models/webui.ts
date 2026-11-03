@@ -192,6 +192,22 @@ export abstract class TorrentWebUI {
         return { success: false, httpResponseCode: 0, httpResponseBody: (error as Error)?.message ?? null };
     }
 
+    /**
+     * Runs a step after the Add succeeded. If it throws or fails, the Add still succeeded, so the
+     * problem comes back as a warning instead of a failed result.
+     */
+    protected async runFollowUp(notApplied: string, step: () => Promise<TorrentAddingResult | void>): Promise<string | undefined> {
+        try {
+            const result = await step();
+            if (result && !result.success) {
+                return `${notApplied}: HTTP ${result.httpResponseCode} ${result.httpResponseBody ?? ""}`.trimEnd();
+            }
+            return undefined;
+        } catch (error) {
+            return `${notApplied}: ${(error as Error)?.message ?? error}`;
+        }
+    }
+
     protected addLeadingAndTrimTrailingSlashes(urlPart: string): string {
         if (!urlPart) {
             return "";
@@ -225,6 +241,8 @@ export interface TorrentAddingResult {
     success: boolean;
     httpResponseCode: number;
     httpResponseBody: string | null;
+    /** Set when the torrent was added but a follow-up step (Add Paused, Label) did not apply. */
+    warning?: string;
 }
 
 export interface ConnectionTestResult {

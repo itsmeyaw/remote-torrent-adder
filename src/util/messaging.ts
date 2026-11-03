@@ -381,7 +381,7 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config:
         console.debug(`Torrent added: ${torrent.name} to -> ${webUi.name}`);
         if (settings.notificationsEnabled) {
             showNotification("Torrent added successfully",
-                `${torrent.name} successfully added to ${webUi.name}`,
+                `${torrent.name} successfully added to ${webUi.name}${result.warning ? `\n${result.warning}` : ""}`,
                 false,
                 settings.notificationsDurationMs,
                 settings.notificationsSoundEnabled,
