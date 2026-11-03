@@ -13,6 +13,7 @@ vi.mock("../../src/util/download", async (importOriginal) => ({
 }));
 
 import { registerMessageListener, dispatchPreAddTorrent } from "../../src/util/messaging";
+import { HandledFailure } from "../../src/util/errors";
 import {
     GetSettingsMessage,
     SaveSettingsMessage,
@@ -490,6 +491,20 @@ describe("dispatchPreAddTorrent", () => {
 
         expect(callArgs(showNotification, 0)[0]).toBe("Cloudflare is blocking this download");
         expect(chrome.action.openPopup).not.toHaveBeenCalled();
+    });
+
+    it("marks a download failure it already notified", async () => {
+        const settings = getDefaultSettings();
+        settings.webuiSettings = [
+            makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, showPerTorrentConfigSelector: true }),
+        ];
+        (chrome as any).__storage.settings = serializeSettings(settings);
+        downloadTorrent.mockRejectedValue(new CloudflareChallengeError("https://tracker.org/get/1.torrent"));
+
+        await expect(dispatchPreAddTorrent({ action: PreAddTorrentMessage.action, url: "https://tracker.org/get/1.torrent", webUiId: "w1" }, 7))
+            .rejects.toBeInstanceOf(HandledFailure);
+        await expect(dispatchPreAddTorrent({ action: PreAddTorrentMessage.action, url: "https://tracker.org/get/1.torrent", webUiId: "w1" }, 7))
+            .rejects.toHaveProperty("cause", expect.any(CloudflareChallengeError));
     });
 
     it("responds to the message caller with the download error", async () => {

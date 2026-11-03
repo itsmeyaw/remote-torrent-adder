@@ -28,6 +28,7 @@ export function createChromeMock(): any {
         },
         lastError: undefined as { message: string } | undefined,
         getURL: vi.fn((path: string) => `chrome-extension://rta-test-id/${path.replace(/^\//, "")}`),
+        openOptionsPage: vi.fn(() => Promise.resolve()),
     };
 
     return {

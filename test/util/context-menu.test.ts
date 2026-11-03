@@ -4,15 +4,19 @@ import { callArgs } from "../helpers/assert";
 // Stub out the messaging module so we can observe dispatched torrents without
 // pulling in the whole service-worker dependency graph.
 const { dispatchPreAddTorrent, addTorrentToWebUiById } = vi.hoisted(() => ({
-    dispatchPreAddTorrent: vi.fn(),
+    dispatchPreAddTorrent: vi.fn(() => Promise.resolve()),
     addTorrentToWebUiById: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("../../src/util/messaging", () => ({ dispatchPreAddTorrent, addTorrentToWebUiById }));
 
 import { refreshContextMenu, registerContextMenuClickListener } from "../../src/util/context-menu";
+import { HandledFailure } from "../../src/util/errors";
 import { PreAddTorrentMessage } from "../../src/models/messages";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
+import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { serializeSettings } from "../../src/util/serializer";
+import { SETTINGS_KEY } from "../../src/util/settings";
 
 const settingsFor = (id: string, name: string) => makeWebUISettings({ id, name, host: "h", port: 8080 });
 const webUi = (id: string, name: string) => new QBittorrentWebUI(settingsFor(id, name));
@@ -206,5 +210,64 @@ describe("registerContextMenuClickListener", () => {
         await click("server-7", [settingsFor("a", "A")]);
         expect(dispatchPreAddTorrent).not.toHaveBeenCalled();
         expect(addTorrentToWebUiById).not.toHaveBeenCalled();
+    });
+
+    describe("failures", () => {
+        const notifications = () => (chrome.notifications.create as any).mock.calls.map((c: any[]) => c[1]);
+
+        it("notifies when the clicked entry matches no webui", async () => {
+            await click("server-7", [settingsFor("a", "A")]);
+            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed", message: "No WebUI matches the clicked menu entry." })]);
+        });
+
+        it("notifies when no window can be found for the add", async () => {
+            (chrome.windows.getLastFocused as any).mockRejectedValueOnce(new Error("no window"));
+            seedWebUISettings([settingsFor("a", "A")]);
+            registerContextMenuClickListener();
+            clickListener()(clickData("server-main"), undefined);
+            await flush();
+            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed", message: "no window" })]);
+        });
+
+        it("notifies when a single-webui add fails before anything was notified", async () => {
+            dispatchPreAddTorrent.mockRejectedValueOnce(new Error("storage is down"));
+            await click("server-main", [settingsFor("a", "A")]);
+            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed", message: "storage is down" })]);
+        });
+
+        it("notifies a send-all failure that was not notified downstream", async () => {
+            addTorrentToWebUiById.mockRejectedValueOnce(new Error("storage is down"));
+            await click("server-all", [settingsFor("a", "A"), settingsFor("b", "B")]);
+            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed" })]);
+        });
+
+        it("does not notify again a failure the messaging layer already notified", async () => {
+            dispatchPreAddTorrent.mockRejectedValueOnce(new HandledFailure("Torrent adding failed"));
+            await click("server-main", [settingsFor("a", "A")]);
+            expect(notifications()).toEqual([]);
+        });
+
+        it("logs the storage error before notifying with defaults when settings cannot be read", async () => {
+            const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+            vi.mocked(chrome.storage.local.get).mockRejectedValue(new Error("storage unavailable"));
+            registerContextMenuClickListener();
+            clickListener()(clickData("server-main"), tab);
+            await flush();
+            expect(errorSpy).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ message: "storage unavailable" }));
+            expect(notifications()).toEqual([expect.objectContaining({ title: "Adding torrent failed" })]);
+            errorSpy.mockRestore();
+        });
+
+        it("does not notify when notifications are disabled", async () => {
+            const settings = getDefaultSettings();
+            settings.notificationsEnabled = false;
+            settings.webuiSettings = [settingsFor("a", "A")];
+            (chrome as any).__storage[SETTINGS_KEY] = serializeSettings(settings);
+            dispatchPreAddTorrent.mockRejectedValueOnce(new Error("storage is down"));
+            registerContextMenuClickListener();
+            clickListener()(clickData("server-main"), tab);
+            await flush();
+            expect(notifications()).toEqual([]);
+        });
     });
 });

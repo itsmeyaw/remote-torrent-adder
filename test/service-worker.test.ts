@@ -151,3 +151,13 @@ describe("service worker boot on a configured profile", () => {
         ]);
     });
 });
+
+describe("service worker startup when dynamic CORS rules cannot be cleared", () => {
+    it("logs the failure instead of leaving it unhandled", async () => {
+        (chrome.declarativeNetRequest.getDynamicRules as any).mockRejectedValue(new Error("storage is down"));
+
+        await bootServiceWorker("startup");
+
+        expect(consoleError).toHaveBeenCalledWith("Failed to clear dynamic CORS rules", expect.any(Error));
+    });
+});

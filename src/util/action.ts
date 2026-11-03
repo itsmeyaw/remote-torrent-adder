@@ -41,7 +41,7 @@ async function handleActionClick(tab: chrome.tabs.Tab): Promise<void> {
 export async function openPrimaryWebUi(): Promise<void> {
     const [primaryWebUi] = await loadWebUis();
     if (!primaryWebUi) {
-        console.warn("Action icon clicked, but no WebUI is configured.");
+        await ext.runtime.openOptionsPage();
         return;
     }
     await openWebUi(primaryWebUi);

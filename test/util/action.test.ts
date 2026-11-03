@@ -112,9 +112,10 @@ describe("openPrimaryWebUi", () => {
         expect(chrome.tabs.update).not.toHaveBeenCalled();
     });
 
-    it("does nothing when no webui is configured", async () => {
+    it("opens the options page when no webui is configured", async () => {
         seedWebUISettings([]);
         await openPrimaryWebUi();
+        expect(chrome.runtime.openOptionsPage).toHaveBeenCalledTimes(1);
         expect(chrome.tabs.create).not.toHaveBeenCalled();
     });
 });
