@@ -21,10 +21,10 @@ function loadSettingsAndRegisterActions(attemptNumber: number = 0): void {
     seenLinkUrls = new Set<string>();
     sendMessageAndForget('updateActionBadgeText', { text: '' });
     sendMessage('getLinkCatchingConfig', {}).then(serializedConfig => {
-        const config = deserializeObject(serializedConfig) as ILinkCatchingConfig;
+        const config = deserializeObject<ILinkCatchingConfig>(serializedConfig);
         console.debug("Received link-catching config from background script:", config);
 
-        if (config.linkCatchingEnabled) {
+        if (config?.linkCatchingEnabled) {
             registerLinks(config.linkCatchingRegexes);
             registerForms(config.linkCatchingRegexes);
         }
