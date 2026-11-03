@@ -45,7 +45,7 @@ The base class defines `sendTorrent` and `setLabel` and the constructor — don'
 
 `sendTorrent` and `setLabel` are templates in `TorrentWebUI`: they run the login, the Add, the follow-ups and the failure mapping. Implement only these hooks:
 - `add(torrent, config, session)` (required) → `AddResult`: the Add request. Set `torrentId` when the response carries the client's id for the added torrent. Let transport errors throw; the base maps them with `toFailureResult`.
-- `login()` (optional) → `Session`: opens a session before the Add. The return value reaches `add`, `applyLabel` and the follow-ups. Throw `new AuthenticationError(status, reason?)` when the server rejects the credentials. Omit it when the client has no session.
+- `login()` (optional) → `Session`: opens a session before the Add. The return value reaches `add`, `applyLabel` and the follow-ups. Throw `new AuthenticationError(status, reason?)` when the server rejects the credentials, and `new CredentialsUnverifiedError(status, message)` when it answered without saying whether they are right. Omit it when the client has no session.
 - `applyLabel(session, torrentId, label)` (optional) → `TorrentAddingResult`: sets a label on an existing torrent. Its presence makes `setLabel` work; normalise the id case here if the client needs it.
 - `labelAfterAdd(session, torrentId, label)` / `pauseAfterAdd(session, torrentId)` (optional): implement only when the Add request cannot carry the value. After a successful Add the base calls them when a label is set or Add Paused is on. A failure becomes a `warning` on the successful result; it never fails the Add.
 - `addedTorrentId(added, torrent)` (optional override, default `added.torrentId`): the id the follow-ups use. Override when the Add response has no id (BiglyBT computes the info hash).
@@ -69,8 +69,9 @@ Result construction:
 
 Connection testing:
 - `get isConnectionTestSupported(): boolean` — defaults to `true`. Override to `false` if the client has no probe-able endpoint; the Options page hides the Test Connection button when it is false.
-- `testConnection(): Promise<ConnectionTestResult>` — the default implementation only GETs the base URL and reports reachability *without* checking credentials. Nearly every existing client overrides it; do the same whenever the client can actually validate credentials.
-- `this.probeWithBasicAuth(url)` → ready-made `testConnection()` body for basic-auth clients; treats 401/403 as "reachable, not authenticated".
+- Clients with `login()` get the Connection Test from it: the base class runs the same login the Add runs, so don't override `testConnection()`. Success → authenticated. `AuthenticationError` or a 401/403 → reachable, not authenticated. `CredentialsUnverifiedError` or any other status → reachable, not verified. Network failure → unreachable.
+- Basic-auth clients (no `login()`) override `testConnection()` with `return this.probeWithBasicAuth(url)`, which treats 401/403 as "reachable, not authenticated".
+- Clients with neither get the base default: a GET to the base URL that reports reachability *without* checking credentials.
 - `this.toReachableResult(authenticated, code)` / `this.toUnreachableResult(error)` → build a `ConnectionTestResult` in a custom `testConnection()`.
 
 ```typescript
@@ -196,7 +197,7 @@ Porla: POST JSON `{username, password}` to `/api/v1/auth/login`, receive token, 
 POST JSON `{username, password}` to `/api/auth/authenticate`; session cookie set by browser. Throw `AuthenticationError` from `login()` on rejection.
 
 ### Basic auth — see `rqbit.ts`, `tixati.ts`, `rutorrent.ts`
-Use `this.createBasicAuthHeaders()`, and `this.probeWithBasicAuth(url)` for `testConnection()`. `biglybt.ts` and `transmission.ts` also probe this way.
+Use `this.createBasicAuthHeaders()`, and `this.probeWithBasicAuth(url)` for `testConnection()`.
 
 ### XML-RPC — see `rutorrent.ts`
 Build an XML body and POST with `Content-Type: text/xml`.

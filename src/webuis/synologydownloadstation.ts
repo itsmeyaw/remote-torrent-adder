@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type AddResult, AuthenticationError, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, CredentialsUnverifiedError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 
 interface SynologyApiInfo {
     path: string;
@@ -12,13 +12,6 @@ type SynologyApiInfoMap = Record<string, SynologyApiInfo | undefined>;
 interface SynologySession {
     apis: SynologyApiInfoMap;
     sessionId: string;
-}
-
-class SynologyDiscoveryError extends Error {
-    constructor(public readonly httpResponseCode: number, message: string) {
-        super(message);
-        this.name = "SynologyDiscoveryError";
-    }
 }
 
 const INFO_API = "SYNO.API.Info";
@@ -67,38 +60,6 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI<SynologySession> 
     private apiInfo: SynologyApiInfoMap | null = null;
     private sessionId: string | null = null;
 
-    public override async testConnection(): Promise<ConnectionTestResult> {
-        try {
-            const apis = await this.discoverApis();
-            const response = await fetch(this.createLoginUrl(apis), this.createLoginFetchOptions(apis));
-            if (!response.ok) {
-                return this.toReachableResult(false, response.status);
-            }
-
-            const json = await response.json();
-            if (json?.success === true && json?.data?.sid) {
-                return this.toReachableResult(true, response.status);
-            }
-
-            return {
-                reachable: true,
-                authenticated: false,
-                httpResponseCode: response.status,
-                message: `Reachable, but authentication failed: ${this.describeError(json?.error?.code, AUTH_ERRORS)}`,
-            };
-        } catch (error) {
-            if (error instanceof SynologyDiscoveryError) {
-                return {
-                    reachable: true,
-                    authenticated: null,
-                    httpResponseCode: error.httpResponseCode,
-                    message: `Reachable, but credentials could not be verified: ${error.message}`,
-                };
-            }
-            return this.toUnreachableResult(error);
-        }
-    }
-
     protected override async login(): Promise<SynologySession> {
         const apis = await this.discoverApis();
         return { apis, sessionId: await this.authenticate(apis) };
@@ -127,7 +88,7 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI<SynologySession> 
         const json = await response.json();
 
         if (json?.success !== true || !json?.data) {
-            throw new SynologyDiscoveryError(
+            throw new CredentialsUnverifiedError(
                 response.status,
                 `Could not query the Synology API list: ${this.describeError(json?.error?.code, {})}`,
             );

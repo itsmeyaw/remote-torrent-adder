@@ -1,25 +1,8 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type AddResult, AuthenticationError, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 
 
 export class DelugeWebUI extends TorrentWebUI {
-    public override async testConnection(): Promise<ConnectionTestResult> {
-        try {
-            const response = await fetch(this.createBaseUrl() + "/json", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ method: "auth.login", params: [this._settings.password], id: this.randomId() })
-            });
-            if (!response.ok) {
-                return this.toReachableResult(false, response.status);
-            }
-            const json = await response.json();
-            return this.toReachableResult(json["result"] === true, response.status);
-        } catch (error) {
-            return this.toUnreachableResult(error);
-        }
-    }
-
     protected override async login(): Promise<void> {
         const payload = {
             method: "auth.login",

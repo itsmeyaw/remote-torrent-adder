@@ -1,21 +1,8 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type AddResult, AuthenticationError, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { blobToBase64 } from "../torrent/converter";
 
 export class PorlaWebUI extends TorrentWebUI<string> {
-    public override async testConnection(): Promise<ConnectionTestResult> {
-        try {
-            const response = await fetch(this.createBaseUrl() + "/api/v1/jsonrpc", this.createLoginRequest());
-            if (!response.ok) {
-                return this.toReachableResult(false, response.status);
-            }
-            const json = await response.json();
-            return this.toReachableResult(!json.error && !!json.result?.token, response.status);
-        } catch (error) {
-            return this.toUnreachableResult(error);
-        }
-    }
-
     protected override async login(): Promise<string> {
         const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", this.createLoginRequest());
         const json = await response.json();

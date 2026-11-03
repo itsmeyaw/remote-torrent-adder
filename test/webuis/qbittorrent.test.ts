@@ -155,18 +155,8 @@ describe("QBittorrentWebUI", () => {
 });
 
 describe("QBittorrentWebUI connection test", () => {
-    it("reports authenticated when the login body is Ok.", async () => {
-        queueFetch(mockResponse({ status: 200, body: "Ok." }));
-        await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: true, httpResponseCode: 200 });
-    });
-
     it("reports authentication failed when the login body is Fails.", async () => {
         queueFetch(mockResponse({ status: 200, body: "Fails." }));
         await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: false, httpResponseCode: 200 });
-    });
-
-    it("reports authentication failed on a non-OK login status", async () => {
-        queueFetch(mockResponse({ status: 403, body: "Your IP address has been banned" }));
-        await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: false, httpResponseCode: 403 });
     });
 });

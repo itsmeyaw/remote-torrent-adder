@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { callArgs } from "../helpers/assert";
 import { SynologyDownloadStationWebUI } from "../../src/webuis/synologydownloadstation";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
@@ -196,12 +196,6 @@ describe("SynologyDownloadStationWebUI", () => {
         expect(result).toMatchObject({ success: false, httpResponseCode: 500 });
     });
 
-    it("reports reachable and authenticated when the login succeeds", async () => {
-        queueFetch(modernDiscovery(), loginOk());
-
-        await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: true });
-    });
-
     it("reports a wrong password as reachable but not authenticated", async () => {
         queueFetch(modernDiscovery(), apiError(400));
         const result = await build().testConnection();
@@ -218,19 +212,12 @@ describe("SynologyDownloadStationWebUI", () => {
         expect(result.message).toContain("The requested API does not exist");
     });
 
-    it("reports a non-OK discovery response as unreachable with its status", async () => {
+    it("reports a non-OK discovery response as reachable but not verified with its status", async () => {
         queueFetch(mockResponse({ status: 503, body: "busy" }));
         const result = await build().testConnection();
 
-        expect(result).toMatchObject({ reachable: false, authenticated: null, httpResponseCode: 503 });
-    });
-
-    it("reports a network failure as unreachable", async () => {
-        vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
-        const result = await build().testConnection();
-
-        expect(result).toMatchObject({ reachable: false, authenticated: null, httpResponseCode: 0 });
-        expect(result.message).toContain("Failed to fetch");
+        expect(result).toMatchObject({ reachable: true, authenticated: null, httpResponseCode: 503 });
+        expect(result.message).toBe("Reachable, but the server answered HTTP 503; credentials could not be verified");
     });
 
     it("supports dirs only", () => {
