@@ -9,10 +9,6 @@ export interface Torrent {
     isPrivate?: boolean;
 }
 
-export interface SerializedTorrent extends Torrent {
-    data: string;
-}
-
 export interface TorrentUploadConfig {
     dir?: string;
     label?: string;
