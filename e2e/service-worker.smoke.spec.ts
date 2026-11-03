@@ -67,7 +67,7 @@ test.describe("service worker", () => {
         const stored = await extension.readSettings();
         expect(JSON.parse(stored!)).toMatchObject({ webuiSettings: [] });
 
-        const problems = logs.unexpectedProblems([/Failed to deserialize settings/]);
+        const problems = logs.unexpectedProblems([/Stored settings are invalid/]);
         expect(problems, logs.report(problems)).toEqual([]);
     });
 

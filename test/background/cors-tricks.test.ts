@@ -54,6 +54,25 @@ describe("registerCorsCircumventionForWebUis", () => {
         expect(arg.addRules).toHaveLength(1);
         expect(arg.addRules[0].condition.urlFilter).toBe("|http://127.0.0.1:8080*");
     });
+
+    it("runs overlapping refreshes one after the other, so the second removes the rules the first added", async () => {
+        let sessionRules: { id: number }[] = [];
+        (chrome.declarativeNetRequest.getSessionRules as any).mockImplementation(() => Promise.resolve(sessionRules));
+        (chrome.declarativeNetRequest.updateSessionRules as any).mockImplementation(
+            async ({ removeRuleIds, addRules }: { removeRuleIds: number[]; addRules: { id: number }[] }) => {
+                await Promise.resolve();
+                sessionRules = [...sessionRules.filter(rule => !removeRuleIds.includes(rule.id)), ...addRules];
+            });
+
+        await Promise.all([
+            registerCorsCircumventionForWebUis([webUi({ host: "a", port: 80 })]),
+            registerCorsCircumventionForWebUis([webUi({ host: "a", port: 80 })]),
+        ]);
+
+        const second = (chrome.declarativeNetRequest.updateSessionRules as any).mock.calls[1][0];
+        expect(second.removeRuleIds).toEqual([1]);
+        expect(sessionRules).toHaveLength(1);
+    });
 });
 
 describe("executeMethodWrappedWithReferer", () => {

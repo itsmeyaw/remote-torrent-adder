@@ -12,7 +12,12 @@ function hasUsableHost(baseUrl: string): boolean {
     }
 }
 
-export async function registerCorsCircumventionForWebUis(allWebUis: TorrentWebUI[]): Promise<void> {
+export function registerCorsCircumventionForWebUis(allWebUis: TorrentWebUI[]): Promise<void> {
+    // One refresh at a time: overlapping ones would each add a rule id the other has not removed yet.
+    return navigator.locks.request("rta-cors-session-rules", () => replaceCorsRules(allWebUis));
+}
+
+async function replaceCorsRules(allWebUis: TorrentWebUI[]): Promise<void> {
     const oldRuleIds = (await ext.declarativeNetRequest.getSessionRules())
         .map(rule => rule.id);
     const newRules: chrome.declarativeNetRequest.Rule[] = [];
