@@ -227,7 +227,7 @@ export class FirefoxExtensionHarness {
                 "const [tab] = await browser.tabs.query({ url: args[0] });",
                 'if (!tab || !tab.id) { throw new Error("No tab matched " + args[0]); }',
                 'const response = await browser.tabs.sendMessage(tab.id, { action: "getPageLinks" }, { frameId: 0 });',
-                "return (response && response.links) || [];",
+                "return (response && response.value && response.value.links) || [];",
             ].join("\n"),
             tabUrlPattern,
         );

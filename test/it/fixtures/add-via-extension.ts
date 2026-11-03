@@ -46,10 +46,10 @@ export async function setLabelViaExtension(
     extension: ExtensionHarness,
     infoHash: string,
     label: string,
-): Promise<{ error?: string }> {
+): Promise<{ value?: undefined; error?: string }> {
     const page = await extension.openPage(extension.url("options/options.html"));
     const response = await page.evaluate(
-        message => chrome.runtime.sendMessage(message) as Promise<{ error?: string }>,
+        message => chrome.runtime.sendMessage(message) as Promise<{ value?: undefined; error?: string }>,
         { action: "setTorrentLabel", webUiId: WEBUI_ID, infoHash, torrentName: "IT torrent", label, labels: [label] },
     );
     await page.close();
@@ -61,10 +61,10 @@ export async function testConnectionViaExtension(
     settings: WebUISettings,
 ): Promise<ConnectionTestResult> {
     const page = await extension.openPage(extension.url("options/options.html"));
-    const result = await page.evaluate(
-        webUiSettings => chrome.runtime.sendMessage({ action: "testConnection", webUiSettings }) as Promise<ConnectionTestResult>,
+    const reply = await page.evaluate(
+        webUiSettings => chrome.runtime.sendMessage({ action: "testConnection", webUiSettings }) as Promise<{ value: ConnectionTestResult }>,
         settings,
     );
     await page.close();
-    return result;
+    return reply.value;
 }

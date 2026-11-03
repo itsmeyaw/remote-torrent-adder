@@ -363,7 +363,7 @@ describe("addLink: Upload Config parity", () => {
         seed([{ ...webUi, showPerTorrentConfigSelector: true }]);
         await addLink("magnet:?x", { webUiId: "w1" }, { windowId: 7 });
         const [bufferedId] = popupBufferedIds();
-        (chrome.runtime.sendMessage as any).mockResolvedValue((chrome as any).__storage.settings);
+        (chrome.runtime.sendMessage as any).mockResolvedValue({ value: (chrome as any).__storage.settings });
         const popup = await loadPopupData(bufferedId!);
 
         expect(popup!.initial.label).toBe(config.label ?? "");

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import ImportExportPage from "../../../src/options/pages/ImportExportPage";
-import { GetSettingsMessage, SaveSettingsMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
 import { getDefaultSettings } from "../../../src/settings/settings-defaults";
 import { makeWebUISettings } from "../../helpers/fixtures";
@@ -10,17 +9,17 @@ import { type WebUISettings } from "../../../src/models/webui";
 
 function respondWithSettings() {
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-        if (message.action === GetSettingsMessage.action) {
-            return Promise.resolve(serializeSettings(getDefaultSettings()));
+        if (message.action === "getSettings") {
+            return Promise.resolve({ value: serializeSettings(getDefaultSettings()) });
         }
-        return Promise.resolve();
+        return Promise.resolve({ value: undefined });
     });
 }
 
 function savedWebUiNames(): string[] | undefined {
     const save = (chrome.runtime.sendMessage as any).mock.calls
         .map((call: any[]) => call[0])
-        .filter((message: any) => message?.action === SaveSettingsMessage.action)
+        .filter((message: any) => message?.action === "saveSettings")
         .at(-1);
     return save && deserializeSettings(save.settings)!.webuiSettings.map(webUi => webUi.name);
 }

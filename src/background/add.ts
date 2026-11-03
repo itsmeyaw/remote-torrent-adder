@@ -1,6 +1,7 @@
 import { ext } from "../util/browser-api";
 import { type RTASettings } from "../models/settings";
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
+import { type ConfigSelectorChoice } from "../models/messages";
 import { type TorrentAddingResult, type TorrentWebUI, type WebUISettings } from "../models/webui";
 import { openActionPopup, openPopupWindow } from "./action";
 import { resolveUploadConfig } from "../torrent/upload-config";
@@ -18,14 +19,6 @@ export type AddTarget = { webUiId?: string | null } | { sendToAll: true };
 /** Where the link was found: downloads the Torrent File from it and places the Config Selector next to it. */
 export interface AddPage extends TorrentDownloadContext {
     windowId?: number | null;
-}
-
-/** What the user settled on in the Config Selector for a Buffered Torrent. */
-export interface ConfigSelectorChoice {
-    bufferedId: string;
-    config: TorrentUploadConfig;
-    labels: string[];
-    directories: string[];
 }
 
 /** Every Add entry point goes through here, so every failure is reported the same way. */

@@ -3,17 +3,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import IconClickPage from "../../../src/options/pages/IconClickPage";
-import { GetSettingsMessage, SaveSettingsMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
 import { getDefaultSettings } from "../../../src/settings/settings-defaults";
 import { makeWebUISettings } from "../../helpers/fixtures";
 
 function respondWithSettings(settings = getDefaultSettings()) {
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-        if (message.action === GetSettingsMessage.action) {
-            return Promise.resolve(serializeSettings(settings));
+        if (message.action === "getSettings") {
+            return Promise.resolve({ value: serializeSettings(settings) });
         }
-        return Promise.resolve();
+        return Promise.resolve({ value: undefined });
     });
 }
 
@@ -55,7 +54,7 @@ describe("IconClickPage", () => {
 
         const save = (chrome.runtime.sendMessage as any).mock.calls
             .map((call: any[]) => call[0])
-            .find((message: any) => message?.action === SaveSettingsMessage.action);
+            .find((message: any) => message?.action === "saveSettings");
         expect(deserializeSettings(save.settings)!.iconClickAction).toBe("showPageLinks");
     });
 });

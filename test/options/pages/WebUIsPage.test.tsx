@@ -3,7 +3,6 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import WebUIsPage, { moveItem, parsePortInput } from "../../../src/options/pages/WebUIsPage";
-import { GetSettingsMessage, SaveSettingsMessage, TestConnectionMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
 import { getDefaultSettings } from "../../../src/settings/settings-defaults";
 import { type ConnectionTestResult } from "../../../src/models/webui";
@@ -16,20 +15,20 @@ function respondWithWebUIs(
     const settings = getDefaultSettings();
     settings.webuiSettings = webuiSettings;
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-        if (message.action === GetSettingsMessage.action) {
-            return Promise.resolve(serializeSettings(settings));
+        if (message.action === "getSettings") {
+            return Promise.resolve({ value: serializeSettings(settings) });
         }
-        if (message.action === TestConnectionMessage.action && connectionTest) {
-            return Promise.resolve(connectionTest);
+        if (message.action === "testConnection" && connectionTest) {
+            return Promise.resolve("error" in connectionTest ? connectionTest : { value: connectionTest });
         }
-        return Promise.resolve();
+        return Promise.resolve({ value: undefined });
     });
 }
 
 const savedWebUIs = () => {
     const save = (chrome.runtime.sendMessage as any).mock.calls
         .map((call: any[]) => call[0])
-        .findLast((message: any) => message?.action === SaveSettingsMessage.action);
+        .findLast((message: any) => message?.action === "saveSettings");
     return save ? deserializeSettings(save.settings)!.webuiSettings : null;
 };
 

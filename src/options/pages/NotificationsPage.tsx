@@ -1,7 +1,6 @@
-import { sendMessageAndForget } from "../../util/browser-api";
+import { sendMessage } from "../../util/messaging";
 import { useEffect, useRef, useState } from "react";
 import { useSettings } from "../SettingsContext";
-import { type ITestNotificationMessage, TestNotificationMessage } from "../../models/messages";
 import { deleteCustomSound, getCustomSound, saveCustomSound, type SoundKind } from "../../notifications/sound-storage";
 import Toggle from "../components/Toggle";
 import { isFirefox } from "../../util/platform";
@@ -24,10 +23,7 @@ export default function NotificationsPage() {
   if (loading || !settings) return <div>Loading...</div>;
 
   const sendTest = (isFailed: boolean) => {
-    sendMessageAndForget({
-      action: TestNotificationMessage.action,
-      isFailed,
-    } as ITestNotificationMessage);
+    sendMessage("testNotification", { isFailed }).catch(error => console.error("Could not send the test notification", error));
   };
 
   return (

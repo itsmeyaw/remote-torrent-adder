@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createChromeMock } from "../helpers/chrome-mock";
-import { GetLinkCatchingConfig, PreAddTorrentMessage, UpdateActionBadgeText } from "../../src/models/messages";
 import { serializeObject } from "../../src/settings/serializer";
 
 const RealMutationObserver = globalThis.MutationObserver;
@@ -23,11 +22,11 @@ beforeEach(() => {
         }
     });
     browser.runtime.sendMessage.mockImplementation(async (message: { action: string }) => {
-        if (message.action === GetLinkCatchingConfig.action) {
-            return serializeObject({
+        if (message.action === "getLinkCatchingConfig") {
+            return { value: serializeObject({
                 linkCatchingEnabled: true,
                 linkCatchingRegexes: linkRegexes,
-            });
+            }) };
         }
     });
 });
@@ -77,7 +76,7 @@ describe("content-script link click targets", () => {
 
         expect(click(link)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: link.href,
         });
     });
@@ -92,7 +91,7 @@ describe("content-script link click targets", () => {
 
         expect(click(link)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: link.href,
         });
     });
@@ -106,7 +105,7 @@ describe("content-script link click targets", () => {
 
         expect(click(link)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: "https://tracker.example/download/second.torrent",
         });
     });
@@ -118,7 +117,7 @@ describe("content-script link click targets", () => {
 
         expect(click(link)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: link.href,
         });
     });
@@ -132,7 +131,7 @@ describe("content-script link click targets", () => {
         expect(click(link)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledTimes(2);
         expect(browser.runtime.sendMessage).toHaveBeenLastCalledWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: link.href,
         });
     });
@@ -169,7 +168,7 @@ describe("content-script form submit targets", () => {
 
         expect(submit(form)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: form.action,
         });
     });
@@ -184,7 +183,7 @@ describe("content-script form submit targets", () => {
 
         expect(submit(document.querySelector("form")!.querySelector("button,input")!)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: "https://tracker.example/original.torrent",
         });
     });
@@ -194,7 +193,7 @@ describe("content-script form submit targets", () => {
 
         expect(submit(document.querySelector("form")!)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: "https://tracker.example/original.torrent",
         });
     });
@@ -206,7 +205,7 @@ describe("content-script form submit targets", () => {
 
         expect(submit(form)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: "https://tracker.example/late.torrent",
         });
     });
@@ -227,7 +226,7 @@ describe("content-script form submit targets", () => {
 
         expect(submit(button)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
-            action: PreAddTorrentMessage.action,
+            action: "preAddTorrent",
             url: "https://tracker.example/second.torrent",
         });
     });
@@ -271,7 +270,7 @@ describe("content-script badge", () => {
         const calls: [{ action: string; text?: string }][] = browser.runtime.sendMessage.mock.calls;
         return calls
             .map(([message]) => message)
-            .filter(message => message.action === UpdateActionBadgeText.action)
+            .filter(message => message.action === "updateActionBadgeText")
             .map(message => message.text);
     }
 

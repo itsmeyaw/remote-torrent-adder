@@ -10,7 +10,6 @@ vi.mock("../../../src/util/platform", async (importOriginal) => ({
 
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import NotificationsPage from "../../../src/options/pages/NotificationsPage";
-import { GetSettingsMessage, SaveSettingsMessage, TestNotificationMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
 import { getDefaultSettings } from "../../../src/settings/settings-defaults";
 
@@ -18,10 +17,10 @@ const BUTTON_TOGGLE = /Offer an "Add label" button after adding/;
 
 function respondWithSettings(settings = getDefaultSettings()) {
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-        if (message.action === GetSettingsMessage.action) {
-            return Promise.resolve(serializeSettings(settings));
+        if (message.action === "getSettings") {
+            return Promise.resolve({ value: serializeSettings(settings) });
         }
-        return Promise.resolve();
+        return Promise.resolve({ value: undefined });
     });
 }
 
@@ -47,7 +46,7 @@ describe("NotificationsPage add-label button toggle", () => {
 
         const save = (chrome.runtime.sendMessage as any).mock.calls
             .map((call: any[]) => call[0])
-            .find((message: any) => message?.action === SaveSettingsMessage.action);
+            .find((message: any) => message?.action === "saveSettings");
         expect(deserializeSettings(save.settings)!.notificationsLabelButtonEnabled).toBe(false);
     });
 
@@ -73,7 +72,7 @@ describe("NotificationsPage test buttons", () => {
 
         const sent = (chrome.runtime.sendMessage as any).mock.calls
             .map((call: any[]) => call[0])
-            .find((message: any) => message?.action === TestNotificationMessage.action);
-        expect(sent).toEqual({ action: TestNotificationMessage.action, isFailed });
+            .find((message: any) => message?.action === "testNotification");
+        expect(sent).toEqual({ action: "testNotification", isFailed });
     });
 });

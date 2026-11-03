@@ -1,25 +1,6 @@
 import { ext } from "../util/browser-api";
-import {
-    GetSettingsMessage,
-    GetLinkCatchingConfig,
-    type IAddTorrentMessageWithLabelAndDir,
-    type IPreAddTorrentMessage,
-    PreAddTorrentMessage,
-    AddTorrentMessageWithLabelAndDir,
-    UpdateActionBadgeText,
-    SaveSettingsMessage,
-    type IUpdateActionBadgeTextMessage,
-    TestNotificationMessage,
-    TestConnectionMessage,
-    type ITestConnectionMessage,
-    type ISaveSettingsMessage,
-    type ITestNotificationMessage,
-    type IMessagable,
-    SetTorrentLabelMessage,
-    type ISetTorrentLabelMessage,
-    OpenWebUiMessage,
-    type IOpenWebUiMessage
-} from "../models/messages";
+import { listenForMessages } from "../util/messaging";
+import { type PreAddTorrentRequest, type SetTorrentLabelRequest, type ILinkCatchingConfig } from "../models/messages";
 import { type ConnectionTestResult, type WebUISettings } from "../models/webui";
 import { WebUIFactory } from "../models/clients";
 import { openWebUi, updateBadgeText } from "./action";
@@ -33,131 +14,46 @@ import { findWebUiSettings, getWebUi } from "../settings/webuis";
 import { addBufferedTorrent, addLink } from "./add";
 
 export function registerMessageListener(): void {
-    ext.runtime.onMessage.addListener((message: IMessagable, sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => {
-        let willRespondAsync = false;
-
-        const finish = (payload?: unknown) => {
-            try { sendResponse(payload); } catch { /* channel maybe closed */ }
-        };
-
-        const respondWithError = (err: unknown) => {
-            console.error("Message handling error", message?.action, err);
-            finish({ error: (err as Error)?.message || String(err) });
-        };
-
-        try {
-            if (!message || !message.action) {
-                finish({ error: "missing action" });
-                return false;
+    listenForMessages({
+        getSettings: async () => serializeSettings(await loadSettings()),
+        getLinkCatchingConfig: async (): Promise<string> => {
+            const settings = await loadSettings();
+            const config: ILinkCatchingConfig = {
+                linkCatchingEnabled: settings.linkCatchingEnabled,
+                linkCatchingRegexes: settings.linkCatchingRegexes,
+            };
+            return serializeObject(config);
+        },
+        saveSettings: ({ settings }) => {
+            const parsed = parseSettings(settings);
+            if (!parsed.ok) {
+                throw new Error(parsed.problems.join(" "));
             }
-
-            console.debug(`Received message of type ${message.action}`);
-            switch (message.action) {
-                case GetSettingsMessage.action: {
-                    willRespondAsync = true;
-                    loadSettings()
-                        .then(settings => finish(serializeSettings(settings)))
-                        .catch(respondWithError);
-                    break;
-                }
-                case GetLinkCatchingConfig.action: {
-                    willRespondAsync = true;
-                    loadSettings()
-                        .then(settings => finish(serializeObject({
-                            linkCatchingEnabled: settings.linkCatchingEnabled,
-                            linkCatchingRegexes: settings.linkCatchingRegexes,
-                        })))
-                        .catch(respondWithError);
-                    break;
-                }
-                case SaveSettingsMessage.action: {
-                    const saveSettingsMessage = message as ISaveSettingsMessage & { settings: string };
-                    const parsed = parseSettings(saveSettingsMessage.settings);
-                    if (!parsed.ok) {
-                        respondWithError(new Error(parsed.problems.join(" ")));
-                        break;
-                    }
-                    willRespondAsync = true;
-                    saveSettings(parsed.settings)
-                        .then(() => finish({}))
-                        .catch(respondWithError);
-                    break;
-                }
-                case TestNotificationMessage.action: {
-                    willRespondAsync = true;
-                    loadSettings()
-                        .then(settings => notify({ type: "test", isFailed: (message as ITestNotificationMessage).isFailed }, settings))
-                        .then(() => finish({}))
-                        .catch(respondWithError);
-                    break;
-                }
-                case TestConnectionMessage.action: {
-                    willRespondAsync = true;
-                    testConnectionForWebUiSettings((message as ITestConnectionMessage).webUiSettings)
-                        .then(finish)
-                        .catch(respondWithError);
-                    break;
-                }
-                case PreAddTorrentMessage.action: {
-                    willRespondAsync = true;
-                    const preAddTorrentMessage = message as IPreAddTorrentMessage;
-                    addLink(preAddTorrentMessage.url, { webUiId: preAddTorrentMessage.webUiId }, {
-                        ...resolveDownloadContext(preAddTorrentMessage, sender),
-                        windowId: sender.tab?.windowId,
-                    })
-                        .then(() => finish({}))
-                        .catch(respondWithError);
-                    break;
-                }
-                case AddTorrentMessageWithLabelAndDir.action: {
-                    willRespondAsync = true;
-                    addBufferedTorrent(message as IAddTorrentMessageWithLabelAndDir)
-                        .then(() => finish({}))
-                        .catch(respondWithError);
-                    break;
-                }
-                case SetTorrentLabelMessage.action: {
-                    willRespondAsync = true;
-                    setTorrentLabel(message as ISetTorrentLabelMessage)
-                        .then(() => finish({}))
-                        .catch(respondWithError);
-                    break;
-                }
-                case UpdateActionBadgeText.action: {
-                    updateBadgeText((message as IUpdateActionBadgeTextMessage).text, sender.tab?.id || -1);
-                    break;
-                }
-                case OpenWebUiMessage.action: {
-                    if (!sender.url?.startsWith(ext.runtime.getURL(""))) {
-                        respondWithError(new Error("openWebUi is only accepted from extension pages"));
-                        break;
-                    }
-                    willRespondAsync = true;
-                    loadSettings()
-                        .then(settings => getWebUi(settings, (message as IOpenWebUiMessage).webUiId))
-                        .then(webUi => {
-                            if (!webUi) {
-                                throw new Error(`No WebUI found for id ${(message as IOpenWebUiMessage).webUiId}`);
-                            }
-                            void openWebUi(webUi).catch(error => console.error("Failed opening WebUI", error));
-                            finish({});
-                        })
-                        .catch(respondWithError);
-                    break;
-                }
-                default: {
-                    finish({ error: `unknown action: ${message.action}` });
-                }
+            return saveSettings(parsed.settings);
+        },
+        testNotification: async ({ isFailed }) => notify({ type: "test", isFailed }, await loadSettings()),
+        testConnection: ({ webUiSettings }) => testConnectionForWebUiSettings(webUiSettings),
+        preAddTorrent: (message, sender) => addLink(message.url, { webUiId: message.webUiId }, {
+            ...resolveDownloadContext(message, sender),
+            windowId: sender.tab?.windowId,
+        }),
+        addTorrentMessageWithLabelAndDir: choice => addBufferedTorrent(choice),
+        setTorrentLabel: message => setTorrentLabel(message),
+        updateActionBadgeText: ({ text }, sender) => updateBadgeText(text, sender.tab?.id ?? -1),
+        openWebUi: async ({ webUiId }, sender) => {
+            if (!sender.url?.startsWith(ext.runtime.getURL(""))) {
+                throw new Error("openWebUi is only accepted from extension pages");
             }
-        } catch (err) {
-            respondWithError(err);
-        }
-
-        return willRespondAsync;
+            const webUi = getWebUi(await loadSettings(), webUiId);
+            if (!webUi) {
+                throw new Error(`No WebUI found for id ${webUiId}`);
+            }
+            void openWebUi(webUi).catch(error => console.error("Failed opening WebUI", error));
+        },
     });
 }
 
-export function resolveDownloadContext(message: IPreAddTorrentMessage, sender: chrome.runtime.MessageSender): TorrentDownloadContext {
+export function resolveDownloadContext(message: PreAddTorrentRequest, sender: chrome.runtime.MessageSender): TorrentDownloadContext {
     const senderPageUrl = sender.tab ? sender.url ?? sender.tab.url ?? null : null;
     return {
         tabId: sender.tab?.id ?? message.tabId ?? null,
@@ -174,7 +70,7 @@ async function testConnectionForWebUiSettings(webUiSettings: WebUISettings): Pro
     return executeMethodWrappedWithOriginStripped(() => webUi.testConnection(), webUi.createBaseUrl());
 }
 
-async function setTorrentLabel(message: ISetTorrentLabelMessage): Promise<void> {
+async function setTorrentLabel(message: SetTorrentLabelRequest): Promise<void> {
     const webUi = getWebUi(await loadSettings(), message.webUiId);
     if (!webUi) {
         throw new Error(`No WebUI found for id ${message.webUiId}`);

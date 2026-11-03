@@ -1,10 +1,6 @@
-import { ext } from "../util/browser-api";
 import { type DecodedTorrent } from "../models/decoded-torrent";
-import {
-    FetchTorrentInPageMessage,
-    type IFetchTorrentInPageMessage,
-    type IFetchTorrentInPageResponse
-} from "../models/messages";
+import { sendMessageToTab } from "../util/messaging";
+import { type IFetchedTorrentFile } from "../models/messages";
 import { type Torrent } from "../models/torrent";
 import { getTorrentNameFromLink } from "./parsers";
 import { decodeTorrentBytes } from "./bencode-decode";
@@ -76,28 +72,22 @@ async function fetchTorrentFileFromPage(url: string, context: TorrentDownloadCon
         return null;
     }
 
-    const message: IFetchTorrentInPageMessage = { action: FetchTorrentInPageMessage.action, url };
-    let response: IFetchTorrentInPageResponse | undefined;
+    let fetched: IFetchedTorrentFile;
     try {
-        response = await ext.tabs.sendMessage(context.tabId, message, { frameId: context.frameId ?? 0 }) as IFetchTorrentInPageResponse | undefined;
+        fetched = await sendMessageToTab(context.tabId, "fetchTorrentInPage", { url }, { frameId: context.frameId ?? 0 });
     } catch (error) {
-        console.warn("No content script answered in tab " + context.tabId + "; downloading from the service worker instead.", error);
-        return null;
-    }
-
-    if (!response?.fetched) {
-        console.warn("The page could not download the torrent; downloading from the service worker instead.", response?.error);
+        console.warn("The page could not download the torrent; downloading from the service worker instead.", error);
         return null;
     }
 
     return {
-        ok: response.fetched.ok,
-        status: response.fetched.status,
-        statusText: response.fetched.statusText,
-        contentType: response.fetched.contentType,
-        cfMitigated: response.fetched.cfMitigated,
-        finalUrl: response.fetched.finalUrl,
-        bytes: base64ToBytes(response.fetched.base64)
+        ok: fetched.ok,
+        status: fetched.status,
+        statusText: fetched.statusText,
+        contentType: fetched.contentType,
+        cfMitigated: fetched.cfMitigated,
+        finalUrl: fetched.finalUrl,
+        bytes: base64ToBytes(fetched.base64)
     };
 }
 

@@ -2,24 +2,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SetLabelView from "../../src/popup/app/SetLabelView";
-import { GetSettingsMessage, SetTorrentLabelMessage } from "../../src/models/messages";
 import { serializeSettings } from "../../src/settings/serializer";
 import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { makeWebUISettings } from "../helpers/fixtures";
 
 const infoHash = "0123456789abcdef0123456789abcdef01234567";
 
-function respond(setLabelResponse: unknown = {}) {
+function respond(setLabelReply: unknown = { value: undefined }) {
     const settings = getDefaultSettings();
     settings.webuiSettings = [makeWebUISettings({ id: "w1", name: "Seedbox", labels: ["movies", "tv"] })];
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-        if (message.action === GetSettingsMessage.action) {
-            return Promise.resolve(serializeSettings(settings));
+        if (message.action === "getSettings") {
+            return Promise.resolve({ value: serializeSettings(settings) });
         }
-        if (message.action === SetTorrentLabelMessage.action) {
-            return Promise.resolve(setLabelResponse);
+        if (message.action === "setTorrentLabel") {
+            return Promise.resolve(setLabelReply);
         }
-        return Promise.resolve();
+        return Promise.resolve({ value: undefined });
     });
 }
 
@@ -55,7 +54,7 @@ describe("SetLabelView", () => {
         await userEvent.click(screen.getByRole("button", { name: "Set label" }));
 
         expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
-            action: SetTorrentLabelMessage.action,
+            action: "setTorrentLabel",
             webUiId: "w1",
             infoHash,
             torrentName: "Cool Torrent",
@@ -72,7 +71,7 @@ describe("SetLabelView", () => {
 
         await userEvent.type(input, "{Enter}");
 
-        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(expect.objectContaining({ action: SetTorrentLabelMessage.action, label: "movies" }));
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(expect.objectContaining({ action: "setTorrentLabel", label: "movies" }));
     });
 
     it("stays open and shows the error when the client refuses", async () => {

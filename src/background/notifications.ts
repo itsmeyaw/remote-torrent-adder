@@ -1,5 +1,5 @@
-import { ext, sendMessageAndForget } from "../util/browser-api";
-import { type IPlaySoundMessage, PlaySoundMessage } from "../models/messages";
+import { ext } from "../util/browser-api";
+import { sendMessageAndForget } from "../util/messaging";
 import { canUseOffscreen, isFirefox } from "../util/platform";
 import { playNotificationSound } from "../notifications/play-sound";
 import { openSetLabelWindow, openWebUi } from "./action";
@@ -152,11 +152,7 @@ function show(presentation: Presentation, settings: RTASettings): void {
     if (settings.notificationsSoundEnabled) {
         if (canUseOffscreen()) {
             void ensureOffscreenDocument().then(() => {
-                const playSoundMessage = {
-                    action: PlaySoundMessage.action,
-                    isFailed
-                } as IPlaySoundMessage;
-                sendMessageAndForget(playSoundMessage);
+                sendMessageAndForget("playSound", { isFailed });
             });
         } else {
             void playNotificationSound(isFailed);

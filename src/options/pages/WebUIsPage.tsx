@@ -1,4 +1,4 @@
-import { ext } from "../../util/browser-api";
+import { sendMessage } from "../../util/messaging";
 import { useEffect, useState } from "react";
 import { useSettings } from "../SettingsContext";
 import ChipList from "../components/ChipList";
@@ -8,7 +8,6 @@ import Select from "../components/Select";
 import SettingsGroup from "../components/SettingsGroup";
 import { Client, ClientClassByClient, ClientDisplayName, WebUIFactory } from "../../models/clients";
 import type { ConnectionTestResult, WebUISettings } from "../../models/webui";
-import { TestConnectionMessage, type ITestConnectionMessage } from "../../models/messages";
 import Toggle from "../components/Toggle";
 import { inputClass } from "../ui-classes";
 import { createWebUiSettings } from "../../settings/settings-defaults";
@@ -210,14 +209,8 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
   const handleTest = async () => {
     setTestState({ signature: endpointSignature, testing: true, result: null });
     try {
-      const response = await ext.runtime.sendMessage({
-        action: TestConnectionMessage.action,
-        webUiSettings: webui,
-      } as ITestConnectionMessage);
-      if (response && typeof response === "object" && "error" in response) {
-        throw new Error(String(response.error));
-      }
-      setTestState({ signature: endpointSignature, testing: false, result: response as ConnectionTestResult });
+      const result = await sendMessage("testConnection", { webUiSettings: webui });
+      setTestState({ signature: endpointSignature, testing: false, result });
     } catch (error) {
       setTestState({
         signature: endpointSignature,

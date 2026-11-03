@@ -12,15 +12,6 @@ vi.mock("../../src/background/add", () => ({ addLink, addBufferedTorrent }));
 
 import { registerMessageListener } from "../../src/background/messaging";
 import { HandledFailure } from "../../src/util/errors";
-import {
-    GetSettingsMessage,
-    SaveSettingsMessage,
-    TestNotificationMessage,
-    PreAddTorrentMessage,
-    AddTorrentMessageWithLabelAndDir,
-    SetTorrentLabelMessage,
-    OpenWebUiMessage,
-} from "../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../src/settings/serializer";
 import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { Client } from "../../src/models/clients";
@@ -33,7 +24,7 @@ function getListener() {
     return calls[calls.length - 1][0];
 }
 
-/** Invokes the listener and resolves with the value passed to sendResponse. */
+/** Invokes the listener and resolves with the envelope passed to sendResponse. */
 function dispatch(message: any, sender: any = {}): Promise<any> {
     const listener = getListener();
     return new Promise((resolve) => {
@@ -48,31 +39,33 @@ beforeEach(() => {
 });
 
 describe("registerMessageListener routing", () => {
-    it("responds with an error when the message has no action", async () => {
-        expect(await dispatch({})).toEqual({ error: "missing action" });
+    it.each([
+        ["without an action", {}],
+        ["with an unknown action", { action: "nope" }],
+        ["with an inherited property name", { action: "toString" }],
+    ])("leaves a message %s to other contexts: no reply, the channel stays closed", (_label, message) => {
+        const sendResponse = vi.fn();
+        expect(getListener()(message, {}, sendResponse)).toBe(false);
+        expect(sendResponse).not.toHaveBeenCalled();
     });
 
-    it("responds with an error for an unknown action", async () => {
-        expect(await dispatch({ action: "nope" })).toEqual({ error: "unknown action: nope" });
-    });
-
-    it("returns serialized settings for GetSettings", async () => {
+    it("returns serialized settings for getSettings", async () => {
         const stored = getDefaultSettings();
         stored.notificationsDurationMs = 4321;
         (chrome as any).__storage.settings = serializeSettings(stored);
 
-        const response = await dispatch({ action: GetSettingsMessage.action });
-        expect(deserializeSettings(response)!.notificationsDurationMs).toBe(4321);
+        const response = await dispatch({ action: "getSettings" });
+        expect(deserializeSettings(response.value)!.notificationsDurationMs).toBe(4321);
     });
 
-    it("persists settings for SaveSettings", async () => {
+    it("persists settings for saveSettings", async () => {
         const toSave = getDefaultSettings();
         toSave.notificationsSoundEnabled = true;
         const response = await dispatch({
-            action: SaveSettingsMessage.action,
+            action: "saveSettings",
             settings: serializeSettings(toSave),
         });
-        expect(response).toEqual({});
+        expect(response).toEqual({ value: undefined });
         expect(deserializeSettings((chrome as any).__storage.settings)!.notificationsSoundEnabled).toBe(true);
     });
 
@@ -82,7 +75,7 @@ describe("registerMessageListener routing", () => {
         ["[]", "That JSON is not a Remote Torrent Adder settings export."],
     ])("rejects a SaveSettings payload that is not a settings export (%j) and keeps the stored settings", async (settings, problem) => {
         const before = (chrome as any).__storage.settings;
-        const response = await dispatch({ action: SaveSettingsMessage.action, settings });
+        const response = await dispatch({ action: "saveSettings", settings });
         expect(response).toEqual({ error: problem });
         expect((chrome as any).__storage.settings).toBe(before);
     });
@@ -90,14 +83,14 @@ describe("registerMessageListener routing", () => {
     it("rejects a SaveSettings payload with an invalid setting and reports the problem", async () => {
         const before = (chrome as any).__storage.settings;
         const invalid = { ...getDefaultSettings(), notificationsDurationMs: -1 };
-        const response = await dispatch({ action: SaveSettingsMessage.action, settings: serializeSettings(invalid) });
+        const response = await dispatch({ action: "saveSettings", settings: serializeSettings(invalid) });
         expect(response).toEqual({ error: "Invalid notificationsDurationMs" });
         expect((chrome as any).__storage.settings).toBe(before);
     });
 
     it("raises a test notification with the outcome the page asked for", async () => {
         await dispatch({
-            action: TestNotificationMessage.action,
+            action: "testNotification",
             isFailed: true,
         });
         expect(notify).toHaveBeenCalledWith({ type: "test", isFailed: true }, expect.objectContaining({ notificationsEnabled: true }));
@@ -107,11 +100,11 @@ describe("registerMessageListener routing", () => {
 describe("Add messages", () => {
     it("hands a pre-add to addLink with its WebUI and the tab it came from", async () => {
         const response = await dispatch(
-            { action: PreAddTorrentMessage.action, url: "https://tracker.org/get/1.torrent", webUiId: "w1" },
+            { action: "preAddTorrent", url: "https://tracker.org/get/1.torrent", webUiId: "w1" },
             { tab: { id: 9, windowId: 1, url: "https://tracker.org/browse" }, frameId: 3 },
         );
 
-        expect(response).toEqual({});
+        expect(response).toEqual({ value: undefined });
         expect(addLink).toHaveBeenCalledWith(
             "https://tracker.org/get/1.torrent",
             { webUiId: "w1" },
@@ -120,7 +113,7 @@ describe("Add messages", () => {
     });
 
     it("hands a pre-add without a WebUI id to addLink as the Primary WebUI target", async () => {
-        await dispatch({ action: PreAddTorrentMessage.action, url: "magnet:?x" });
+        await dispatch({ action: "preAddTorrent", url: "magnet:?x" });
 
         expect(at(addLink.mock.calls, 0)[1]).toEqual({ webUiId: undefined });
     });
@@ -128,14 +121,14 @@ describe("Add messages", () => {
     it("responds with the message of a failed pre-add", async () => {
         addLink.mockRejectedValueOnce(new HandledFailure("Adding Cool Torrent to My Client failed (HTTP 500): nope"));
 
-        const response = await dispatch({ action: PreAddTorrentMessage.action, url: "magnet:?x", webUiId: "w1" });
+        const response = await dispatch({ action: "preAddTorrent", url: "magnet:?x", webUiId: "w1" });
 
         expect(response).toEqual({ error: "Adding Cool Torrent to My Client failed (HTTP 500): nope" });
     });
 
     it("hands the Config Selector's choice to addBufferedTorrent", async () => {
         const message = {
-            action: AddTorrentMessageWithLabelAndDir.action,
+            action: "addTorrentMessageWithLabelAndDir",
             bufferedId: "b1",
             config: { label: "movies" },
             labels: ["movies"],
@@ -144,7 +137,7 @@ describe("Add messages", () => {
 
         const response = await dispatch(message);
 
-        expect(response).toEqual({});
+        expect(response).toEqual({ value: undefined });
         expect(addBufferedTorrent).toHaveBeenCalledWith(message);
     });
 
@@ -152,7 +145,7 @@ describe("Add messages", () => {
         addBufferedTorrent.mockRejectedValueOnce(new HandledFailure("No buffered torrent to add; it may already have been consumed."));
 
         const response = await dispatch({
-            action: AddTorrentMessageWithLabelAndDir.action,
+            action: "addTorrentMessageWithLabelAndDir",
             bufferedId: "unknown",
             config: {},
             labels: [],
@@ -183,7 +176,7 @@ describe("setTorrentLabel", () => {
         respondToEveryFetchWith(true, 200);
 
         const response = await dispatch({
-            action: SetTorrentLabelMessage.action,
+            action: "setTorrentLabel",
             webUiId: "w1",
             infoHash,
             torrentName: "Cool Torrent",
@@ -191,7 +184,7 @@ describe("setTorrentLabel", () => {
             labels: ["movies", "old"],
         });
 
-        expect(response).toEqual({});
+        expect(response).toEqual({ value: undefined });
         const setCategoryCall = (globalThis as any).fetch.mock.calls.find((call: any[]) => String(call[0]).endsWith("/setCategory"));
         expect(setCategoryCall[1].body.get("hashes")).toBe(infoHash);
         expect(at(deserializeSettings((chrome as any).__storage.settings)!.webuiSettings, 0).labels).toEqual(["movies", "old"]);
@@ -208,7 +201,7 @@ describe("setTorrentLabel", () => {
         respondToEveryFetchWith(false, 500);
 
         const response = await dispatch({
-            action: SetTorrentLabelMessage.action,
+            action: "setTorrentLabel",
             webUiId: "w1",
             infoHash,
             torrentName: "Cool Torrent",
@@ -225,7 +218,7 @@ describe("setTorrentLabel", () => {
         seedWebUi();
 
         const response = await dispatch({
-            action: SetTorrentLabelMessage.action,
+            action: "setTorrentLabel",
             webUiId: "missing",
             infoHash,
             torrentName: "Cool Torrent",
@@ -252,14 +245,14 @@ describe("openWebUi", () => {
     it("opens the chosen webui and responds without waiting for the tab to load", async () => {
         seedTwoWebUis();
 
-        expect(await dispatch({ action: OpenWebUiMessage.action, webUiId: "w2" }, extensionPage())).toEqual({});
+        expect(await dispatch({ action: "openWebUi", webUiId: "w2" }, extensionPage())).toEqual({ value: undefined });
         await vi.waitFor(() => expect(chrome.tabs.update).toHaveBeenCalledWith(1, { url: "http://second:9090/" }));
     });
 
     it("reports an unknown webui", async () => {
         seedTwoWebUis();
 
-        const response = await dispatch({ action: OpenWebUiMessage.action, webUiId: "missing" }, extensionPage());
+        const response = await dispatch({ action: "openWebUi", webUiId: "missing" }, extensionPage());
 
         expect(response.error).toBe("No WebUI found for id missing");
         expect(chrome.tabs.create).not.toHaveBeenCalled();
@@ -269,7 +262,7 @@ describe("openWebUi", () => {
         seedTwoWebUis();
 
         const response = await dispatch(
-            { action: OpenWebUiMessage.action, webUiId: "w2" },
+            { action: "openWebUi", webUiId: "w2" },
             { url: "https://evil.example/", tab: { id: 9 } },
         );
 

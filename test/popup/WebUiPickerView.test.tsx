@@ -2,17 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WebUiPickerView from "../../src/popup/app/WebUiPickerView";
-import { GetSettingsMessage, OpenWebUiMessage } from "../../src/models/messages";
 import { serializeSettings } from "../../src/settings/serializer";
 import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { makeWebUISettings } from "../helpers/fixtures";
 
 function respondWithSettings(settings = getDefaultSettings()) {
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-        if (message.action === GetSettingsMessage.action) {
-            return Promise.resolve(serializeSettings(settings));
+        if (message.action === "getSettings") {
+            return Promise.resolve({ value: serializeSettings(settings) });
         }
-        return Promise.resolve();
+        return Promise.resolve({ value: undefined });
     });
 }
 
@@ -50,7 +49,7 @@ describe("WebUiPickerView", () => {
         render(<WebUiPickerView />);
         await userEvent.click(await screen.findByText("Home qBittorrent"));
 
-        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: OpenWebUiMessage.action, webUiId: "a" });
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: "openWebUi", webUiId: "a" });
         await vi.waitFor(() => expect(window.close).toHaveBeenCalled());
         expect(chrome.tabs.create).not.toHaveBeenCalled();
     });

@@ -2,19 +2,18 @@ import { describe, it, expect } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider, useSettings } from "../../src/options/SettingsContext";
-import { GetSettingsMessage, SaveSettingsMessage } from "../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../src/settings/serializer";
 import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { callArgs } from "../helpers/assert";
 import { makeWebUISettings } from "../helpers/fixtures";
 
-/** Answers GetSettings with the given settings, like the service worker does. */
+/** Answers getSettings with the given settings, like the service worker does. */
 function respondWithSettings(settings = getDefaultSettings()) {
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-        if (message.action === GetSettingsMessage.action) {
-            return Promise.resolve(serializeSettings(settings));
+        if (message.action === "getSettings") {
+            return Promise.resolve({ value: serializeSettings(settings) });
         }
-        return Promise.resolve();
+        return Promise.resolve({ value: undefined });
     });
 }
 
@@ -61,7 +60,7 @@ describe("SettingsContext", () => {
 
         await waitFor(() => {
             const saves = (chrome.runtime.sendMessage as any).mock.calls
-                .filter((call: any[]) => call[0]?.action === SaveSettingsMessage.action);
+                .filter((call: any[]) => call[0]?.action === "saveSettings");
             expect(saves).toHaveLength(1);
         });
     });
@@ -77,7 +76,7 @@ describe("SettingsContext", () => {
 
         await waitFor(() => {
             const save = (chrome.runtime.sendMessage as any).mock.calls
-                .find((call: any[]) => call[0]?.action === SaveSettingsMessage.action);
+                .find((call: any[]) => call[0]?.action === "saveSettings");
             const persisted = deserializeSettings(save[0].settings)!;
             expect(persisted.notificationsDurationMs).toBe(9999);
             expect(persisted.notificationsSoundEnabled).toBe(true);
@@ -100,9 +99,9 @@ describe("SettingsContext", () => {
         await screen.findByTestId("duration");
 
         const gets = (chrome.runtime.sendMessage as any).mock.calls
-            .filter((call: any[]) => call[0]?.action === GetSettingsMessage.action);
+            .filter((call: any[]) => call[0]?.action === "getSettings");
         expect(gets).toHaveLength(1);
-        expect(callArgs(chrome.runtime.sendMessage as any, 0)[0].action).toBe(GetSettingsMessage.action);
+        expect(callArgs(chrome.runtime.sendMessage as any, 0)[0].action).toBe("getSettings");
     });
 
     it("keeps a label the background wrote while the page was open", async () => {
@@ -119,7 +118,7 @@ describe("SettingsContext", () => {
 
         await waitFor(() => {
             const save = (chrome.runtime.sendMessage as any).mock.calls
-                .find((call: any[]) => call[0]?.action === SaveSettingsMessage.action);
+                .find((call: any[]) => call[0]?.action === "saveSettings");
             expect(deserializeSettings(save[0].settings)!.webuiSettings[0]!.labels).toEqual(["movies", "tv"]);
         });
     });
@@ -128,9 +127,9 @@ describe("SettingsContext", () => {
         const saves: string[] = [];
         respondWithSettings();
         (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-            if (message.action === GetSettingsMessage.action) return Promise.resolve(serializeSettings(getDefaultSettings()));
-            if (message.action === SaveSettingsMessage.action) saves.push(message.settings);
-            return Promise.resolve();
+            if (message.action === "getSettings") return Promise.resolve({ value: serializeSettings(getDefaultSettings()) });
+            if (message.action === "saveSettings") saves.push(message.settings);
+            return Promise.resolve({ value: undefined });
         });
         renderProbe();
         await screen.findByTestId("duration");
@@ -165,7 +164,7 @@ describe("SettingsContext", () => {
     });
 
     it("shows the same error when the stored settings cannot be parsed", async () => {
-        (chrome.runtime.sendMessage as any).mockImplementation(() => Promise.resolve("{not json"));
+        (chrome.runtime.sendMessage as any).mockImplementation(() => Promise.resolve({ value: "{not json" }));
 
         renderProbe();
 

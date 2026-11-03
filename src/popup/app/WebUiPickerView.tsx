@@ -1,10 +1,8 @@
-import { trySendMessage } from '../../util/browser-api';
+import { sendMessage } from '../../util/messaging';
 import { useEffect, useState } from 'react';
 import Notice from './Notice';
 import { WebUIFactory } from '../../models/clients';
-import { OpenWebUiMessage, type IOpenWebUiMessage } from '../../models/messages';
-import { deserializeSettings } from '../../settings/serializer';
-import { requestSerializedSettings } from '../../settings/request-settings';
+import { requestSettings } from '../../settings/request-settings';
 import { addTrailingSlash } from "../../background/action";
 
 interface WebUiOption {
@@ -23,9 +21,8 @@ export default function WebUiPickerView() {
 
   useEffect(() => {
     let cancelled = false;
-    void requestSerializedSettings().then((serialized) => {
+    void requestSettings().then((settings) => {
       if (cancelled) return;
-      const settings = serialized ? deserializeSettings(serialized) : null;
       const options: WebUiOption[] = (settings?.webuiSettings ?? [])
         .map(webUiSettings => {
           const webUi = WebUIFactory.createWebUI(webUiSettings);
@@ -45,8 +42,9 @@ export default function WebUiPickerView() {
   }, []);
 
   const openWebUi = (webUiId: string) => {
-    const message: IOpenWebUiMessage = { action: OpenWebUiMessage.action, webUiId };
-    void trySendMessage(message).finally(() => window.close());
+    void sendMessage('openWebUi', { webUiId })
+      .catch((error: unknown) => console.error('Failed opening the WebUI', error))
+      .finally(() => window.close());
   };
 
   if (state.status === 'loading') {
