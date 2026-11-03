@@ -1,6 +1,6 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
-import { computeInfoHash } from "../util/info-hash";
+import { computeInfoHash } from "../torrent/info-hash";
 import { isTransmissionSessionHandshake } from "./transmission-webui";
 
 export class BiglyBTWebUI extends TorrentWebUI {

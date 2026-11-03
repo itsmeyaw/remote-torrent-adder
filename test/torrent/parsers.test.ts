@@ -8,7 +8,7 @@ import {
     parseNameFromDecodedTorrentData,
     parseFilesFromDecodedTorrentData,
     parsePrivateFlagFromDecodedTorrentData,
-} from "../../src/util/parsers";
+} from "../../src/torrent/parsers";
 
 const enc = (s: string) => new TextEncoder().encode(s);
 

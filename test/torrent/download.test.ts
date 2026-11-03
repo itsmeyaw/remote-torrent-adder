@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { CloudflareChallengeError, downloadTorrent, getBaseUrl } from "../../src/util/download";
+import { CloudflareChallengeError, downloadTorrent, getBaseUrl } from "../../src/torrent/download";
 import { FetchTorrentInPageMessage } from "../../src/models/messages";
-import { bytesToBase64 } from "../../src/util/torrent-bytes";
+import { bytesToBase64 } from "../../src/torrent/torrent-bytes";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 import { buildBencodedTorrent } from "../helpers/fixtures";
 

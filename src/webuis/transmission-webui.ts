@@ -1,6 +1,6 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
-import { blobToBase64 } from "../util/converter";
+import { blobToBase64 } from "../torrent/converter";
 
 interface TransmissionRpcResponse {
     result?: string;

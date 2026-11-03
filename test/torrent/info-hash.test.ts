@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createHash, webcrypto } from "node:crypto";
 import bencode from "bencode";
-import { computeInfoHash, parseInfoHashFromMagnetLink } from "../../src/util/info-hash";
+import { computeInfoHash, parseInfoHashFromMagnetLink } from "../../src/torrent/info-hash";
 import { makeFileTorrent, makeMagnetTorrent } from "../helpers/fixtures";
 
 const HEX_HASH = "0123456789abcdef0123456789abcdef01234567";

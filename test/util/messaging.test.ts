@@ -7,7 +7,7 @@ const { showNotification, downloadTorrent } = vi.hoisted(() => ({
     downloadTorrent: vi.fn(),
 }));
 vi.mock("../../src/util/notifications", () => ({ showNotification }));
-vi.mock("../../src/util/download", async (importOriginal) => ({
+vi.mock("../../src/torrent/download", async (importOriginal) => ({
     ...(await importOriginal<Record<string, unknown>>()),
     downloadTorrent,
 }));
@@ -29,7 +29,7 @@ import { getDefaultSettings } from "../../src/util/settings-defaults";
 import { Client } from "../../src/models/clients";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { readBufferedTorrent, saveBufferedTorrent } from "../../src/util/buffered-torrent";
-import { CloudflareChallengeError } from "../../src/util/download";
+import { CloudflareChallengeError } from "../../src/torrent/download";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
 import { Settings } from "../../src/util/settings";
 

@@ -1,4 +1,4 @@
-import { ext } from "./browser-api";
+import { ext } from "../util/browser-api";
 import { type DecodedTorrent } from "../models/decoded-torrent";
 import {
     FetchTorrentInPageMessage,
@@ -8,7 +8,7 @@ import {
 import { type Torrent } from "../models/torrent";
 import { getTorrentNameFromLink } from "./parsers";
 import { decodeTorrentBytes } from "./bencode-decode";
-import { executeMethodWrappedWithReferer } from "./cors-tricks";
+import { executeMethodWrappedWithReferer } from "../util/cors-tricks";
 import { base64ToBytes, MAX_TORRENT_FILE_BYTES } from "./torrent-bytes";
 import { buildTorrentFromDecodedData, buildTorrentFromMagnetLink } from "./torrent-source";
 

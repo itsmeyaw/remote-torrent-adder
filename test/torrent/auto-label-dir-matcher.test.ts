@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getAutoLabelResult, getAutoDirResult, explainAutoLabelDir } from "../../src/util/auto-label-dir-matcher";
+import { getAutoLabelResult, getAutoDirResult, explainAutoLabelDir } from "../../src/torrent/auto-label-dir-matcher";
 import { type Torrent } from "../../src/models/torrent";
 import { type AutoLabelDirSetting } from "../../src/models/webui";
 import { at } from "../helpers/assert";

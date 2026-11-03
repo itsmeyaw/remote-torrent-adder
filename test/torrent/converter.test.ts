@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { convertToBinary, convertBlobToString, blobToBase64 } from "../../src/util/converter";
+import { convertToBinary, convertBlobToString, blobToBase64 } from "../../src/torrent/converter";
 
 describe("convertToBinary", () => {
     it("maps each character to its byte value", () => {

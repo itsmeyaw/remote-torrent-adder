@@ -3,7 +3,7 @@ import { type TorrentWebUI } from "../models/webui";
 import OnClickData = chrome.contextMenus.OnClickData;
 import Tab = chrome.tabs.Tab;
 import { type IPreAddTorrentMessage, PreAddTorrentMessage } from "../models/messages";
-import { type TorrentDownloadContext } from "./download";
+import { type TorrentDownloadContext } from "../torrent/download";
 import { HandledFailure } from "./errors";
 import { addTorrentToWebUiById, dispatchPreAddTorrent } from "./messaging";
 import { loadWebUis } from "./webuis";

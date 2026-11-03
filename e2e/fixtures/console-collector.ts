@@ -14,7 +14,7 @@ export interface LogEntry {
 const BENIGN_WARNINGS: RegExp[] = [
     // src/content-script/rta.ts - a cold service worker is expected on first load
     /Service worker might've been asleep/,
-    // src/util/download.ts - the normal fallback when no content script answers
+    // src/torrent/download.ts - the normal fallback when no content script answers
     /No content script answered in tab/,
     /The page could not download the torrent/,
     // src/util/action.ts, src/util/context-menu.ts - expected with empty settings

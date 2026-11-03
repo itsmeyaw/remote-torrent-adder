@@ -1,5 +1,5 @@
 import { type IFetchedTorrentFile } from "../models/messages";
-import { bytesToBase64, MAX_TORRENT_FILE_BYTES } from "../util/torrent-bytes";
+import { bytesToBase64, MAX_TORRENT_FILE_BYTES } from "../torrent/torrent-bytes";
 
 export async function fetchTorrentInPage(url: string): Promise<IFetchedTorrentFile> {
     const response = await fetch(url, {

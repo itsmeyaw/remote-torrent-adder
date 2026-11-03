@@ -122,5 +122,5 @@ Report the failure mode, root cause, and fix in the conversation. A debugging se
 - `src/util/cors-tricks.ts` — CORS bypass implementation
 - `src/util/browser-api.ts` / `src/util/platform.ts` — the `ext` shim and the build-time browser constant; first stop for a browser-specific failure
 - `src/util/authentication-listener.ts` — auth event handling
-- `src/util/download.ts` — torrent file fetching and parsing
+- `src/torrent/download.ts` — torrent file fetching and parsing
 - `src/util/messaging.ts` — message flow between layers

@@ -3,7 +3,7 @@ import { WebUIFactory } from "../models/clients";
 import { AddTorrentMessageWithLabelAndDir, type IAddTorrentMessageWithLabelAndDir } from "../models/messages";
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ClientSpecificSettingDescriptor, resolveClientSpecificSetting, type WebUISettings } from "../models/webui";
-import { getAutoDirResult, getAutoLabelResult } from "../util/auto-label-dir-matcher";
+import { getAutoDirResult, getAutoLabelResult } from "../torrent/auto-label-dir-matcher";
 import { readBufferedTorrent } from "../util/buffered-torrent";
 
 /**

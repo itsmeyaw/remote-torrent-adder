@@ -5,8 +5,8 @@ import {
   explainAutoLabelDir,
   type AutoLabelDirCriterionEvaluation,
   type AutoLabelDirRuleEvaluation
-} from "../../util/auto-label-dir-matcher";
-import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../util/torrent-source";
+} from "../../torrent/auto-label-dir-matcher";
+import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../torrent/torrent-source";
 import { fieldLabel } from "./auto-label-dir-fields";
 import { primaryButtonClass } from "../ui-classes";
 

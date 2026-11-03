@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { fetchTorrentInPage } from "../../src/content-script/torrent-fetch";
-import { base64ToBytes } from "../../src/util/torrent-bytes";
+import { base64ToBytes } from "../../src/torrent/torrent-bytes";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 
 describe("fetchTorrentInPage", () => {
