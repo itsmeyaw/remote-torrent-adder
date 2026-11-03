@@ -130,22 +130,19 @@ describe("addLeadingAndTrimTrailingSlashes", () => {
 });
 
 describe("config resolution helpers", () => {
-    it("getDirectory prefers config, then default, then null", () => {
+    it("getDirectory returns the config dir, or null when it is missing (defaults are resolved upstream)", () => {
         expect(build({ defaultDir: "/def" }).publicGetDirectory({ dir: "/cfg" })).toBe("/cfg");
-        expect(build({ defaultDir: "/def" }).publicGetDirectory({})).toBe("/def");
-        expect(build({ defaultDir: null }).publicGetDirectory({})).toBeNull();
+        expect(build({ defaultDir: "/def" }).publicGetDirectory({})).toBeNull();
     });
 
-    it("getLabel prefers config, then default, then null", () => {
+    it("getLabel returns the config label, or null when it is missing (defaults are resolved upstream)", () => {
         expect(build({ defaultLabel: "def" }).publicGetLabel({ label: "cfg" })).toBe("cfg");
-        expect(build({ defaultLabel: "def" }).publicGetLabel({})).toBe("def");
-        expect(build({ defaultLabel: null }).publicGetLabel({})).toBeNull();
+        expect(build({ defaultLabel: "def" }).publicGetLabel({})).toBeNull();
     });
 
-    it("getAddPaused prefers config, then default, then false", () => {
+    it("getAddPaused returns the config value, or false when it is missing (defaults are resolved upstream)", () => {
         expect(build({ addPaused: false }).publicGetAddPaused({ addPaused: true })).toBe(true);
-        expect(build({ addPaused: true }).publicGetAddPaused({})).toBe(true);
-        expect(build({ addPaused: false }).publicGetAddPaused({})).toBe(false);
+        expect(build({ addPaused: true }).publicGetAddPaused({})).toBe(false);
     });
 
     it("getClientSpecific prefers config, then the stored setting, then the declared default", () => {

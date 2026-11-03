@@ -25,7 +25,7 @@ import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ConnectionTestResult, type TorrentAddingResult, type TorrentWebUI, type WebUISettings } from "../models/webui";
 import { WebUIFactory } from "../models/clients";
 import { openActionPopup, openPopupWindow, openWebUi, updateBadgeText } from "./action";
-import { getAutoDirResult, getAutoLabelResult } from "../torrent/auto-label-dir-matcher";
+import { resolveUploadConfig } from "../torrent/upload-config";
 import { executeMethodWrappedWithOriginStripped } from "./cors-tricks";
 import { CloudflareChallengeError, downloadTorrent, type TorrentDownloadContext } from "../torrent/download";
 import { HandledFailure } from "../util/errors";
@@ -262,12 +262,7 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
         notifyDownloadFailure(error, settings, webUi.settings.id);
         throw handledFailure(error);
     }
-    const fallbackConfig: TorrentUploadConfig = {
-        addPaused: webUi.settings.addPaused,
-        dir: getAutoDirResult(torrent, webUi._settings.autoLabelDirSettings) ?? webUi.settings.defaultDir ?? undefined,
-        label: getAutoLabelResult(torrent, webUi._settings.autoLabelDirSettings) ?? webUi.settings.defaultLabel ?? undefined
-    };
-    await sendTorrentToWebUi(webUi, torrent, config ?? fallbackConfig);
+    await sendTorrentToWebUi(webUi, torrent, config ?? resolveUploadConfig(torrent, webUi.settings).config);
 }
 
 function notifyDownloadFailure(error: unknown, settings: RTASettings, webUiId: string): void {

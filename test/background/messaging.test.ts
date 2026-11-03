@@ -476,6 +476,31 @@ describe("dispatchPreAddTorrent", () => {
         expect((uploadCall![1].body as FormData).get("category")).toBe("auto-movies");
     });
 
+    it("falls back to the first Label List entry in the direct-add path when there is no default", async () => {
+        const settings = getDefaultSettings();
+        settings.webuiSettings = [
+            makeWebUISettings({
+                id: "w1",
+                client: Client.QBittorrentWebUI,
+                showPerTorrentConfigSelector: false,
+                defaultLabel: null,
+                labels: ["movies", "tv"],
+            }),
+        ];
+        (chrome as any).__storage.settings = serializeSettings(settings);
+        downloadTorrent.mockResolvedValue(makeMagnetTorrent());
+        const fetchMock = vi.fn(() =>
+            Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("Ok.") } as any),
+        );
+        (globalThis as any).fetch = fetchMock;
+
+        await dispatchPreAddTorrent({ action: PreAddTorrentMessage.action, url: "magnet:?x", webUiId: "w1" }, 1);
+        await new Promise((r) => setTimeout(r, 0));
+
+        const uploadCall = (fetchMock.mock.calls as any[][]).find(call => String(call[0]).includes("/torrents/add"));
+        expect((uploadCall![1].body as FormData).get("category")).toBe("movies");
+    });
+
     it("notifies instead of opening the popup when the download fails", async () => {
         const settings = getDefaultSettings();
         settings.webuiSettings = [

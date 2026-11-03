@@ -144,6 +144,8 @@ function AutoLabelDirSettingsEditor({ value, onChange, showLabel, showDir, label
           settings={value}
           defaultLabel={defaultLabel}
           defaultDir={defaultDir}
+          labels={labels}
+          dirs={dirs}
           showLabel={showLabel}
           showDir={showDir}
         />
