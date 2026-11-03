@@ -74,6 +74,14 @@ export class AuthenticationError extends Error {
     }
 }
 
+/** Thrown by a login when the server answered, but not in a way that says whether the credentials are right. */
+export class CredentialsUnverifiedError extends Error {
+    constructor(public readonly httpResponseCode: number, message: string) {
+        super(message);
+        this.name = "CredentialsUnverifiedError";
+    }
+}
+
 export abstract class TorrentWebUI<Session = unknown> {
     _settings: WebUISettings;
 
@@ -182,17 +190,51 @@ export abstract class TorrentWebUI<Session = unknown> {
     }
 
     public async testConnection(): Promise<ConnectionTestResult> {
+        if (!this.login) {
+            try {
+                const response = await fetch(this.createBaseUrl(), { method: "GET" });
+                return {
+                    reachable: true,
+                    authenticated: null,
+                    httpResponseCode: response.status,
+                    message: "Reachable (credentials not checked for this client)",
+                };
+            } catch (error) {
+                return this.toUnreachableResult(error);
+            }
+        }
         try {
-            const response = await fetch(this.createBaseUrl(), { method: "GET" });
+            // shortcut: login() does not return its HTTP status, so a successful login reports 200, upgrade when login() exposes it
+            await this.login();
+            return this.toReachableResult(true, 200);
+        } catch (error) {
+            return this.toLoginTestResult(error);
+        }
+    }
+
+    private toLoginTestResult(error: unknown): ConnectionTestResult {
+        if (error instanceof AuthenticationError) {
+            return {
+                reachable: true,
+                authenticated: false,
+                httpResponseCode: error.httpResponseCode,
+                message: "Reachable, but authentication failed" + (error.reason ? `: ${error.reason}` : ""),
+            };
+        }
+        if (error instanceof CredentialsUnverifiedError) {
             return {
                 reachable: true,
                 authenticated: null,
-                httpResponseCode: response.status,
-                message: "Reachable (credentials not checked for this client)",
+                httpResponseCode: error.httpResponseCode,
+                message: `Reachable, but credentials could not be verified: ${error.message}`,
             };
-        } catch (error) {
-            return this.toUnreachableResult(error);
         }
+        if (error instanceof HttpError) {
+            return error.status === 401 || error.status === 403
+                ? this.toReachableResult(false, error.status)
+                : this.toUnverifiedHttpResult(error.status);
+        }
+        return this.toUnreachableResult(error);
     }
 
     protected toReachableResult(authenticated: boolean, httpResponseCode: number): ConnectionTestResult {
@@ -203,6 +245,15 @@ export abstract class TorrentWebUI<Session = unknown> {
             message: authenticated
                 ? "Reachable & authenticated"
                 : "Reachable, but authentication failed",
+        };
+    }
+
+    protected toUnverifiedHttpResult(httpResponseCode: number): ConnectionTestResult {
+        return {
+            reachable: true,
+            authenticated: null,
+            httpResponseCode,
+            message: `Reachable, but the server answered HTTP ${httpResponseCode}; credentials could not be verified`,
         };
     }
 
@@ -234,12 +285,7 @@ export abstract class TorrentWebUI<Session = unknown> {
             if (response.status === 401 || response.status === 403) {
                 return this.toReachableResult(false, response.status);
             }
-            return {
-                reachable: true,
-                authenticated: null,
-                httpResponseCode: response.status,
-                message: `Reachable, but the server answered HTTP ${response.status}; credentials could not be verified`,
-            };
+            return this.toUnverifiedHttpResult(response.status);
         } catch (error) {
             return this.toUnreachableResult(error);
         }

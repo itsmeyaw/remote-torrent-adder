@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { AuthenticationError, HttpError, TorrentWebUI, resolveClientSpecificSetting } from "../../src/models/webui";
+import { AuthenticationError, CredentialsUnverifiedError, HttpError, TorrentWebUI, resolveClientSpecificSetting } from "../../src/models/webui";
 import type { AddResult, ClientSpecificSettingDescriptor, TorrentAddingResult } from "../../src/models/webui";
 import type { Torrent, TorrentUploadConfig } from "../../src/models/torrent";
 import { makeWebUISettings, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
+import { callArgs } from "../helpers/assert";
 
 /**
  * Minimal concrete subclass that exposes the protected helpers so the base
@@ -490,6 +491,103 @@ describe("AuthenticationError", () => {
         expect(new AuthenticationError(401).message).toBe("Authentication failed");
         expect(new AuthenticationError(401, "bad password").message).toBe("Authentication failed: bad password");
         expect(new AuthenticationError(401).httpResponseCode).toBe(401);
+    });
+});
+
+describe("testConnection through login", () => {
+    const connectionTestOf = (loginError: Error | null) => {
+        const ui = new RecordingWebUI(makeWebUISettings());
+        ui.loginError = loginError;
+        return ui.testConnection();
+    };
+
+    it("reports reachable and authenticated when login succeeds", async () => {
+        await expect(connectionTestOf(null)).resolves.toEqual({
+            reachable: true,
+            authenticated: true,
+            httpResponseCode: 200,
+            message: "Reachable & authenticated",
+        });
+    });
+
+    it("reports the rejected credentials with the reason when login throws AuthenticationError", async () => {
+        await expect(connectionTestOf(new AuthenticationError(401, "bad password"))).resolves.toEqual({
+            reachable: true,
+            authenticated: false,
+            httpResponseCode: 401,
+            message: "Reachable, but authentication failed: bad password",
+        });
+    });
+
+    it("reports rejected credentials without a reason when AuthenticationError has none", async () => {
+        await expect(connectionTestOf(new AuthenticationError(403))).resolves.toEqual({
+            reachable: true,
+            authenticated: false,
+            httpResponseCode: 403,
+            message: "Reachable, but authentication failed",
+        });
+    });
+
+    it("reports authentication failed on a 401 or 403 HttpError", async () => {
+        for (const status of [401, 403]) {
+            await expect(connectionTestOf(new HttpError(status, ""))).resolves.toEqual({
+                reachable: true,
+                authenticated: false,
+                httpResponseCode: status,
+                message: "Reachable, but authentication failed",
+            });
+        }
+    });
+
+    it("reports reachable but not verified on any other HttpError, without blaming the credentials", async () => {
+        for (const status of [404, 500]) {
+            await expect(connectionTestOf(new HttpError(status, ""))).resolves.toEqual({
+                reachable: true,
+                authenticated: null,
+                httpResponseCode: status,
+                message: `Reachable, but the server answered HTTP ${status}; credentials could not be verified`,
+            });
+        }
+    });
+
+    it("reports reachable but not verified with the reason when login throws CredentialsUnverifiedError", async () => {
+        await expect(connectionTestOf(new CredentialsUnverifiedError(503, "Could not query the API list"))).resolves.toEqual({
+            reachable: true,
+            authenticated: null,
+            httpResponseCode: 503,
+            message: "Reachable, but credentials could not be verified: Could not query the API list",
+        });
+    });
+
+    it("reports unreachable when login fails at the network level", async () => {
+        await expect(connectionTestOf(new TypeError("Failed to fetch"))).resolves.toEqual({
+            reachable: false,
+            authenticated: null,
+            httpResponseCode: 0,
+            message: "Could not reach server: Failed to fetch",
+        });
+    });
+});
+
+describe("testConnection without login", () => {
+    it("probes the base URL and reports that credentials are not checked", async () => {
+        const fetch = queueFetch(mockResponse({ status: 200 }));
+        const ui = new MinimalWebUI(makeWebUISettings({ host: "h", port: 8080 }));
+
+        await expect(ui.testConnection()).resolves.toEqual({
+            reachable: true,
+            authenticated: null,
+            httpResponseCode: 200,
+            message: "Reachable (credentials not checked for this client)",
+        });
+        expect(callArgs(fetch, 0)[0]).toBe("http://h:8080");
+    });
+
+    it("reports unreachable when the base URL cannot be fetched", async () => {
+        (globalThis as any).fetch = async () => { throw new TypeError("Failed to fetch"); };
+        const ui = new MinimalWebUI(makeWebUISettings());
+
+        await expect(ui.testConnection()).resolves.toMatchObject({ reachable: false, authenticated: null, httpResponseCode: 0 });
     });
 });
 
