@@ -37,11 +37,24 @@ describe("showNotification", () => {
     it("opens the webui when its notification is clicked", async () => {
         registerNotificationClickListener();
         showNotification("T", "B", false, 2000, false, "http://h/");
-        await Promise.resolve();
+        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
         const onClicked = (chrome.notifications.onClicked.addListener as any).mock.calls[0][0];
 
         onClicked("notif-id");
-        expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "http://h/" });
+        await vi.waitFor(() => expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "http://h/" }));
+    });
+
+    it("opens the webui for a click delivered to a freshly restarted worker", async () => {
+        showNotification("T", "B", false, 2000, false, "http://h/");
+        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
+
+        vi.resetModules();
+        const restarted = await import("../../src/util/notifications");
+        restarted.registerNotificationClickListener();
+        const onClicked = (chrome.notifications.onClicked.addListener as any).mock.calls[0][0];
+
+        onClicked("notif-id");
+        await vi.waitFor(() => expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "http://h/" }));
     });
 
     it("ignores clicks on notifications without a stored url", async () => {
@@ -51,6 +64,7 @@ describe("showNotification", () => {
         const onClicked = (chrome.notifications.onClicked.addListener as any).mock.calls[0][0];
 
         onClicked("notif-id");
+        await new Promise(resolve => setTimeout(resolve, 0));
         expect(chrome.tabs.create).not.toHaveBeenCalled();
     });
 

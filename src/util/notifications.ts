@@ -4,7 +4,7 @@ import { canUseOffscreen, isFirefox } from "./platform";
 import { playNotificationSound } from "./play-sound";
 import { openSetLabelWindow } from "./action";
 
-const notificationUrls = new Map<string, string>();
+const URL_KEY_PREFIX = "notificationUrl:";
 const LABEL_ACTION_KEY_PREFIX = "notificationLabelAction:";
 
 export interface NotificationLabelAction {
@@ -15,11 +15,7 @@ export interface NotificationLabelAction {
 
 export function registerNotificationClickListener(): void {
     ext.notifications.onClicked.addListener((notificationId) => {
-        const url = notificationUrls.get(notificationId);
-        if (url) {
-            openWebUi(url);
-            forgetNotification(notificationId);
-        }
+        void openNotificationWebUi(notificationId);
     });
 }
 
@@ -43,9 +39,7 @@ export function showNotification(title: string, message: string, isFailed: boole
 
     void ext.notifications.create("", notificationCreateOptions).then(async myId => {
         if (webUiUrl) {
-            notificationUrls.set(myId, webUiUrl);
-        } else {
-            notificationUrls.delete(myId);
+            await ext.storage.session.set({ [URL_KEY_PREFIX + myId]: webUiUrl });
         }
         if (offeredLabelAction) {
             await ext.storage.session.set({ [LABEL_ACTION_KEY_PREFIX + myId]: offeredLabelAction });
@@ -78,9 +72,18 @@ async function openSetLabelWindowFor(notificationId: string): Promise<void> {
     }
 }
 
+async function openNotificationWebUi(notificationId: string): Promise<void> {
+    const key = URL_KEY_PREFIX + notificationId;
+    const url = (await ext.storage.session.get(key))[key] as string | undefined;
+    if (url) {
+        openWebUi(url);
+        forgetNotification(notificationId);
+    }
+}
+
 function forgetNotification(notificationId: string): void {
-    notificationUrls.delete(notificationId);
     ext.notifications.clear(notificationId).then();
+    void ext.storage.session.remove(URL_KEY_PREFIX + notificationId);
     void ext.storage.session.remove(LABEL_ACTION_KEY_PREFIX + notificationId);
 }
 
