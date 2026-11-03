@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type JSX } from "react";
 import Toggle from "../components/Toggle";
 import { useSettings } from "../SettingsContext";
 import { isMatchedByRegexes } from "../../util/utils";
+import { chipClass, chipInputClass, inputClass, monoInputClass, primaryButtonClass } from "../ui-classes";
 
 function regexToString(r: RegExp): string {
   return r.source;
@@ -94,7 +95,7 @@ export default function LinkCatchingPage(): JSX.Element {
           {regexStrings.map((r, idx) => (
             <span
               key={idx}
-              className="inline-flex items-center bg-rta-chip-bg border border-rta-chip-border rounded-[16px] py-1 px-3 font-[monospace] text-[15px] shadow-[0_1px_4px_rgba(110,139,116,0.08)] transition-[box-shadow] duration-200"
+              className={`${chipClass} shadow-[0_1px_4px_rgba(110,139,116,0.08)] transition-[box-shadow] duration-200`}
             >
               {editIdx === idx ? (
                 <>
@@ -102,7 +103,7 @@ export default function LinkCatchingPage(): JSX.Element {
                     type="text"
                     value={editValue}
                     onChange={e => setEditValue(e.target.value)}
-                    className="font-[monospace] text-[15px] border-none outline-none bg-rta-input-bg text-rta-text rounded-[8px] py-0.5 px-2 mr-1"
+                    className={chipInputClass}
                   />
                   <button onClick={() => handleEditSave(idx)} className="mr-0.5 text-[13px]">✔</button>
                   <button onClick={() => setEditIdx(null)} className="text-[13px]">✖</button>
@@ -124,11 +125,11 @@ export default function LinkCatchingPage(): JSX.Element {
             value={newRegex}
             onChange={e => setNewRegex(e.target.value)}
             placeholder="Add new regex"
-            className="font-[monospace] text-[15px] border border-rta-border bg-rta-input-bg text-rta-text rounded-[8px] py-1 px-2.5"
+            className={monoInputClass}
           />
           <button
             onClick={handleAdd}
-            className="bg-rta-accent text-rta-green-dark border-none rounded-[8px] py-1 px-3 font-medium cursor-pointer"
+            className={primaryButtonClass}
           >Add</button>
         </div>
         {addError && <div role="alert" className="text-rta-danger text-[13px] mt-1.5">{addError}</div>}
@@ -141,7 +142,7 @@ export default function LinkCatchingPage(): JSX.Element {
           placeholder="Paste a link to test..."
           value={testerValue}
           onChange={handleTesterChange}
-          className="w-full max-w-[400px] text-[15px] py-1.5 px-3 rounded-[8px] border border-rta-border bg-rta-input-bg text-rta-text mb-3"
+          className={`w-full max-w-[400px] mb-3 ${inputClass}`}
         />
         <div>
           {testerValue && (

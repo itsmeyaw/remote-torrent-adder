@@ -16,7 +16,7 @@ const Toggle: React.FC<ToggleProps> = ({ checked, onChange, label }) => (
         className="absolute left-0 top-0 m-0 w-11 h-6 opacity-0 cursor-pointer"
       />
       <span
-        className={`block w-full h-full rounded-[16px] transition-colors duration-200 ${checked ? "bg-rta-success" : "bg-rta-neutral"}`}
+        className={`block w-full h-full rounded-2xl transition-colors duration-200 ${checked ? "bg-rta-success" : "bg-rta-neutral"}`}
       ></span>
       <span
         className={`absolute top-0.5 w-5 h-5 rounded-full bg-rta-surface shadow-[0_1px_4px_rgba(0,0,0,0.4)] transition-[left] duration-200 ${checked ? "left-5" : "left-1"}`}

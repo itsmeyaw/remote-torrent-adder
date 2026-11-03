@@ -11,6 +11,7 @@ import type { ConnectionTestResult, WebUISettings } from "../../models/webui";
 import { TestConnectionMessage, type ITestConnectionMessage } from "../../models/messages";
 import Toggle from "../components/Toggle";
 import { generateId, moveItem, parsePortInput, MAX_PORT, MIN_PORT } from "../../util/utils";
+import { inputClass } from "../ui-classes";
 
 const clientOptions = Object.values(Client).map(c => ({ value: c, label: ClientDisplayName[c] }));
 
@@ -18,7 +19,6 @@ function isClientSelected(client: Client | ""): client is Client {
   return !!client && client in ClientClassByClient;
 }
 
-const fieldInputClass = "text-[15px] rounded-[8px] py-1.5 px-3 border border-rta-border bg-rta-input-bg text-rta-text";
 
 const dropIndicatorClass: Record<"above" | "below", string> = {
   above: "shadow-[inset_0_3px_0_0_var(--rta-green-dark)]",
@@ -154,7 +154,7 @@ function WebUIListItem({
             onClick={e => e.stopPropagation()}
             onChange={e => onNameChange(e.target.value)}
             placeholder="Unnamed WebUI"
-            className="text-[15px] rounded-[8px] py-1 px-2 border border-rta-border bg-rta-input-bg text-rta-text flex-1 min-w-0 font-semibold"
+            className="text-[15px] rounded-lg py-1 px-2 border border-rta-border bg-rta-input-bg text-rta-text flex-1 min-w-0 font-semibold"
           />
         ) : (
           <span
@@ -164,7 +164,7 @@ function WebUIListItem({
           </span>
         )}
         {isPrimary && (
-          <span className="text-[11px] font-bold text-white bg-rta-green rounded-[6px] py-0.5 px-1.5 whitespace-nowrap">
+          <span className="text-[11px] font-bold text-white bg-rta-green rounded-md py-0.5 px-1.5 whitespace-nowrap">
             Primary
           </span>
         )}
@@ -234,7 +234,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
         {!isPrimary && (
           <button
             onClick={onPromote}
-            className="bg-rta-info text-white border-none rounded-[8px] py-1.5 px-4 font-bold cursor-pointer transition-all duration-150"
+            className="bg-rta-info text-white border-none rounded-lg py-1.5 px-4 font-bold cursor-pointer transition-all duration-150"
           >Promote to Primary</button>
         )}
         <button
@@ -242,14 +242,14 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
             if (confirmRemove) onRemove();
             else setConfirmRemove(true);
           }}
-          className={`${confirmRemove ? "bg-rta-danger-dark shadow-[0_0_8px_2px_var(--rta-danger-dark)]" : "bg-rta-danger"} text-white border-none rounded-[8px] py-1.5 px-4 font-bold cursor-pointer transition-all duration-150`}
+          className={`${confirmRemove ? "bg-rta-danger-dark shadow-[0_0_8px_2px_var(--rta-danger-dark)]" : "bg-rta-danger"} text-white border-none rounded-lg py-1.5 px-4 font-bold cursor-pointer transition-all duration-150`}
         >
           {confirmRemove ? "For real?" : "Remove"}
         </button>
         {confirmRemove && (
           <button
             onClick={() => setConfirmRemove(false)}
-            className="bg-rta-neutral text-rta-danger border-none rounded-[8px] py-1.5 px-3 font-medium cursor-pointer"
+            className="bg-rta-neutral text-rta-danger border-none rounded-lg py-1.5 px-3 font-medium cursor-pointer"
           >Cancel</button>
         )}
       </div>
@@ -277,7 +277,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
               <div className="flex gap-4 items-end flex-wrap">
                 <div>
                   <label className="block mb-1 font-medium">Host</label>
-                  <input type="text" value={webui.host} onChange={e => onChange({ ...webui, host: e.target.value })} className={`${fieldInputClass} min-w-[120px]`} />
+                  <input type="text" value={webui.host} onChange={e => onChange({ ...webui, host: e.target.value })} className={`${inputClass} min-w-[120px]`} />
                 </div>
                 <div>
                   <label htmlFor="rta-webui-port" className="block mb-1 font-medium">Port</label>
@@ -290,13 +290,13 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                     placeholder={webui.secure ? "443" : "80"}
                     value={webui.port ?? ""}
                     onChange={e => onChange({ ...webui, port: parsePortInput(e.target.value) })}
-                    className={`${fieldInputClass} min-w-[80px]`}
+                    className={`${inputClass} min-w-[80px]`}
                   />
                 </div>
                 <Toggle checked={webui.secure} onChange={v => onChange({ ...webui, secure: v })} label="Secure (HTTPS)" />
                 <div>
                   <label className="block mb-1 font-medium">Relative Path</label>
-                  <input type="text" value={webui.relativePath || ""} onChange={e => onChange({ ...webui, relativePath: e.target.value })} className={`${fieldInputClass} min-w-[120px]`} />
+                  <input type="text" value={webui.relativePath || ""} onChange={e => onChange({ ...webui, relativePath: e.target.value })} className={`${inputClass} min-w-[120px]`} />
                 </div>
               </div>
               <div className="text-rta-text-muted">Base URL for API calls: {webUiInstance?.createBaseUrl()}</div>
@@ -304,11 +304,11 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
               <div className="flex gap-4 items-end flex-wrap">
                 <div>
                   <label className="block mb-1 font-medium">Username</label>
-                  <input type="text" value={webui.username} onChange={e => onChange({ ...webui, username: e.target.value })} className={`${fieldInputClass} min-w-[120px]`} />
+                  <input type="text" value={webui.username} onChange={e => onChange({ ...webui, username: e.target.value })} className={`${inputClass} min-w-[120px]`} />
                 </div>
                 <div>
                   <label className="block mb-1 font-medium">Password</label>
-                  <input type="password" value={webui.password} onChange={e => onChange({ ...webui, password: e.target.value })} className={`${fieldInputClass} min-w-[120px]`} />
+                  <input type="password" value={webui.password} onChange={e => onChange({ ...webui, password: e.target.value })} className={`${inputClass} min-w-[120px]`} />
                 </div>
               </div>
               {/* Test connection */}
@@ -317,7 +317,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                   <button
                     onClick={handleTest}
                     disabled={testing}
-                    className={`bg-rta-info text-white border-none rounded-[8px] py-1.5 px-4 font-bold transition-all duration-150 ${testing ? "cursor-default opacity-70" : "cursor-pointer opacity-100"}`}
+                    className={`bg-rta-info text-white border-none rounded-lg py-1.5 px-4 font-bold transition-all duration-150 ${testing ? "cursor-default opacity-70" : "cursor-pointer opacity-100"}`}
                   >{testing ? "Testing…" : "Test connection"}</button>
                   {testResult && (() => {
                     const color = !testResult.reachable
@@ -368,7 +368,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                         type="text"
                         value={webui.defaultLabel ?? ""}
                         onChange={e => onChange({ ...webui, defaultLabel: e.target.value })}
-                        className={`${fieldInputClass} min-w-[180px]`}
+                        className={`${inputClass} min-w-[180px]`}
                         placeholder="Default label"
                       />
                     </div>
@@ -383,7 +383,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                         type="text"
                         value={webui.defaultDir ?? ""}
                         onChange={e => onChange({ ...webui, defaultDir: e.target.value })}
-                        className={`${fieldInputClass} min-w-[180px]`}
+                        className={`${inputClass} min-w-[180px]`}
                         placeholder="Default directory"
                       />
                     </div>
@@ -475,7 +475,7 @@ export default function WebUIsPage() {
             onClick={handleAdd}
             title="Add new WebUI"
             aria-label="Add new WebUI"
-            className="bg-rta-success text-white border-none rounded-[8px] w-8 h-8 text-[22px] leading-none cursor-pointer flex items-center justify-center"
+            className="bg-rta-success text-white border-none rounded-lg w-8 h-8 text-[22px] leading-none cursor-pointer flex items-center justify-center"
           >+</button>
         </div>
         <div className="flex flex-col gap-1">

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { chipClass, chipInputClass, monoInputClass, primaryButtonClass } from "../ui-classes";
 
 interface ChipListProps {
   label: string;
@@ -31,12 +32,12 @@ const ChipList: React.FC<ChipListProps> = ({ label, values, onChange, placeholde
       {values.length > 0 && (
         <div className="flex flex-wrap gap-2 min-h-10">
           {values.map((v, idx) => (
-            <span key={idx} className="inline-flex items-center bg-rta-chip-bg border border-rta-chip-border rounded-[16px] py-1 px-3 font-[monospace] text-[15px]">
+            <span key={idx} className={chipClass}>
               <input
                 type="text"
                 value={v}
                 onChange={e => handleEdit(idx, e.target.value)}
-                className="font-[monospace] text-[15px] border-none outline-none bg-rta-input-bg text-rta-text rounded-[8px] py-0.5 px-2 mr-1"
+                className={chipInputClass}
               />
               <button onClick={() => handleRemove(idx)} className="text-[13px] ml-0.5">🗑</button>
             </span>
@@ -49,9 +50,9 @@ const ChipList: React.FC<ChipListProps> = ({ label, values, onChange, placeholde
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder={placeholder || "Add new entry"}
-          className="font-[monospace] text-[15px] border border-rta-border bg-rta-input-bg text-rta-text rounded-[8px] py-1 px-2.5"
+          className={monoInputClass}
         />
-        <button onClick={handleAdd} className="bg-rta-accent text-rta-green-dark border-none rounded-[8px] py-1 px-3 font-medium cursor-pointer">Add</button>
+        <button onClick={handleAdd} className={primaryButtonClass}>Add</button>
       </div>
     </div>
   );

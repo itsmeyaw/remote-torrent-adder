@@ -14,7 +14,7 @@ const Select: React.FC<SelectProps> = ({ label, value, changeable, options, onCh
     <select
       value={value}
       onChange={onChange ? e => onChange(e.target.value) : undefined}
-      className="text-[15px] rounded-[8px] py-1.5 px-3 border border-rta-border bg-rta-input-bg text-rta-text min-w-[180px]"
+      className="text-[15px] rounded-lg py-1.5 px-3 border border-rta-border bg-rta-input-bg text-rta-text min-w-[180px]"
       disabled={changeable === false}
     >
       <option value="" disabled>Select...</option>

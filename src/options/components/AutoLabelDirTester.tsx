@@ -8,6 +8,7 @@ import {
 } from "../../util/auto-label-dir-matcher";
 import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../util/torrent-source";
 import { fieldLabel } from "./auto-label-dir-fields";
+import { primaryButtonClass } from "../ui-classes";
 
 interface AutoLabelDirTesterProps {
   settings: AutoLabelDirSetting[];
@@ -19,7 +20,7 @@ interface AutoLabelDirTesterProps {
 
 const MAX_TORRENT_BYTES = 10 * 1024 * 1024;
 
-const monospace = "font-[monospace] bg-rta-chip-bg border border-rta-chip-border rounded-[6px] py-px px-1.5";
+const monospace = "font-[monospace] bg-rta-chip-bg border border-rta-chip-border rounded-md py-px px-1.5";
 
 function Outcome({ caption, value, source }: { caption: string; value: string | null; source: string | null }) {
   return (
@@ -77,7 +78,7 @@ function RuleRow({ rule, winningRuleIndex, showLabel, showDir }: {
   if (showDir) outcomeParts.push(`dir ${rule.setting.dir ? `"${rule.setting.dir}"` : "(none)"}`);
 
   return (
-    <div className={`py-2 px-2.5 mt-2 rounded-[8px] bg-rta-surface border ${isWinner ? "border-rta-success" : "border-rta-border"}`}>
+    <div className={`py-2 px-2.5 mt-2 rounded-lg bg-rta-surface border ${isWinner ? "border-rta-success" : "border-rta-border"}`}>
       <div className="flex gap-2 items-baseline flex-wrap">
         <span className="font-semibold">Rule {rule.index + 1}</span>
         {isWinner && <span className="text-rta-success font-medium">✅ applied → {outcomeParts.join(", ")}</span>}
@@ -108,7 +109,7 @@ function TorrentContents({ torrent }: { torrent: Torrent }) {
         {open ? "▾" : "▸"} Torrent contents ({trackers.length} {trackers.length === 1 ? "tracker" : "trackers"}, {files.length} {files.length === 1 ? "file" : "files"})
       </button>
       {open && (
-        <div className="mt-2 max-h-[260px] overflow-y-auto border border-rta-border rounded-[8px] p-2.5 bg-rta-surface">
+        <div className="mt-2 max-h-[260px] overflow-y-auto border border-rta-border rounded-lg p-2.5 bg-rta-surface">
           <div className="font-medium mb-1">Trackers</div>
           {trackers.length === 0
             ? <div className="text-rta-text-muted text-[14px]">None.</div>
@@ -193,7 +194,7 @@ function AutoLabelDirTester({ settings, defaultLabel, defaultDir, showLabel, sho
         <span className="mr-2">Drop a .torrent file here</span>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="bg-rta-accent text-rta-green-dark border-none rounded-[8px] py-1 px-3 font-medium cursor-pointer">
+          className={primaryButtonClass}>
           Choose file…
         </button>
         <input
@@ -212,11 +213,11 @@ function AutoLabelDirTester({ settings, defaultLabel, defaultDir, showLabel, sho
           onChange={e => setMagnetLink(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") handleMagnet(); }}
           placeholder="…or paste a magnet link"
-          className="flex-1 min-w-0 font-[monospace] text-[14px] border border-rta-border bg-rta-input-bg text-rta-text rounded-[8px] py-1 px-2.5"
+          className="flex-1 min-w-0 font-[monospace] text-[14px] border border-rta-border bg-rta-input-bg text-rta-text rounded-lg py-1 px-2.5"
         />
         <button
           onClick={handleMagnet}
-          className="bg-rta-accent text-rta-green-dark border-none rounded-[8px] py-1 px-3 font-medium cursor-pointer">
+          className={primaryButtonClass}>
           Test
         </button>
       </div>

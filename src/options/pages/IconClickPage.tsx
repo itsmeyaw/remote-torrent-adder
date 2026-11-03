@@ -3,7 +3,7 @@ import { useSettings } from "../SettingsContext";
 import RadioCard from "../components/RadioCard";
 import { type IconClickAction } from "../../models/settings";
 
-const sectionClass = "inline-flex flex-col gap-2.5 bg-rta-surface-alt border border-rta-border rounded-[12px] p-4.5";
+const sectionClass = "inline-flex flex-col gap-2.5 bg-rta-surface-alt border border-rta-border rounded-xl p-4.5";
 
 const sectionTitleClass = "mt-0 mb-1 mx-0 text-[13px] font-bold tracking-[0.6px] uppercase text-rta-green-dark";
 

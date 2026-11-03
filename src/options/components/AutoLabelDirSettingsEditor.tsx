@@ -3,6 +3,7 @@ import type { AutoLabelDirSetting, AutoLabelDirCriterion } from "../../models/we
 import AutoLabelDirTester from "./AutoLabelDirTester";
 import SettingsGroup from "./SettingsGroup";
 import { CRITERIA_FIELDS, fieldLabel, type CriterionField } from "./auto-label-dir-fields";
+import { chipClass, compactInputClass, monoInputClass, primaryButtonClass } from "../ui-classes";
 
 interface AutoLabelDirSettingsEditorProps {
   value: AutoLabelDirSetting[];
@@ -39,7 +40,7 @@ function CriteriaEditor({ criteria, onChange }: { criteria: AutoLabelDirCriterio
       {criteria.length > 0 && (
         <div className="flex flex-wrap gap-2 min-h-8">
           {criteria.map((c, idx) => (
-            <span key={idx} className="inline-flex items-center bg-rta-chip-bg border border-rta-chip-border rounded-[16px] py-1 px-3 font-[monospace] text-[15px]">
+            <span key={idx} className={chipClass}>
               <span className="mr-2">{fieldLabel(c.field)}:</span>
               <span className="mr-2">{c.value}</span>
               <button onClick={() => handleRemove(idx)} className="text-[13px] ml-0.5">🗑</button>
@@ -51,7 +52,7 @@ function CriteriaEditor({ criteria, onChange }: { criteria: AutoLabelDirCriterio
         <select
           value={field}
           onChange={e => setField(e.target.value as CriterionField)}
-          className="text-[15px] rounded-[8px] py-1 px-2.5 border border-rta-border bg-rta-input-bg text-rta-text">
+          className={compactInputClass}>
           {CRITERIA_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
         <input
@@ -59,9 +60,9 @@ function CriteriaEditor({ criteria, onChange }: { criteria: AutoLabelDirCriterio
           value={value}
           onChange={e => setValue(e.target.value)}
           placeholder={CRITERIA_FIELDS.find(f => f.value === field)?.placeholder}
-          className="flex-1 min-w-0 font-[monospace] text-[15px] border border-rta-border bg-rta-input-bg text-rta-text rounded-[8px] py-1 px-2.5"
+          className={`flex-1 min-w-0 ${monoInputClass}`}
         />
-        <button onClick={handleAdd} className="bg-rta-accent text-rta-green-dark border-none rounded-[8px] py-1 px-3 font-medium cursor-pointer">Add</button>
+        <button onClick={handleAdd} className={primaryButtonClass}>Add</button>
       </div>
     </div>
   );
@@ -91,14 +92,14 @@ function AutoLabelDirSettingsEditor({ value, onChange, showLabel, showDir, label
   return (
     <SettingsGroup
       title="Auto Label/Dir Settings"
-      actions={<button onClick={handleAdd} className="bg-rta-success text-white border-none rounded-[8px] py-1.5 px-4 font-medium cursor-pointer">Add Rule</button>}
+      actions={<button onClick={handleAdd} className="bg-rta-success text-white border-none rounded-lg py-1.5 px-4 font-medium cursor-pointer">Add Rule</button>}
     >
       {value.length === 0 && <div className="text-rta-text-muted mb-2">No rules defined yet.</div>}
       {value.map((setting, idx) => (
-        <div key={idx} className="mb-4.5 p-3 border border-rta-border rounded-[8px] bg-rta-surface relative">
+        <div key={idx} className="mb-4.5 p-3 border border-rta-border rounded-lg bg-rta-surface relative">
           <button
             onClick={() => handleRemove(idx)}
-            className="absolute top-2 right-2 bg-rta-danger text-white border-none rounded-[8px] py-1 px-2.5 font-medium cursor-pointer"
+            className="absolute top-2 right-2 bg-rta-danger text-white border-none rounded-lg py-1 px-2.5 font-medium cursor-pointer"
             title="Remove rule"
           >🗑</button>
           <div className="flex gap-8 items-start">
@@ -112,7 +113,7 @@ function AutoLabelDirSettingsEditor({ value, onChange, showLabel, showDir, label
                   <select
                     value={setting.label ?? ""}
                     onChange={e => handleLabelChange(idx, e.target.value === "" ? null : e.target.value)}
-                    className="text-[15px] rounded-[8px] py-1 px-2.5 border border-rta-border bg-rta-input-bg text-rta-text min-w-[120px]">
+                    className={`${compactInputClass} min-w-[120px]`}>
                     <option value="">(none)</option>
                     {[...(labels.includes(setting.label ?? "") || !setting.label ? labels : [setting.label, ...labels])]
                       .filter((l, i, arr) => l && arr.indexOf(l) === i)
@@ -126,7 +127,7 @@ function AutoLabelDirSettingsEditor({ value, onChange, showLabel, showDir, label
                   <select
                     value={setting.dir ?? ""}
                     onChange={e => handleDirChange(idx, e.target.value === "" ? null : e.target.value)}
-                    className="text-[15px] rounded-[8px] py-1 px-2.5 border border-rta-border bg-rta-input-bg text-rta-text min-w-[120px]">
+                    className={`${compactInputClass} min-w-[120px]`}>
                     <option value="">(none)</option>
                     {[...(dirs.includes(setting.dir ?? "") || !setting.dir ? dirs : [setting.dir, ...dirs])]
                       .filter((d, i, arr) => d && arr.indexOf(d) === i)

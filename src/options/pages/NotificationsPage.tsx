@@ -10,13 +10,13 @@ import { isFirefox } from "../../util/platform";
 // into memory to play, so cap the size to keep things snappy.
 const MAX_SOUND_BYTES = 1024 * 1024; // 1 MB
 
-const sectionClass = "bg-rta-surface-alt border border-rta-border rounded-[12px] p-4.5 mb-4.5";
+const sectionClass = "bg-rta-surface-alt border border-rta-border rounded-xl p-4.5 mb-4.5";
 
 const sectionTitleClass = "mt-0 mb-3.5 mx-0 text-[13px] font-bold tracking-[0.6px] uppercase text-rta-green-dark";
 
 const rowClass = "flex items-center gap-3";
 
-const buttonClass = "border border-rta-border rounded-[8px] py-1.5 px-3.5 bg-rta-surface text-rta-text font-medium cursor-pointer";
+const buttonClass = "border border-rta-border rounded-lg py-1.5 px-3.5 bg-rta-surface text-rta-text font-medium cursor-pointer";
 
 export default function NotificationsPage() {
   const { settings, updateSetting, loading } = useSettings();
@@ -69,7 +69,7 @@ export default function NotificationsPage() {
             min={0}
             value={settings.notificationsDurationMs}
             onChange={e => updateSetting("notificationsDurationMs", Number(e.target.value))}
-            className="w-[110px] bg-rta-input-bg text-rta-text border border-rta-border rounded-[8px] py-1.5 px-2.5"
+            className="w-[110px] bg-rta-input-bg text-rta-text border border-rta-border rounded-lg py-1.5 px-2.5"
           />
           <span className="text-rta-text-muted">ms</span>
         </div>
@@ -89,13 +89,13 @@ export default function NotificationsPage() {
       <div className="flex gap-3">
         <button
           onClick={() => sendTest(false)}
-          className="bg-rta-success text-white border-none rounded-[8px] py-[9px] px-[18px] font-medium cursor-pointer"
+          className="bg-rta-success text-white border-none rounded-lg py-[9px] px-[18px] font-medium cursor-pointer"
         >
           Test Success Notification
         </button>
         <button
           onClick={() => sendTest(true)}
-          className="bg-rta-danger text-white border-none rounded-[8px] py-[9px] px-[18px] font-medium cursor-pointer"
+          className="bg-rta-danger text-white border-none rounded-lg py-[9px] px-[18px] font-medium cursor-pointer"
         >
           Test Failed Notification
         </button>
@@ -187,7 +187,7 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
       {fileName && (
         <button
           type="button"
-          className="border border-rta-border rounded-[8px] py-1.5 px-3.5 bg-rta-surface text-rta-danger font-medium cursor-pointer"
+          className="border border-rta-border rounded-lg py-1.5 px-3.5 bg-rta-surface text-rta-danger font-medium cursor-pointer"
           onClick={reset}
           disabled={busy}
           title="Reset to default"
