@@ -33,7 +33,7 @@ For Firefox, `pnpm run dev:firefox` launches a scratch profile with `dist/firefo
 - **`src/webuis/<name>-webui.ts`** — one class per BitTorrent client (13), extends `TorrentWebUI`
 - **`src/models/clients.ts`** — `Client` enum + `ClientDisplayName` + `ClientClassByClient` + `WebUIFactory`
 - **`src/models/webui.ts`** — abstract `TorrentWebUI` base class
-- **`src/background/`** — code only the service worker runs: messaging, context menu, action, notifications, auth listener, CORS rules, Buffered Torrent storage
+- **`src/background/`** — code only the service worker runs: messaging, context menu, action, notifications, auth listener, CORS rules, Buffered Torrent storage. `add.ts` is the Add module: every Add entry point (message router, context menu) calls its `addLink` / `addBufferedTorrent`, which load settings once and report failures the same way
 - **`src/torrent/`** — reading a Torrent: bencode, Declared Name/Tracker parsing, Torrent File download, Info Hash, Auto Label/Dir matching
 - **`src/settings/`** — settings load/save, serializer, defaults, validation, WebUI setup
 - **`src/notifications/`** — the offscreen document that plays notification sounds (`play-sound.ts`, `sound-storage.ts`)

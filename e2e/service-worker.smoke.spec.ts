@@ -48,8 +48,8 @@ test.describe("service worker", () => {
         await logs.waitForQuiet();
         expect(await extension.contextMenuIds()).toEqual([
             "server-main",
-            "server-0",
-            "server-1",
+            "server-webui-webui-1",
+            "server-webui-webui-2",
             "sendall-separator",
             "server-all",
         ]);
