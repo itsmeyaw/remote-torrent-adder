@@ -58,7 +58,7 @@ export function registerMessageListener(): void {
                 return false;
             }
 
-            console.debug(`Received message of type ${message.action}:`, message, sender);
+            console.debug(`Received message of type ${message.action}`);
             const settingsProvider = new Settings();
 
             switch (message.action) {
@@ -379,7 +379,7 @@ function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config: Torre
         const webUiUrl = addTrailingSlash(webUi.createBaseUrl());
         webUi.sendTorrent(torrent, config ?? {}).then(async (torrentAddingResult: TorrentAddingResult) => {
             if (torrentAddingResult.success) {
-                console.log(`Torrent added: ${torrent.name} to -> ${webUi.name}`);
+                console.debug(`Torrent added: ${torrent.name} to -> ${webUi.name}`);
             } else {
                 console.warn(`Torrent rejected by ${webUi.name}: ${torrent.name}`, torrentAddingResult);
             }

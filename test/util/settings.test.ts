@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { Settings } from "../../src/util/settings";
 import { serializeSettings } from "../../src/util/serializer";
 import { getDefaultSettings } from "../../src/util/settings-defaults";
@@ -53,6 +53,29 @@ describe("Settings.saveSettings", () => {
 
         expect(chrome.storage.local.set).toHaveBeenCalled();
         expect((chrome as any).__storage.settings).toContain("notificationsSoundEnabled");
+    });
+});
+
+describe("Settings console output", () => {
+    it("never logs WebUI credentials on load or save", async () => {
+        const password = "s3cret-webui-password";
+        const spies = (["log", "info", "debug", "warn", "error"] as const).map(method => vi.spyOn(console, method).mockImplementation(() => {}));
+        try {
+            const settings = getDefaultSettings();
+            settings.webuiSettings = [makeWebUISettings({ password })];
+
+            await new Settings().saveSettings(settings);
+            await new Settings().loadSettings();
+            (chrome as any).__storage.settings = undefined;
+            await new Settings().loadSettings();
+
+            expect(spies.some(spy => spy.mock.calls.length > 0)).toBe(true);
+            for (const spy of spies) {
+                expect(JSON.stringify(spy.mock.calls)).not.toContain(password);
+            }
+        } finally {
+            vi.restoreAllMocks();
+        }
     });
 });
 
