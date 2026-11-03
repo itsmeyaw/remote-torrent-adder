@@ -90,7 +90,10 @@ async function handleContextMenuClick(onClickData: OnClickData, tab?: Tab): Prom
         return;
     }
 
-    targetWebUis.forEach(webUi => addTorrentToWebUiById(webUi.settings.id, url, null, context));
+    targetWebUis.forEach(webUi => {
+        addTorrentToWebUiById(webUi.settings.id, url, null, context)
+            .catch(error => console.error(`Adding to ${webUi.name} failed`, error));
+    });
 }
 
 function resolveTargetWebUis(menuItemId: string, allWebUis: TorrentWebUI[]): TorrentWebUI[] {
