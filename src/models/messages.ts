@@ -26,10 +26,6 @@ export const PreAddTorrentMessage: IMessagable = {
     action: "preAddTorrent"
 }
 
-export const AddTorrentMessage: IMessagable = {
-    action: "addTorrent"
-}
-
 export const AddTorrentMessageWithLabelAndDir: IMessagable = {
     action: "addTorrentMessageWithLabelAndDir"
 }
@@ -56,11 +52,6 @@ export const OpenWebUiMessage: IMessagable = {
 
 export const FetchTorrentInPageMessage: IMessagable = {
     action: "fetchTorrentInPage"
-}
-
-export interface IAddTorrentMessage extends IPreAddTorrentMessage {
-    webUiId: string;
-    config: TorrentUploadConfig;
 }
 
 export interface IAddTorrentMessageWithLabelAndDir extends IMessagable {

@@ -39,9 +39,13 @@ export function defineClientSuite(probe: ClientProbe): ClientSuite {
 
     const addAndFind: ClientSuite["addAndFind"] = async (extension, logs, options = {}) => {
         const torrent = options.torrent ?? torrentServer.createTorrent();
-        await configureExtension(extension, webUiSettingsFor(probe, options.settings));
+        const { config } = options;
+        const defaults: Partial<WebUISettings> = config
+            ? { defaultLabel: config.label ?? null, defaultDir: config.dir ?? null, addPaused: config.addPaused ?? false }
+            : {};
+        await configureExtension(extension, webUiSettingsFor(probe, { ...defaults, ...options.settings }));
 
-        const notification = await addViaExtension(extension, torrent.url, options.config);
+        const notification = await addViaExtension(extension, torrent.url);
         expect(notification.title, notification.message).toBe("Torrent added successfully");
 
         const state = await waitFor(`${torrent.name} to show up in ${probe.profile}`, () => probe.find(torrent.infoHash), {
