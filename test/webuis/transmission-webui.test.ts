@@ -92,7 +92,9 @@ describe("TransmissionWebUI", () => {
         const result = await build().sendTorrent(makeFileTorrent(), { label: "movies" });
 
         expect(result.success).toBe(true);
-        expect(fetch).toHaveBeenCalledTimes(2);
+        const bodies = fetch.mock.calls.map(([, opts]) => String(opts?.body));
+        expect(bodies.join("\n")).not.toContain("undefined");
+        expect(bodies.slice(1).map(body => JSON.parse(body).method)).toEqual(["torrent-add"]);
     });
 
     it("reports failure when the rpc result is not success", async () => {
