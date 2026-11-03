@@ -197,7 +197,7 @@ Porla: POST JSON `{username, password}` to `/api/v1/auth/login`, receive token, 
 POST JSON `{username, password}` to `/api/auth/authenticate`; session cookie set by browser. Throw `AuthenticationError` from `login()` on rejection.
 
 ### Basic auth — see `rqbit.ts`, `tixati.ts`, `rutorrent.ts`
-Use `this.createBasicAuthHeaders()`, and `this.probeWithBasicAuth(url)` for `testConnection()`. `biglybt.ts` and `transmission.ts` also probe this way.
+Use `this.createBasicAuthHeaders()`, and `this.probeWithBasicAuth(url)` for `testConnection()`.
 
 ### XML-RPC — see `rutorrent.ts`
 Build an XML body and POST with `Content-Type: text/xml`.

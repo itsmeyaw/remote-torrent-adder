@@ -7,6 +7,8 @@ import { PorlaWebUI } from "../../src/webuis/porla";
 import { DelugeWebUI } from "../../src/webuis/deluge";
 import { QNAPDownloadStationWebUI } from "../../src/webuis/qnapdownloadstation";
 import { SynologyDownloadStationWebUI } from "../../src/webuis/synologydownloadstation";
+import { TransmissionWebUI } from "../../src/webuis/transmission";
+import { BiglyBTWebUI } from "../../src/webuis/biglybt";
 import { makeWebUISettings, makeMagnetTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 
@@ -75,6 +77,20 @@ const rows: LoginAdapter[] = [
         loginUrl: "http://h:8080/webapi/auth.cgi",
         loginOk: () => mockResponse({ status: 200, json: { success: true, data: { sid: "sid-1" } } }),
     },
+    {
+        name: "Transmission",
+        build: () => new TransmissionWebUI(settings),
+        prelude: () => [],
+        loginUrl: "http://h:8080/transmission/rpc",
+        loginOk: () => mockResponse({ status: 409, headers: { "X-Transmission-Session-Id": "s" } }),
+    },
+    {
+        name: "BiglyBT",
+        build: () => new BiglyBTWebUI(settings),
+        prelude: () => [],
+        loginUrl: "http://h:8080/transmission/rpc",
+        loginOk: () => mockResponse({ status: 409, headers: { "X-Transmission-Session-Id": "s" } }),
+    },
 ];
 
 /** Drops the per-request id that JSON-RPC adapters randomise, so two login bodies compare by content. */
@@ -85,7 +101,7 @@ const normalizeBody = (body: unknown): unknown => {
     if (body instanceof URLSearchParams) {
         return body.toString();
     }
-    if (typeof body === "string") {
+    if (typeof body === "string" && body !== "") {
         const { id: _id, ...json } = JSON.parse(body);
         return json;
     }
