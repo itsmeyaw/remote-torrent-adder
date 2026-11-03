@@ -11,10 +11,10 @@ const SettingsGroup: React.FC<SettingsGroupProps> = ({ title, actions, children 
   return (
     <section
       aria-labelledby={titleId}
-      style={{ marginBottom: 20, border: "1px solid var(--rta-border, #b7c9a7)", borderRadius: 10, padding: 16, background: "var(--rta-surface-alt, #f7faf7)" }}
+      className="mb-5 border border-rta-border rounded-[10px] p-4 bg-rta-surface-alt"
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-        <span id={titleId} style={{ fontWeight: 600, fontSize: 16 }}>{title}</span>
+      <div className="flex items-center gap-3 mb-3">
+        <span id={titleId} className="font-semibold text-[16px]">{title}</span>
         {actions}
       </div>
       {children}
