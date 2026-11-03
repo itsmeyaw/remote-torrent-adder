@@ -36,15 +36,14 @@ export function addTrailingSlash(url: string): string {
     return url;
 }
 
-export function clearDynamicRules(): void {
-    ext.declarativeNetRequest.getDynamicRules().then(rules => {
-        const ruleIds = rules.map(rule => rule.id);
-        if (ruleIds.length > 0) {
-            ext.declarativeNetRequest.updateDynamicRules({
-                removeRuleIds: ruleIds
-            });
-        }
-    });
+export async function clearDynamicRules(): Promise<void> {
+    const rules = await ext.declarativeNetRequest.getDynamicRules();
+    const ruleIds = rules.map(rule => rule.id);
+    if (ruleIds.length > 0) {
+        await ext.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: ruleIds
+        });
+    }
 }
 
 export const MIN_PORT = 1;

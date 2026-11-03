@@ -95,18 +95,25 @@ describe("addTrailingSlash", () => {
 describe("clearDynamicRules", () => {
     it("removes all existing dynamic rule ids", async () => {
         (chrome.declarativeNetRequest.getDynamicRules as any).mockResolvedValue([{ id: 1 }, { id: 2 }]);
-        clearDynamicRules();
-        await Promise.resolve();
-        await Promise.resolve();
+        await clearDynamicRules();
         expect(chrome.declarativeNetRequest.updateDynamicRules).toHaveBeenCalledWith({ removeRuleIds: [1, 2] });
     });
 
     it("does not call update when there are no rules", async () => {
         (chrome.declarativeNetRequest.getDynamicRules as any).mockResolvedValue([]);
-        clearDynamicRules();
-        await Promise.resolve();
-        await Promise.resolve();
+        await clearDynamicRules();
         expect(chrome.declarativeNetRequest.updateDynamicRules).not.toHaveBeenCalled();
+    });
+
+    it("rejects when the rules cannot be read instead of failing silently", async () => {
+        (chrome.declarativeNetRequest.getDynamicRules as any).mockRejectedValue(new Error("storage is down"));
+        await expect(clearDynamicRules()).rejects.toThrow("storage is down");
+    });
+
+    it("rejects when the rules cannot be removed instead of failing silently", async () => {
+        (chrome.declarativeNetRequest.getDynamicRules as any).mockResolvedValue([{ id: 1 }]);
+        (chrome.declarativeNetRequest.updateDynamicRules as any).mockRejectedValue(new Error("update refused"));
+        await expect(clearDynamicRules()).rejects.toThrow("update refused");
     });
 });
 

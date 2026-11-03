@@ -34,7 +34,7 @@ ext.runtime.onInstalled.addListener(() => {
 });
 
 ext.runtime.onStartup.addListener(() => {
-    clearDynamicRules();
+    clearDynamicRules().catch(error => console.error("Failed to clear dynamic CORS rules", error));
     void rebuildContextMenu();
 });
 
