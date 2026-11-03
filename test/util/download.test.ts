@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { CloudflareChallengeError, downloadTorrent } from "../../src/util/download";
+import { CloudflareChallengeError, downloadTorrent, getBaseUrl } from "../../src/util/download";
 import { FetchTorrentInPageMessage } from "../../src/models/messages";
 import { bytesToBase64 } from "../../src/util/torrent-bytes";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
@@ -185,5 +185,15 @@ describe("downloadTorrent (cloudflare)", () => {
         queueFetch(mockResponse({ status: 403, body: "no", headers: { "Content-Type": "text/html" } }));
 
         await expect(downloadTorrent("https://tracker.org/get/1.torrent")).rejects.toThrow(/Status not OK: 403/);
+    });
+});
+
+describe("getBaseUrl", () => {
+    it("returns the origin of a valid URL", () => {
+        expect(getBaseUrl("https://example.com:8080/path?q=1")).toBe("https://example.com:8080");
+    });
+
+    it("returns an empty string for an invalid URL", () => {
+        expect(getBaseUrl("not a url")).toBe("");
     });
 });

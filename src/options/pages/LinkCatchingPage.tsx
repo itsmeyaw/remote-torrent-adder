@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type JSX } from "react";
 import Toggle from "../components/Toggle";
 import { useSettings } from "../SettingsContext";
-import { isMatchedByRegexes } from "../../util/utils";
+import { isMatchedByRegexes } from "../../content-script/link-catching";
 import { chipClass, chipInputClass, inputClass, monoInputClass, primaryButtonClass } from "../ui-classes";
 
 function regexToString(r: RegExp): string {

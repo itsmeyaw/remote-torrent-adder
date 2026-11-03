@@ -1,7 +1,6 @@
 import { type Torrent } from "../models/torrent";
 import { type WebUISettings } from "../models/webui";
 import { type IdbStore, withStore } from "./idb";
-import { generateId } from "./utils";
 
 /**
  * The torrent a click handed off to the popup, parked between the service
@@ -41,7 +40,7 @@ const LEGACY_BUFFERED_TORRENT_KEY = "pending";
  */
 export async function saveBufferedTorrent(buffered: BufferedTorrent): Promise<string> {
     const now = Date.now();
-    const id = `${sortableTimestamp(now)}-${generateId()}`;
+    const id = `${sortableTimestamp(now)}-${crypto.randomUUID()}`;
     const expiredBefore = sortableTimestamp(now - RETENTION_MS);
     await withStore(BUFFERED_TORRENT_STORE, "readwrite", store => {
         // Queued first, so it runs before the put in the same transaction.

@@ -1,5 +1,4 @@
 import { ext } from "./browser-api";
-import { addTrailingSlash } from "./utils";
 import { initiateWebUis, loadWebUis } from "./webuis";
 import { Settings } from "./settings";
 import { rememberWebUiTab } from "./authentication-listener";
@@ -59,6 +58,13 @@ export async function openWebUi(webUi: TorrentWebUI): Promise<void> {
     }
     await rememberWebUiTab(tab.id, webUi.settings.id);
     await ext.tabs.update(tab.id, { url });
+}
+
+export function addTrailingSlash(url: string): string {
+    if (!url.endsWith("/")) {
+        return url + "/";
+    }
+    return url;
 }
 
 function popupUrl(mode?: PopupMode, bufferedId?: string): string {

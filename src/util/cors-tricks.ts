@@ -47,6 +47,16 @@ export async function registerCorsCircumventionForWebUis(allWebUis: TorrentWebUI
     });
 }
 
+export async function clearDynamicRules(): Promise<void> {
+    const rules = await ext.declarativeNetRequest.getDynamicRules();
+    const ruleIds = rules.map(rule => rule.id);
+    if (ruleIds.length > 0) {
+        await ext.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: ruleIds
+        });
+    }
+}
+
 // Random, not a counter: a restarted worker must not reuse the id of a rule still registered from before the restart.
 function allocateDynamicRuleId(): number {
     return Math.floor(Math.random() * 2_000_000_000) + 1;

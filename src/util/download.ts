@@ -9,7 +9,6 @@ import { type Torrent } from "../models/torrent";
 import { getTorrentNameFromLink } from "./parsers";
 import { decodeTorrentBytes } from "./bencode-decode";
 import { executeMethodWrappedWithReferer } from "./cors-tricks";
-import { getBaseUrl } from "./utils";
 import { base64ToBytes, MAX_TORRENT_FILE_BYTES } from "./torrent-bytes";
 import { buildTorrentFromDecodedData, buildTorrentFromMagnetLink } from "./torrent-source";
 
@@ -161,4 +160,13 @@ function describeContentType(contentType: string | null): string {
     }
     const semicolonPos = contentType.indexOf(";");
     return (semicolonPos < 0 ? contentType : contentType.slice(0, semicolonPos)).trim();
+}
+
+export function getBaseUrl(url: string): string {
+    try {
+        const u = new URL(url);
+        return u.origin;
+    } catch {
+        return "";
+    }
 }

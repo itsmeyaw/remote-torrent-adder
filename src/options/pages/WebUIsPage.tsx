@@ -10,7 +10,6 @@ import { Client, ClientClassByClient, ClientDisplayName, WebUIFactory } from "..
 import type { ConnectionTestResult, WebUISettings } from "../../models/webui";
 import { TestConnectionMessage, type ITestConnectionMessage } from "../../models/messages";
 import Toggle from "../components/Toggle";
-import { generateId, moveItem, parsePortInput, MAX_PORT, MIN_PORT } from "../../util/utils";
 import { inputClass } from "../ui-classes";
 
 const clientOptions = Object.values(Client).map(c => ({ value: c, label: ClientDisplayName[c] }));
@@ -19,6 +18,29 @@ function isClientSelected(client: Client | ""): client is Client {
   return !!client && client in ClientClassByClient;
 }
 
+export function moveItem<T>(items: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || from >= items.length || to < 0 || to >= items.length) {
+    return items;
+  }
+  const reordered = [...items];
+  const [item] = reordered.splice(from, 1);
+  if (item === undefined) {
+    return items;
+  }
+  reordered.splice(to, 0, item);
+  return reordered;
+}
+
+export const MIN_PORT = 1;
+export const MAX_PORT = 65535;
+
+export function parsePortInput(raw: string): number | null {
+  const digits = raw.replace(/\D/g, "").replace(/^0+/, "");
+  if (digits === "") {
+    return null;
+  }
+  return Math.min(Number(digits), MAX_PORT);
+}
 
 const dropIndicatorClass: Record<"above" | "below", string> = {
   above: "shadow-[inset_0_3px_0_0_var(--rta-green-dark)]",
@@ -27,7 +49,7 @@ const dropIndicatorClass: Record<"above" | "below", string> = {
 
 function getDefaultWebUISettings(): WebUISettings {
   return {
-    id: generateId(),
+    id: crypto.randomUUID(),
     // No client is chosen yet: the user picks one in the detail panel, which is
     // what reveals the rest of the configuration. Until then this entry is a
     // draft and is filtered out by consumers that resolve a concrete client.

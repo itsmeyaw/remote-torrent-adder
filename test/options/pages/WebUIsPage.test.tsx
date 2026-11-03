@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
-import WebUIsPage from "../../../src/options/pages/WebUIsPage";
+import WebUIsPage, { moveItem, parsePortInput } from "../../../src/options/pages/WebUIsPage";
 import { GetSettingsMessage, SaveSettingsMessage, TestConnectionMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/util/serializer";
 import { getDefaultSettings } from "../../../src/util/settings-defaults";
@@ -197,5 +197,67 @@ describe("WebUIsPage", () => {
         await userEvent.click(within(general).getByRole("button", { name: "Test connection" }));
 
         expect(await within(general).findByText("✅ Reachable & authenticated")).toBeInTheDocument();
+    });
+});
+
+describe("moveItem", () => {
+    it("moves an item down", () => {
+        expect(moveItem(["a", "b", "c"], 0, 2)).toEqual(["b", "c", "a"]);
+    });
+
+    it("moves an item up", () => {
+        expect(moveItem(["a", "b", "c"], 2, 0)).toEqual(["c", "a", "b"]);
+    });
+
+    it("swaps neighbours", () => {
+        expect(moveItem(["a", "b", "c"], 1, 0)).toEqual(["b", "a", "c"]);
+    });
+
+    it("does not mutate the input", () => {
+        const items = ["a", "b", "c"];
+        moveItem(items, 0, 2);
+        expect(items).toEqual(["a", "b", "c"]);
+    });
+
+    it("returns the same array reference for a no-op move", () => {
+        const items = ["a", "b", "c"];
+        expect(moveItem(items, 1, 1)).toBe(items);
+    });
+
+    it("returns the same array reference for out-of-range indices", () => {
+        const items = ["a", "b", "c"];
+        expect(moveItem(items, -1, 1)).toBe(items);
+        expect(moveItem(items, 0, 3)).toBe(items);
+        expect(moveItem(items, 3, 0)).toBe(items);
+    });
+});
+
+describe("parsePortInput", () => {
+    it("returns null for an empty field", () => {
+        expect(parsePortInput("")).toBeNull();
+    });
+
+    it("parses a plain port number", () => {
+        expect(parsePortInput("8080")).toBe(8080);
+    });
+
+    it("drops a leading minus so negative ports cannot be entered", () => {
+        expect(parsePortInput("-8080")).toBe(8080);
+        expect(parsePortInput("-")).toBeNull();
+    });
+
+    it("clamps anything above the maximum port", () => {
+        expect(parsePortInput("65536")).toBe(65535);
+        expect(parsePortInput("999999")).toBe(65535);
+    });
+
+    it("treats zero and leading zeroes as no port", () => {
+        expect(parsePortInput("0")).toBeNull();
+        expect(parsePortInput("00080")).toBe(80);
+    });
+
+    it("ignores non-digit characters", () => {
+        expect(parsePortInput("8e4")).toBe(84);
+        expect(parsePortInput("abc")).toBeNull();
     });
 });

@@ -16,7 +16,7 @@ import {
     UpdateActionBadgeText
 } from '../models/messages';
 import { PreAddTorrentMessage } from '../models/messages';
-import { isMatchedByRegexes } from '../util/utils';
+import { isMatchedByRegexes } from './link-catching';
 import { fetchTorrentInPage } from './torrent-fetch';
 
 

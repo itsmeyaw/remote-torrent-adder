@@ -5,7 +5,7 @@ import { WebUIFactory } from '../../models/clients';
 import { OpenWebUiMessage, type IOpenWebUiMessage } from '../../models/messages';
 import { deserializeSettings } from '../../util/serializer';
 import { requestSerializedSettings } from '../../util/request-settings';
-import { addTrailingSlash } from '../../util/utils';
+import { addTrailingSlash } from "../../util/action";
 
 interface WebUiOption {
   id: string;
