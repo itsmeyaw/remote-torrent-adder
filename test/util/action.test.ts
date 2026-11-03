@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { registerActionClickListener, openPrimaryWebUi, updateBadgeText } from "../../src/util/action";
+import { registerActionClickListener, openPrimaryWebUi, updateBadgeText, addTrailingSlash } from "../../src/util/action";
 import { getDefaultSettings } from "../../src/util/settings-defaults";
 import { serializeSettings } from "../../src/util/serializer";
 import { SETTINGS_KEY } from "../../src/util/settings";
@@ -129,5 +129,15 @@ describe("updateBadgeText", () => {
     it("clears the badge with an empty string", () => {
         updateBadgeText("", 42);
         expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ text: "", tabId: 42 });
+    });
+});
+
+describe("addTrailingSlash", () => {
+    it("appends a slash when missing", () => {
+        expect(addTrailingSlash("http://x.com")).toBe("http://x.com/");
+    });
+
+    it("leaves an existing trailing slash untouched", () => {
+        expect(addTrailingSlash("http://x.com/")).toBe("http://x.com/");
     });
 });

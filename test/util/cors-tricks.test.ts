@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
     registerCorsCircumventionForWebUis,
     executeMethodWrappedWithReferer,
+    clearDynamicRules,
 } from "../../src/util/cors-tricks";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
 import { makeWebUISettings } from "../helpers/fixtures";
@@ -141,5 +142,30 @@ describe("executeMethodWrappedWithReferer", () => {
 
         expect(addedIds).toHaveLength(2);
         expect(addedIds[1]).not.toBe(addedIds[0]);
+    });
+});
+
+describe("clearDynamicRules", () => {
+    it("removes all existing dynamic rule ids", async () => {
+        (chrome.declarativeNetRequest.getDynamicRules as any).mockResolvedValue([{ id: 1 }, { id: 2 }]);
+        await clearDynamicRules();
+        expect(chrome.declarativeNetRequest.updateDynamicRules).toHaveBeenCalledWith({ removeRuleIds: [1, 2] });
+    });
+
+    it("does not call update when there are no rules", async () => {
+        (chrome.declarativeNetRequest.getDynamicRules as any).mockResolvedValue([]);
+        await clearDynamicRules();
+        expect(chrome.declarativeNetRequest.updateDynamicRules).not.toHaveBeenCalled();
+    });
+
+    it("rejects when the rules cannot be read instead of failing silently", async () => {
+        (chrome.declarativeNetRequest.getDynamicRules as any).mockRejectedValue(new Error("storage is down"));
+        await expect(clearDynamicRules()).rejects.toThrow("storage is down");
+    });
+
+    it("rejects when the rules cannot be removed instead of failing silently", async () => {
+        (chrome.declarativeNetRequest.getDynamicRules as any).mockResolvedValue([{ id: 1 }]);
+        (chrome.declarativeNetRequest.updateDynamicRules as any).mockRejectedValue(new Error("update refused"));
+        await expect(clearDynamicRules()).rejects.toThrow("update refused");
     });
 });

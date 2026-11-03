@@ -4,7 +4,6 @@ import { migrateSettingsClientIdentifiers } from "./legacy-client-identifiers";
 import { showNotification } from "./notifications";
 import { serializeSettings, deserializeSettings } from "./serializer";
 import { getDefaultSettings } from "./settings-defaults";
-import { generateId } from "./utils";
 
 
 export const SETTINGS_KEY: string = "settings";
@@ -78,7 +77,7 @@ export class Settings {
         if (alreadyBackedUp) {
             return false;
         }
-        await ext.storage.local.set({ [SETTINGS_BACKUP_KEY_PREFIX + generateId()]: stored });
+        await ext.storage.local.set({ [SETTINGS_BACKUP_KEY_PREFIX + crypto.randomUUID()]: stored });
         return true;
     }
 
