@@ -89,7 +89,7 @@ describe("QBittorrentWebUI", () => {
         const fetch = queueFetch(mockResponse({ status: 200, body: "Fails." }));
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({
             success: false,
-            httpResponseBody: "qBittorrent rejected the username or password",
+            httpResponseBody: "Authentication failed: qBittorrent rejected the username or password",
         });
         expect(fetch).toHaveBeenCalledTimes(1);
         expect(callArgs(fetch, 0)[0]).toBe("http://h:8080/api/v2/auth/login");

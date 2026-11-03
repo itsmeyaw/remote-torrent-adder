@@ -1,7 +1,7 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, AuthenticationError, type ConnectionTestResult, TorrentWebUI } from "../models/webui";
 
-export class QNAPDownloadStationWebUI extends TorrentWebUI {
+export class QNAPDownloadStationWebUI extends TorrentWebUI<string> {
     public override async testConnection(): Promise<ConnectionTestResult> {
         try {
             const payload = new FormData();
@@ -18,22 +18,17 @@ export class QNAPDownloadStationWebUI extends TorrentWebUI {
         }
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const sessionId = await this.fetchSessionId();
-            const fetchOptions = await this.createTorrentFetchOptions(sessionId, torrent, config);
-            const response = await this.fetch(this.createAddingUrlForTorrent(torrent), fetchOptions);
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig, sessionId: string): Promise<AddResult> {
+        const fetchOptions = await this.createTorrentFetchOptions(sessionId, torrent, config);
+        const response = await this.fetch(this.createAddingUrlForTorrent(torrent), fetchOptions);
 
-            const responseText = await response.text();
-            const errorCode = JSON.parse(responseText)["error"];
-            return {
-                success: errorCode === 0 || errorCode === 8196,
-                httpResponseCode: response.status,
-                httpResponseBody: responseText,
-            };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+        const responseText = await response.text();
+        const errorCode = JSON.parse(responseText)["error"];
+        return {
+            success: errorCode === 0 || errorCode === 8196,
+            httpResponseCode: response.status,
+            httpResponseBody: responseText,
+        };
     }
 
     private createQNAPDownloadStationBaseUrl(): string {
@@ -47,7 +42,7 @@ export class QNAPDownloadStationWebUI extends TorrentWebUI {
         return this.createQNAPDownloadStationBaseUrl() + (torrent.isMagnet ? "/Task/AddUrl" : "/Task/AddTorrent");
     }
 
-    private async fetchSessionId(): Promise<string> {
+    protected override async login(): Promise<string> {
         const loginUrl = this.createQNAPDownloadStationBaseUrl() + "/Misc/Login";
         const payload = new FormData();
         payload.append("user", this.settings.username);
@@ -55,7 +50,7 @@ export class QNAPDownloadStationWebUI extends TorrentWebUI {
         const response = await this.fetch(loginUrl, { method: 'POST', body: payload });
         const responseJson = await response.json();
         if (!responseJson["sid"]) {
-            throw new Error("Authentication failed");
+            throw new AuthenticationError(response.status);
         }
         return responseJson["sid"];
     }

@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { blobToBase64 } from "../torrent/converter";
 
 interface TransmissionRpcResponse {
@@ -11,47 +11,32 @@ interface TransmissionRpcResponse {
 export const isTransmissionSessionHandshake = (response: Response): boolean =>
     response.status === 409 && response.headers.get("X-Transmission-Session-Id") !== null;
 
-export class TransmissionWebUI extends TorrentWebUI {
+export class TransmissionWebUI extends TorrentWebUI<string> {
     public override testConnection(): Promise<ConnectionTestResult> {
         return this.probeWithBasicAuth(this.createBaseUrl() + "/transmission/rpc", isTransmissionSessionHandshake);
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const sessionId = await this.fetchTransmissionSessionId();
-            const fetchOpts = await this.createTorrentFetchOptions(torrent, config, sessionId);
-            const response = await this.fetch(this.createBaseUrl() + "/transmission/rpc", fetchOpts);
-
-            const responseText = await response.text();
-            const responseData = this.parseRpcResponse(responseText);
-            const success = responseData?.result === "success";
-            const label = this.getLabel(config);
-            const addedArguments = responseData?.arguments;
-            const hashString = (addedArguments?.["torrent-added"] ?? addedArguments?.["torrent-duplicate"])?.hashString;
-            if (!success || !label) {
-                return { success, httpResponseCode: response.status, httpResponseBody: responseText };
-            }
-            const warning = await this.runLabelFollowUp(label, () => {
-                if (!hashString) {
-                    throw new Error("the added torrent's hash is missing from the response");
-                }
-                return this.setLabelWithSessionId(hashString, label, sessionId);
-            });
-            return { success, httpResponseCode: response.status, httpResponseBody: responseText, warning };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+    protected override login(): Promise<string> {
+        return this.fetchTransmissionSessionId();
     }
 
-    public override async setLabel(infoHash: string, label: string): Promise<TorrentAddingResult> {
-        try {
-            return await this.setLabelWithSessionId(infoHash, label, await this.fetchTransmissionSessionId());
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig, sessionId: string): Promise<AddResult> {
+        const fetchOpts = await this.createTorrentFetchOptions(torrent, config, sessionId);
+        const response = await this.fetch(this.createBaseUrl() + "/transmission/rpc", fetchOpts);
+
+        const responseText = await response.text();
+        const responseData = this.parseRpcResponse(responseText);
+        const addedArguments = responseData?.arguments;
+        const torrentId = (addedArguments?.["torrent-added"] ?? addedArguments?.["torrent-duplicate"])?.hashString;
+        return {
+            success: responseData?.result === "success",
+            httpResponseCode: response.status,
+            httpResponseBody: responseText,
+            torrentId,
+        };
     }
 
-    private async setLabelWithSessionId(hashString: string, label: string, sessionId: string): Promise<TorrentAddingResult> {
+    protected override async applyLabel(sessionId: string, hashString: string, label: string): Promise<TorrentAddingResult> {
         const response = await this.fetch(this.createBaseUrl() + "/transmission/rpc", {
             method: "POST",
             headers: {
@@ -66,6 +51,10 @@ export class TransmissionWebUI extends TorrentWebUI {
             httpResponseCode: response.status,
             httpResponseBody: responseText,
         };
+    }
+
+    protected override labelAfterAdd(sessionId: string, torrentId: string, label: string): Promise<TorrentAddingResult> {
+        return this.applyLabel(sessionId, torrentId, label);
     }
 
     private parseRpcResponse(responseText: string): TransmissionRpcResponse | null {

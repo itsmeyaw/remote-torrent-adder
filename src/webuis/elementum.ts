@@ -1,19 +1,15 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, TorrentWebUI } from "../models/webui";
 
 export class ElementumWebUI extends TorrentWebUI {
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const url = this.createElementumBaseUrl();
-            const payload = torrent.isMagnet
-                ? this.createPayloadForMagnet(torrent.data as string, config)
-                : this.createPayloadForTorrent(torrent);
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
+        const url = this.createElementumBaseUrl();
+        const payload = torrent.isMagnet
+            ? this.createPayloadForMagnet(torrent.data as string, config)
+            : this.createPayloadForTorrent(torrent);
 
-            const response = await this.fetch(url, { method: 'POST', body: payload });
-            return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+        const response = await this.fetch(url, { method: 'POST', body: payload });
+        return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     createElementumBaseUrl(): string {

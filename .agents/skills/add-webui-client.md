@@ -22,7 +22,7 @@ Before starting, collect from the user:
 Create `src/webuis/<clientname>.ts` — lowercase, no suffix (the `src/webuis/` folder already says what it is). Multi-word client names are run together rather than hyphenated (`qnapdownloadstation.ts`, `synologydownloadstation.ts`).
 
 ```typescript
-import { TorrentWebUI, type TorrentAddingResult } from '../models/webui';
+import { type AddResult, TorrentWebUI } from '../models/webui';
 import { type Torrent, type TorrentUploadConfig } from '../models/torrent';
 
 export class <ClientName>WebUI extends TorrentWebUI {
@@ -31,20 +31,24 @@ export class <ClientName>WebUI extends TorrentWebUI {
     get isDirSupported(): boolean { return false; }         // set true if supported
     get isAddPausedSupported(): boolean { return false; }   // set true if supported
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            // 1. Authenticate if needed
-            // 2. Build request body — branch on `torrent.isMagnet`
-            // 3. POST torrent to client API via this.fetch()
-            return { success: true, httpResponseCode: 200, httpResponseBody: null };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
+        // 1. Build request body — branch on `torrent.isMagnet`
+        // 2. POST torrent to client API via this.fetch()
+        return { success: true, httpResponseCode: 200, httpResponseBody: null };
     }
 }
 ```
 
-The base class defines the constructor — don't redeclare one unless you need extra setup.
+The base class defines `sendTorrent` and `setLabel` and the constructor — don't override them, and don't redeclare the constructor unless you need extra setup. Implement the hooks below.
+
+### Adapter hooks
+
+`sendTorrent` and `setLabel` are templates in `TorrentWebUI`: they run the login, the Add, the follow-ups and the failure mapping. Implement only these hooks:
+- `add(torrent, config, session)` (required) → `AddResult`: the Add request. Set `torrentId` when the response carries the client's id for the added torrent. Let transport errors throw; the base maps them with `toFailureResult`.
+- `login()` (optional) → `Session`: opens a session before the Add. The return value reaches `add`, `applyLabel` and the follow-ups. Throw `new AuthenticationError(status, reason?)` when the server rejects the credentials. Omit it when the client has no session.
+- `applyLabel(session, torrentId, label)` (optional) → `TorrentAddingResult`: sets a label on an existing torrent. Its presence makes `setLabel` work; normalise the id case here if the client needs it.
+- `labelAfterAdd(session, torrentId, label)` / `pauseAfterAdd(session, torrentId)` (optional): implement only when the Add request cannot carry the value. After a successful Add the base calls them when a label is set or Add Paused is on. A failure becomes a `warning` on the successful result; it never fails the Add.
+- `addedTorrentId(added, torrent)` (optional override, default `added.torrentId`): the id the follow-ups use. Override when the Add response has no id (BiglyBT computes the info hash).
 
 ### Base class API (`src/models/webui.ts`)
 
@@ -61,7 +65,7 @@ Per-torrent value resolution (config value first, then the per-client default):
 - `this.getClientSpecific(key, config)` → `boolean`, for options only this client understands. Declare them by overriding `get clientSpecificSettingDescriptors()`; the options page and the popup then render them with no further wiring. See Step 2b.
 
 Result construction:
-- `this.toFailureResult(error)` → `TorrentAddingResult`; maps `HttpError` to its status and body, anything else to code `0` and the error message. Use this in every `catch` rather than hand-building a failure object.
+- `this.toFailureResult(error)` → `TorrentAddingResult`; maps `HttpError` to its status and body, anything else to code `0` and the error message. The base templates use it; a custom `catch` should too, rather than hand-building a failure object.
 
 Connection testing:
 - `get isConnectionTestSupported(): boolean` — defaults to `true`. Override to `false` if the client has no probe-able endpoint; the Options page hides the Test Connection button when it is false.
@@ -189,7 +193,7 @@ First POST to `/transmission/rpc` returns HTTP 409 with `X-Transmission-Session-
 Porla: POST JSON `{username, password}` to `/api/v1/auth/login`, receive token, pass in subsequent JSON-RPC calls. Deluge: POST JSON-RPC `auth.login` with the password.
 
 ### JSON-body login returning a cookie — see `flood.ts`
-POST JSON `{username, password}` to `/api/auth/authenticate`; session cookie set by browser.
+POST JSON `{username, password}` to `/api/auth/authenticate`; session cookie set by browser. Throw `AuthenticationError` from `login()` on rejection.
 
 ### Basic auth — see `rqbit.ts`, `tixati.ts`, `rutorrent.ts`
 Use `this.createBasicAuthHeaders()`, and `this.probeWithBasicAuth(url)` for `testConnection()`. `biglybt.ts` and `transmission.ts` also probe this way.
@@ -218,7 +222,7 @@ await this.fetch(`${this.createBaseUrl()}/api/endpoint`, {
 ```
 
 ### Split branches by magnet vs file — see `flood.ts`, `deluge.ts`, `rutorrent.ts`
-Different endpoints or payload shapes for `torrent.isMagnet === true` vs `false`. Branch in `sendTorrent` itself; do not try to unify.
+Different endpoints or payload shapes for `torrent.isMagnet === true` vs `false`. Branch in `add` itself; do not try to unify.
 
 ## Output
 

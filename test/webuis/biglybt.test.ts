@@ -63,15 +63,14 @@ describe("BiglyBTWebUI", () => {
     });
     it("sets the label with torrent-set after adding a magnet, using the upper-cased info hash", async () => {
         const fetch = queueFetch(
-            mockResponse({ status: 200 }),
-            mockResponse({ status: 200, json: { result: "success" } }),
             mockResponse({ status: 409, headers: { "X-Transmission-Session-Id": "sess-1" } }),
+            mockResponse({ status: 200, json: { result: "success" } }),
             mockResponse({ status: 200, json: { result: "success" } }),
         );
         const result = await build().sendTorrent(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }), { label: "movies" });
 
         expect(result.success).toBe(true);
-        const [url, opts] = callArgs(fetch, 3);
+        const [url, opts] = callArgs(fetch, 2);
         expect(url).toBe("http://h:9091/transmission/rpc");
         expect((opts.headers as any)["X-Transmission-Session-Id"]).toBe("sess-1");
         expect(JSON.parse(opts.body as string)).toEqual({ method: "torrent-set", arguments: { ids: ["0123456789abcdef0123456789abcdef01234567".toUpperCase()], labels: ["movies"] } });
@@ -90,7 +89,6 @@ describe("BiglyBTWebUI", () => {
         queueFetch(
             mockResponse({ status: 200 }),
             mockResponse({ status: 200, body: "<h1>200: OK</h1>" }),
-            mockResponse({ status: 200 }),
             mockResponse({ status: 200, json: { result: "error" } }),
         );
         const result = await build().sendTorrent(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }), { label: "movies" });

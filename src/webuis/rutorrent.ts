@@ -1,5 +1,5 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ClientSpecificSettingDescriptor, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type AddResult, type ClientSpecificSettingDescriptor, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 
 const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> = [
     {
@@ -17,39 +17,31 @@ export class RuTorrentWebUI extends TorrentWebUI {
         return this.probeWithBasicAuth(this.createBaseUrl() + "/");
     }
 
-    public override async sendTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<TorrentAddingResult> {
-        try {
-            const url = this.createRutorrentBaseUrl(config);
-            let payload: string | FormData;
-            let headers: Record<string, string> = {};
+    protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
+        const url = this.createRutorrentBaseUrl(config);
+        let payload: string | FormData;
+        let headers: Record<string, string> = {};
 
-            if (torrent.isMagnet) {
-                payload = this.createPayloadForMagnet(torrent.data as string);
-                headers = { "Content-Type": "application/x-www-form-urlencoded" };
-            } else {
-                payload = this.createPayloadForTorrent(torrent, config);
-            }
-
-            const response = await this.fetch(url, { method: 'POST', headers, body: payload });
-            const responseBody = await response.text();
-            const success = /result\[\]=Success/.test(response.url) || /addTorrentSuccess/.test(responseBody);
-            return { success, httpResponseCode: response.status, httpResponseBody: responseBody };
-        } catch (error) {
-            return this.toFailureResult(error);
+        if (torrent.isMagnet) {
+            payload = this.createPayloadForMagnet(torrent.data as string);
+            headers = { "Content-Type": "application/x-www-form-urlencoded" };
+        } else {
+            payload = this.createPayloadForTorrent(torrent, config);
         }
+
+        const response = await this.fetch(url, { method: 'POST', headers, body: payload });
+        const responseBody = await response.text();
+        const success = /result\[\]=Success/.test(response.url) || /addTorrentSuccess/.test(responseBody);
+        return { success, httpResponseCode: response.status, httpResponseBody: responseBody };
     }
 
-    public override async setLabel(infoHash: string, label: string): Promise<TorrentAddingResult> {
-        try {
-            const response = await this.fetch(this.createBaseUrl() + "/plugins/httprpc/action.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: `mode=setlabel&hash=${infoHash.toUpperCase()}&v=${encodeURIComponent(encodeURIComponent(label))}`
-            });
-            return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
-        } catch (error) {
-            return this.toFailureResult(error);
-        }
+    protected override async applyLabel(_session: unknown, infoHash: string, label: string): Promise<TorrentAddingResult> {
+        const response = await this.fetch(this.createBaseUrl() + "/plugins/httprpc/action.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `mode=setlabel&hash=${infoHash.toUpperCase()}&v=${encodeURIComponent(encodeURIComponent(label))}`
+        });
+        return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     createRutorrentBaseUrl(config: TorrentUploadConfig): string {
