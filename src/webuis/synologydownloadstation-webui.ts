@@ -9,6 +9,13 @@ interface SynologyApiInfo {
 
 type SynologyApiInfoMap = Record<string, SynologyApiInfo | undefined>;
 
+class SynologyDiscoveryError extends Error {
+    constructor(public readonly httpResponseCode: number, message: string) {
+        super(message);
+        this.name = "SynologyDiscoveryError";
+    }
+}
+
 const INFO_API = "SYNO.API.Info";
 const AUTH_API = "SYNO.API.Auth";
 const TASK_API = "SYNO.DownloadStation.Task";
@@ -75,6 +82,14 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI {
                 message: `Reachable, but authentication failed: ${this.describeError(json?.error?.code, AUTH_ERRORS)}`,
             };
         } catch (error) {
+            if (error instanceof SynologyDiscoveryError) {
+                return {
+                    reachable: true,
+                    authenticated: null,
+                    httpResponseCode: error.httpResponseCode,
+                    message: `Reachable, but credentials could not be verified: ${error.message}`,
+                };
+            }
             return this.toUnreachableResult(error);
         }
     }
@@ -109,7 +124,7 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI {
         const json = await response.json();
 
         if (json?.success !== true || !json?.data) {
-            throw new Error(`Could not query the Synology API list: ${this.describeError(json?.error?.code, {})}`);
+            throw new SynologyDiscoveryError(response.status, `Could not query the Synology API list: ${this.describeError(json?.error?.code, {})}`);
         }
 
         this.apiInfo = json.data as SynologyApiInfoMap;
