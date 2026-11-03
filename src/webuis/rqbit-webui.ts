@@ -11,10 +11,10 @@ export class RqbitWebUI extends TorrentWebUI {
             const url = this.createBaseUrl() + "/torrents" + this.createQueryString(config);
             const response = await this.fetch(url, this.createTorrentFetchOptions(torrent));
             const responseBody = await response.text();
-            if (this.getAddPaused(config)) {
-                await this.pauseTorrent(JSON.parse(responseBody).id);
-            }
-            return {success: true, httpResponseCode: response.status, httpResponseBody: responseBody};
+            const warning = this.getAddPaused(config)
+                ? await this.runFollowUp("Add Paused was not applied", () => this.pauseTorrent(JSON.parse(responseBody).id))
+                : undefined;
+            return {success: true, httpResponseCode: response.status, httpResponseBody: responseBody, warning};
         } catch (error) {
             return this.toFailureResult(error);
         }

@@ -55,12 +55,29 @@ describe("RqbitWebUI", () => {
         expect(fetch).toHaveBeenCalledTimes(1);
     });
 
-    it("reports a failed pause as a failure", async () => {
+    it("keeps the add a success and warns when the pause fails", async () => {
         queueFetch(mockResponse({ status: 200, json: { id: 7 } }), mockResponse({ status: 404, body: "not found" }));
         await expect(build().sendTorrent(makeMagnetTorrent(), { addPaused: true })).resolves.toMatchObject({
-            success: false,
-            httpResponseCode: 404,
+            success: true,
+            httpResponseCode: 200,
+            warning: expect.stringContaining("Add Paused was not applied"),
         });
+    });
+
+    it("keeps the add a success and warns when the add response has no id to pause", async () => {
+        queueFetch(mockResponse({ status: 200, body: "added" }));
+        await expect(build().sendTorrent(makeMagnetTorrent(), { addPaused: true })).resolves.toMatchObject({
+            success: true,
+            httpResponseBody: "added",
+            warning: expect.stringContaining("Add Paused was not applied"),
+        });
+    });
+
+    it("has no warning when the add and the pause both succeed", async () => {
+        queueFetch(mockResponse({ status: 200, json: { id: 7 } }), mockResponse({ status: 200 }));
+        const result = await build().sendTorrent(makeMagnetTorrent(), { addPaused: true });
+
+        expect(result.warning).toBeUndefined();
     });
 
     it("omits the Authorization header when no credentials are configured", async () => {
