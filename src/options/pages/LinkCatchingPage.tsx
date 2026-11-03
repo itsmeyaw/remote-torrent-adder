@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type JSX } from "react";
 import Toggle from "../components/Toggle";
 import { useSettings } from "../SettingsContext";
+import { isMatchedByRegexes } from "../../util/utils";
 
 function regexToString(r: RegExp): string {
   return r.source;
@@ -22,7 +23,7 @@ function patternError(s: string): string {
 /** A stored pattern can be anything the user pasted, so a throw means "no match". */
 function testRegexSafely(regex: RegExp, value: string): boolean {
   try {
-    return regex.test(value);
+    return isMatchedByRegexes(value, [regex]);
   } catch {
     return false;
   }
