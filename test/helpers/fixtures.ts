@@ -3,9 +3,9 @@ import { Buffer } from "buffer";
 import { Client } from "../../src/models/clients";
 import { type Torrent } from "../../src/models/torrent";
 import { type WebUISettings } from "../../src/models/webui";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
-import { serializeSettings } from "../../src/util/serializer";
-import { SETTINGS_KEY } from "../../src/util/settings";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
+import { serializeSettings } from "../../src/settings/serializer";
+import { SETTINGS_KEY } from "../../src/settings/settings";
 
 /**
  * Writes the given WebUIs into the mocked chrome.storage.local, so code that

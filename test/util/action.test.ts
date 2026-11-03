@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { registerActionClickListener, openPrimaryWebUi, updateBadgeText, addTrailingSlash } from "../../src/util/action";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
-import { serializeSettings } from "../../src/util/serializer";
-import { SETTINGS_KEY } from "../../src/util/settings";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
+import { serializeSettings } from "../../src/settings/serializer";
+import { SETTINGS_KEY } from "../../src/settings/settings";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
 
 function registeredClickListener() {

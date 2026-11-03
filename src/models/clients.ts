@@ -18,7 +18,7 @@ import { RqbitWebUI } from "../webuis/rqbit-webui";
  * persisted in user settings and used as lookup keys, so they must never change.
  * What the user actually sees is defined separately in {@link ClientDisplayName},
  * which is free to change at any time. Legacy identifiers from older versions are
- * migrated in `util/legacy-client-identifiers.ts`.
+ * migrated in `settings/legacy-client-identifiers.ts`.
  */
 export enum Client {
     BiglyBTWebUI = "biglybt",

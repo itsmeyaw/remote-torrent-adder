@@ -4,8 +4,8 @@ import { ComboBox } from '../components/ui/combobox';
 import { Button } from '../components/ui/button';
 import Notice from './Notice';
 import { SetTorrentLabelMessage, type ISetTorrentLabelMessage } from '../../models/messages';
-import { deserializeSettings } from '../../util/serializer';
-import { requestSerializedSettings } from '../../util/request-settings';
+import { deserializeSettings } from '../../settings/serializer';
+import { requestSerializedSettings } from '../../settings/request-settings';
 import { errorMessage, moveToFront } from '../lib/utils';
 
 interface LabelTarget {

@@ -4,8 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import WebUIsPage, { moveItem, parsePortInput } from "../../../src/options/pages/WebUIsPage";
 import { GetSettingsMessage, SaveSettingsMessage, TestConnectionMessage } from "../../../src/models/messages";
-import { serializeSettings, deserializeSettings } from "../../../src/util/serializer";
-import { getDefaultSettings } from "../../../src/util/settings-defaults";
+import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
+import { getDefaultSettings } from "../../../src/settings/settings-defaults";
 import { type ConnectionTestResult, type WebUISettings } from "../../../src/models/webui";
 import { makeWebUISettings } from "../../helpers/fixtures";
 

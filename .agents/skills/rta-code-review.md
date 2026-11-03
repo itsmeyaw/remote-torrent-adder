@@ -39,7 +39,7 @@ The same bundle ships to Chrome and Firefox, and this is the newest and most eas
 
 For changes in `src/webuis/`:
 - [ ] Class extends `TorrentWebUI` and is registered in **all three** tables in `src/models/clients.ts`: the `Client` enum, `ClientDisplayName`, and `ClientClassByClient`
-- [ ] The `Client` enum value is a stable lowercase slug, not a display string — these values are persisted in user settings and must never change. Renaming an existing one requires a migration entry in `src/util/legacy-client-identifiers.ts`
+- [ ] The `Client` enum value is a stable lowercase slug, not a display string — these values are persisted in user settings and must never change. Renaming an existing one requires a migration entry in `src/settings/legacy-client-identifiers.ts`
 - [ ] All three abstract getters implemented: `isLabelSupported`, `isDirSupported`, `isAddPausedSupported`
 - [ ] `sendTorrent()` returns `TorrentAddingResult` with `{ success, httpResponseCode, httpResponseBody }`, and its `catch` uses `this.toFailureResult(error)` rather than hand-building a failure object
 - [ ] `testConnection()` is overridden when the client can validate credentials — the base implementation only checks reachability and reports `authenticated: null`. `isConnectionTestSupported` is set to `false` only if there is genuinely nothing to probe
@@ -53,7 +53,7 @@ For changes in `src/webuis/`:
 ### Tests
 
 - [ ] New or changed client behaviour has matching cases in `test/webuis/<name>-webui.test.ts` — every client has one, a new client without one is a gap
-- [ ] New settings fields are covered in `test/util/settings-defaults.test.ts` and `test/util/settings.test.ts`
+- [ ] New settings fields are covered in `test/settings/settings-defaults.test.ts` and `test/settings/settings.test.ts`
 - [ ] New UI has cases in `test/options/` or `test/popup/`
 - [ ] Tests use the helpers in `test/helpers/` (`fetch-mock`, `chrome-mock`, `fixtures`) instead of hand-rolled mocks
 - [ ] Behaviour a headless run can still reach (boot, link catching, the CORS rules, an add round-trip against a stub client) belongs in `e2e/` — and in `e2e/firefox/` too if it is cross-browser
@@ -61,9 +61,9 @@ For changes in `src/webuis/`:
 
 ### Settings & Storage
 
-- [ ] New per-client fields added to `WebUISettings` in `src/models/webui.ts`; new global fields to `RTASettings` in `src/models/settings.ts` with a default in `src/util/settings-defaults.ts`
+- [ ] New per-client fields added to `WebUISettings` in `src/models/webui.ts`; new global fields to `RTASettings` in `src/models/settings.ts` with a default in `src/settings/settings-defaults.ts`
 - [ ] Default values handled (new fields may be undefined in existing configs — use `??` not `||`, since `false` and `0` are valid values)
-- [ ] Adding a new optional field (`?:`) needs no migration. Renaming, removing, or changing the type of an existing field does — and the only migration path currently in the codebase is `src/util/legacy-client-identifiers.ts`, which handles client identifiers specifically. A different kind of schema change needs new migration code plus tests
+- [ ] Adding a new optional field (`?:`) needs no migration. Renaming, removing, or changing the type of an existing field does — and the only migration path currently in the codebase is `src/settings/legacy-client-identifiers.ts`, which handles client identifiers specifically. A different kind of schema change needs new migration code plus tests
 - [ ] New required fields on `WebUISettings` are added to `test/helpers/fixtures.ts` **and** `e2e/fixtures/settings.ts`
 - [ ] A client-only boolean option is declared as a `ClientSpecificSettingDescriptor` on the client class and read with `this.getClientSpecific(key, config)` — **not** as a hand-wired new field on `WebUISettings` with its own control in `WebUIsPage.tsx`. `clientSpecificSettings` is typed `Record<string, unknown>`; reading it directly bypasses the config → stored → default fallback chain
 - [ ] A descriptor's `key` is stable and never changed once shipped — it is persisted in user settings, exactly like the `Client` enum slug
@@ -98,7 +98,7 @@ A review is one of the cases where a `.tmp/review-<pr-or-branch>-<YYYY-MM-DD>.md
 
 1. **Fetch without error handling**: raw `fetch()` calls that don't check `res.ok`
 2. **Hardcoded ports or paths**: should use `createBaseUrl()` + user settings
-3. **Direct storage access**: prefer `src/util/settings.ts` helpers over raw `ext.storage` calls — and a bare `chrome.storage` call is a lint failure, not a style preference
+3. **Direct storage access**: prefer `src/settings/settings.ts` helpers over raw `ext.storage` calls — and a bare `chrome.storage` call is a lint failure, not a style preference
 4. **Missing null checks**: settings fields can be null/undefined — `label`, `dir`, `relativePath`
 5. **FormData content-type**: manually setting multipart content-type breaks the boundary parameter
 6. **Partial client registration**: a client added to the enum but missing from `ClientDisplayName` or `ClientClassByClient` — `test/models/clients.test.ts` catches this, so a failure there usually means exactly this

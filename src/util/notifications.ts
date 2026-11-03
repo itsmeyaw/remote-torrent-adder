@@ -3,7 +3,7 @@ import { type IPlaySoundMessage, PlaySoundMessage } from "../models/messages";
 import { canUseOffscreen, isFirefox } from "./platform";
 import { playNotificationSound } from "./play-sound";
 import { openSetLabelWindow, openWebUi } from "./action";
-import { loadWebUis } from "./webuis";
+import { loadWebUis } from "../settings/webuis";
 
 const LINK_KEY_PREFIX = "notificationLink:";
 const LABEL_ACTION_KEY_PREFIX = "notificationLabelAction:";

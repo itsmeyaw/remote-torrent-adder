@@ -6,8 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FIREFOX_EXTENSION_DIR, GECKO_ID } from "./firefox-paths";
 import { type RTASettings } from "../../src/models/settings";
-import { serializeSettings } from "../../src/util/serializer";
-import { SETTINGS_KEY } from "../../src/util/settings";
+import { serializeSettings } from "../../src/settings/serializer";
+import { SETTINGS_KEY } from "../../src/settings/settings";
 
 const HEADLESS = process.env.RTA_FIREFOX_HEADED !== "1";
 

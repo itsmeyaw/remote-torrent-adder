@@ -6,10 +6,10 @@ import { type IPreAddTorrentMessage, PreAddTorrentMessage } from "../models/mess
 import { type TorrentDownloadContext } from "../torrent/download";
 import { HandledFailure } from "./errors";
 import { addTorrentToWebUiById, dispatchPreAddTorrent } from "./messaging";
-import { loadWebUis } from "./webuis";
+import { loadWebUis } from "../settings/webuis";
 import { showNotification } from "./notifications";
-import { Settings } from "./settings";
-import { getDefaultSettings } from "./settings-defaults";
+import { Settings } from "../settings/settings";
+import { getDefaultSettings } from "../settings/settings-defaults";
 
 const PARENT_MENU_ID = "server-main";
 const SEND_ALL_MENU_ID = "server-all";

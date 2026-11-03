@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import Notice from './Notice';
 import { WebUIFactory } from '../../models/clients';
 import { OpenWebUiMessage, type IOpenWebUiMessage } from '../../models/messages';
-import { deserializeSettings } from '../../util/serializer';
-import { requestSerializedSettings } from '../../util/request-settings';
+import { deserializeSettings } from '../../settings/serializer';
+import { requestSerializedSettings } from '../../settings/request-settings';
 import { addTrailingSlash } from "../../util/action";
 
 interface WebUiOption {

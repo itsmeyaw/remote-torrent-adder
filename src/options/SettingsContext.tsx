@@ -2,9 +2,9 @@ import { ext, sendMessageAndForget } from "../util/browser-api";
 import React, { createContext, useContext, useRef, useState, useEffect } from "react";
 import type { RTASettings } from "../models/settings";
 import { SaveSettingsMessage } from "../models/messages";
-import { deserializeSettings, serializeSettings } from "../util/serializer";
-import { requestSerializedSettings } from "../util/request-settings";
-import { SETTINGS_KEY } from "../util/settings";
+import { deserializeSettings, serializeSettings } from "../settings/serializer";
+import { requestSerializedSettings } from "../settings/request-settings";
+import { SETTINGS_KEY } from "../settings/settings";
 
 interface SettingsContextType {
   settings: RTASettings | null;

@@ -24,14 +24,14 @@ import {
     SetTorrentLabelMessage,
     OpenWebUiMessage,
 } from "../../src/models/messages";
-import { serializeSettings, deserializeSettings } from "../../src/util/serializer";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { serializeSettings, deserializeSettings } from "../../src/settings/serializer";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { Client } from "../../src/models/clients";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { readBufferedTorrent, saveBufferedTorrent } from "../../src/util/buffered-torrent";
 import { CloudflareChallengeError } from "../../src/torrent/download";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
-import { Settings } from "../../src/util/settings";
+import { Settings } from "../../src/settings/settings";
 
 /** Registers the listener and returns it so tests can invoke it directly. */
 function getListener() {

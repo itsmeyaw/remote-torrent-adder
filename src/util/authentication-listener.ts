@@ -1,6 +1,6 @@
 import { ext } from "./browser-api";
 import { type TorrentWebUI } from "../models/webui";
-import { loadWebUis } from "./webuis";
+import { loadWebUis } from "../settings/webuis";
 
 
 const AUTH_TRIED_KEY_PREFIX = "authTried:";

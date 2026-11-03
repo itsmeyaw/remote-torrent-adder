@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 
 describe("getDefaultSettings", () => {
     it("enables notifications and link-catching by default", () => {

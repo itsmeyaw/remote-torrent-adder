@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WebUiPickerView from "../../src/popup/app/WebUiPickerView";
 import { GetSettingsMessage, OpenWebUiMessage } from "../../src/models/messages";
-import { serializeSettings } from "../../src/util/serializer";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { serializeSettings } from "../../src/settings/serializer";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { makeWebUISettings } from "../helpers/fixtures";
 
 function respondWithSettings(settings = getDefaultSettings()) {

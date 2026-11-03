@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { requestSerializedSettings } from "../../src/util/request-settings";
+import { requestSerializedSettings } from "../../src/settings/request-settings";
 import { GetSettingsMessage } from "../../src/models/messages";
 
 describe("requestSerializedSettings", () => {

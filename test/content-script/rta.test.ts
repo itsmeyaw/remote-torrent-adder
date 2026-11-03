@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createChromeMock } from "../helpers/chrome-mock";
 import { GetLinkCatchingConfig, PreAddTorrentMessage, UpdateActionBadgeText } from "../../src/models/messages";
-import { serializeObject } from "../../src/util/serializer";
+import { serializeObject } from "../../src/settings/serializer";
 
 const RealMutationObserver = globalThis.MutationObserver;
 const originalUrl = location.href;

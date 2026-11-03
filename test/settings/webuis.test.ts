@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { initiateWebUis, loadWebUis } from "../../src/util/webuis";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { initiateWebUis, loadWebUis } from "../../src/settings/webuis";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { Client } from "../../src/models/clients";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";

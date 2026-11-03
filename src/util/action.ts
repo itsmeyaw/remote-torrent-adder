@@ -1,6 +1,6 @@
 import { ext } from "./browser-api";
-import { initiateWebUis, loadWebUis } from "./webuis";
-import { Settings } from "./settings";
+import { initiateWebUis, loadWebUis } from "../settings/webuis";
+import { Settings } from "../settings/settings";
 import { rememberWebUiTab } from "./authentication-listener";
 import { type TorrentWebUI } from "../models/webui";
 

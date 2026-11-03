@@ -1,7 +1,7 @@
 import { Client } from "../../src/models/clients";
 import { type RTASettings } from "../../src/models/settings";
 import { type WebUISettings } from "../../src/models/webui";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 
 export function makeWebUISettings(overrides: Partial<WebUISettings> = {}): WebUISettings {
     return {
