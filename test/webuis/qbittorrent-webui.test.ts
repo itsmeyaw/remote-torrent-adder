@@ -20,7 +20,7 @@ describe("QBittorrentWebUI", () => {
         expect(body.get("urls")).toBe("magnet:?xt=urn:btih:abc123&dn=Cool+Torrent");
     });
 
-    it("posts the torrent file with category, savepath and stopped flag", async () => {
+    it("posts the torrent file with category, savepath and paused flags", async () => {
         const fetch = queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Ok." }));
         await build().sendTorrent(makeFileTorrent(), { dir: "/downloads", label: "movies", addPaused: true });
 
@@ -28,7 +28,17 @@ describe("QBittorrentWebUI", () => {
         expect(body.get("torrents")).toBeInstanceOf(File);
         expect(body.get("savepath")).toBe("/downloads");
         expect(body.get("category")).toBe("movies");
+        expect(body.get("paused")).toBe("true");
         expect(body.get("stopped")).toBe("true");
+    });
+
+    it("sends both paused and stopped as false when add paused is off", async () => {
+        const fetch = queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Ok." }));
+        await build().sendTorrent(makeMagnetTorrent(), { addPaused: false });
+
+        const body = callArgs(fetch, 1)[1].body as FormData;
+        expect(body.get("paused")).toBe("false");
+        expect(body.get("stopped")).toBe("false");
     });
 
     it("omits the forced flag by default", async () => {
