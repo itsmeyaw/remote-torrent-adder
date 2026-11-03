@@ -125,10 +125,13 @@ export abstract class TorrentWebUI {
         return {};
     }
 
-    protected async probeWithBasicAuth(url: string): Promise<ConnectionTestResult> {
+    protected async probeWithBasicAuth(
+        url: string,
+        isAuthenticated: (response: Response) => boolean = (response) => response.ok,
+    ): Promise<ConnectionTestResult> {
         try {
             const response = await fetch(url, { method: "GET", headers: this.createBasicAuthHeaders() });
-            if (response.ok) {
+            if (isAuthenticated(response)) {
                 return this.toReachableResult(true, response.status);
             }
             if (response.status === 401 || response.status === 403) {
@@ -138,7 +141,7 @@ export abstract class TorrentWebUI {
                 reachable: true,
                 authenticated: null,
                 httpResponseCode: response.status,
-                message: `Reachable, but the server answered HTTP ${response.status}; check the host and relative path`,
+                message: `Reachable, but the server answered HTTP ${response.status}; credentials could not be verified`,
             };
         } catch (error) {
             return this.toUnreachableResult(error);

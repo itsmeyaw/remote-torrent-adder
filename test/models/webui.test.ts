@@ -3,6 +3,7 @@ import { TorrentWebUI } from "../../src/models/webui";
 import type { ClientSpecificSettingDescriptor, TorrentAddingResult } from "../../src/models/webui";
 import type { TorrentUploadConfig } from "../../src/models/torrent";
 import { makeWebUISettings } from "../helpers/fixtures";
+import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 
 /**
  * Minimal concrete subclass that exposes the protected helpers so the base
@@ -42,8 +43,8 @@ class TestWebUI extends TorrentWebUI {
     publicFetch(url: string, options?: RequestInit) {
         return this.fetch(url, options);
     }
-    publicProbeWithBasicAuth(url: string) {
-        return this.probeWithBasicAuth(url);
+    publicProbeWithBasicAuth(url: string, isAuthenticated?: (response: Response) => boolean) {
+        return this.probeWithBasicAuth(url, isAuthenticated);
     }
 }
 
@@ -186,7 +187,7 @@ describe("fetch", () => {
 
 describe("probeWithBasicAuth", () => {
     const probeWithStatus = (status: number) => {
-        (globalThis as any).fetch = async () => ({ ok: status >= 200 && status < 300, status });
+        queueFetch(mockResponse({ status }));
         return build().publicProbeWithBasicAuth("http://x/");
     };
 
@@ -211,8 +212,17 @@ describe("probeWithBasicAuth", () => {
                 reachable: true,
                 authenticated: null,
                 httpResponseCode: status,
-                message: `Reachable, but the server answered HTTP ${status}; check the host and relative path`,
             });
         }
+    });
+
+    it("reports reachable but not verified with a message that does not blame the path on 5xx", async () => {
+        expect((await probeWithStatus(500)).message).toBe("Reachable, but the server answered HTTP 500; credentials could not be verified");
+    });
+
+    it("accepts a response the client itself recognises as authenticated", async () => {
+        const isAuthenticated = (response: Response) => response.status === 409;
+        queueFetch(mockResponse({ status: 409 }));
+        expect(await build().publicProbeWithBasicAuth("http://x/", isAuthenticated)).toMatchObject({ reachable: true, authenticated: true });
     });
 });
