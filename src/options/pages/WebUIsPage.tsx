@@ -18,13 +18,11 @@ function isClientSelected(client: Client | ""): client is Client {
   return !!client && client in ClientClassByClient;
 }
 
-const fieldInputStyle: React.CSSProperties = {
-  fontSize: 15,
-  borderRadius: 8,
-  padding: "6px 12px",
-  border: "1px solid var(--rta-border, #b7c9a7)",
-  background: "var(--rta-input-bg, #fff)",
-  color: "var(--rta-text, #1b241d)",
+const fieldInputClass = "text-[15px] rounded-[8px] py-1.5 px-3 border border-rta-border bg-rta-input-bg text-rta-text";
+
+const dropIndicatorClass: Record<"above" | "below", string> = {
+  above: "shadow-[inset_0_3px_0_0_var(--rta-green-dark)]",
+  below: "shadow-[inset_0_-3px_0_0_var(--rta-green-dark)]",
 };
 
 function getDefaultWebUISettings(): WebUISettings {
@@ -101,8 +99,6 @@ function WebUIListItem({
     };
   }, [dragArmed, isDragging]);
 
-  const indicatorColor = "var(--rta-green-dark, #4e6a57)";
-
   return (
     <div
       onClick={onSelect}
@@ -125,26 +121,14 @@ function WebUIListItem({
         setDragArmed(false);
         onDragEnd();
       }}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-        padding: "10px 12px",
-        borderRadius: 10,
-        cursor: "pointer",
-        opacity: isDragging ? 0.4 : 1,
-        background: selected ? "var(--rta-accent, #b7c9a7)" : "transparent",
-        border: selected ? "1px solid var(--rta-green-dark, #4e6a57)" : "1px solid transparent",
-        boxShadow:
-          dropIndicator === "above"
-            ? `inset 0 3px 0 0 ${indicatorColor}`
-            : dropIndicator === "below"
-              ? `inset 0 -3px 0 0 ${indicatorColor}`
-              : undefined,
-        transition: "background 0.15s",
-      }}
+      className={[
+        "flex flex-col gap-1 py-2.5 px-3 rounded-[10px] cursor-pointer transition-colors duration-150",
+        isDragging ? "opacity-40" : "opacity-100",
+        selected ? "bg-rta-accent border border-rta-green-dark" : "bg-transparent border border-transparent",
+        dropIndicator ? dropIndicatorClass[dropIndicator] : "",
+      ].join(" ")}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="flex items-center gap-2">
         <button
           type="button"
           title="Drag to reorder (or use the arrow keys)"
@@ -160,16 +144,7 @@ function WebUIListItem({
               onMove(index, index + 1);
             }
           }}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            fontSize: 15,
-            lineHeight: 1,
-            cursor: "grab",
-            touchAction: "none",
-            color: selected ? "var(--rta-green-dark, #4e6a57)" : "var(--rta-text-muted, #888)",
-          }}
+          className={`bg-transparent border-none p-0 text-[15px] leading-none cursor-grab touch-none ${selected ? "text-rta-green-dark" : "text-rta-text-muted"}`}
         >⠿</button>
         {selected ? (
           <input
@@ -179,47 +154,22 @@ function WebUIListItem({
             onClick={e => e.stopPropagation()}
             onChange={e => onNameChange(e.target.value)}
             placeholder="Unnamed WebUI"
-            style={{
-              ...fieldInputStyle,
-              flex: 1,
-              minWidth: 0,
-              padding: "4px 8px",
-              fontWeight: 600,
-            }}
+            className="text-[15px] rounded-[8px] py-1 px-2 border border-rta-border bg-rta-input-bg text-rta-text flex-1 min-w-0 font-semibold"
           />
         ) : (
           <span
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontWeight: 600,
-              fontSize: 15,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              color: webui.name ? "var(--rta-text, #1b241d)" : "var(--rta-text-muted, #888)",
-            }}
+            className={`flex-1 min-w-0 font-semibold text-[15px] overflow-hidden text-ellipsis whitespace-nowrap ${webui.name ? "text-rta-text" : "text-rta-text-muted"}`}
           >
             {webui.name || "Unnamed WebUI"}
           </span>
         )}
         {isPrimary && (
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#fff",
-              background: "var(--rta-green, #6e8b74)",
-              borderRadius: 6,
-              padding: "2px 6px",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <span className="text-[11px] font-bold text-white bg-rta-green rounded-[6px] py-0.5 px-1.5 whitespace-nowrap">
             Primary
           </span>
         )}
       </div>
-      <span style={{ fontSize: 12, color: selected ? "var(--rta-green-dark, #4e6a57)" : "var(--rta-text-muted, #888)" }}>
+      <span className={`text-[12px] ${selected ? "text-rta-green-dark" : "text-rta-text-muted"}`}>
         {subtitle}
       </span>
     </div>
@@ -279,21 +229,12 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
-        <span style={{ fontWeight: 700, fontSize: 22, flex: 1 }}>{webui.name || "Unnamed WebUI"}</span>
+      <div className="flex gap-3 items-center mb-5">
+        <span className="font-bold text-[22px] flex-1">{webui.name || "Unnamed WebUI"}</span>
         {!isPrimary && (
           <button
             onClick={onPromote}
-            style={{
-              background: "var(--rta-info, #4682B4)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 16px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
+            className="bg-rta-info text-white border-none rounded-[8px] py-1.5 px-4 font-bold cursor-pointer transition-all duration-150"
           >Promote to Primary</button>
         )}
         <button
@@ -301,38 +242,20 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
             if (confirmRemove) onRemove();
             else setConfirmRemove(true);
           }}
-          style={{
-            background: confirmRemove ? "var(--rta-danger-dark, #8B0000)" : "var(--rta-danger, #B22222)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "6px 16px",
-            fontWeight: 700,
-            cursor: "pointer",
-            boxShadow: confirmRemove ? "0 0 8px 2px var(--rta-danger-dark, #8B0000)" : undefined,
-            transition: "all 0.15s",
-          }}
+          className={`${confirmRemove ? "bg-rta-danger-dark shadow-[0_0_8px_2px_var(--rta-danger-dark)]" : "bg-rta-danger"} text-white border-none rounded-[8px] py-1.5 px-4 font-bold cursor-pointer transition-all duration-150`}
         >
           {confirmRemove ? "For real?" : "Remove"}
         </button>
         {confirmRemove && (
           <button
             onClick={() => setConfirmRemove(false)}
-            style={{
-              background: "var(--rta-neutral, #eee)",
-              color: "var(--rta-danger, #B22222)",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
+            className="bg-rta-neutral text-rta-danger border-none rounded-[8px] py-1.5 px-3 font-medium cursor-pointer"
           >Cancel</button>
         )}
       </div>
 
       {/* Client type: choosable while still a draft, locked once chosen. */}
-      <div style={{ marginBottom: 20 }}>
+      <div className="mb-5">
         <Select
           label="Client"
           value={webui.client}
@@ -343,21 +266,21 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
       </div>
 
       {!clientChosen ? (
-        <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 15 }}>
+        <div className="text-rta-text-muted text-[15px]">
           Select a client type above to configure this WebUI.
         </div>
       ) : (
         <>
           <SettingsGroup title="General">
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="flex flex-col gap-4">
               {/* Host + Port + Secure + Relative Path */}
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
+              <div className="flex gap-4 items-end flex-wrap">
                 <div>
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Host</label>
-                  <input type="text" value={webui.host} onChange={e => onChange({ ...webui, host: e.target.value })} style={{ ...fieldInputStyle, minWidth: 120 }} />
+                  <label className="block mb-1 font-medium">Host</label>
+                  <input type="text" value={webui.host} onChange={e => onChange({ ...webui, host: e.target.value })} className={`${fieldInputClass} min-w-[120px]`} />
                 </div>
                 <div>
-                  <label htmlFor="rta-webui-port" style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Port</label>
+                  <label htmlFor="rta-webui-port" className="block mb-1 font-medium">Port</label>
                   <input
                     id="rta-webui-port"
                     type="number"
@@ -367,54 +290,44 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                     placeholder={webui.secure ? "443" : "80"}
                     value={webui.port ?? ""}
                     onChange={e => onChange({ ...webui, port: parsePortInput(e.target.value) })}
-                    style={{ ...fieldInputStyle, minWidth: 80 }}
+                    className={`${fieldInputClass} min-w-[80px]`}
                   />
                 </div>
                 <Toggle checked={webui.secure} onChange={v => onChange({ ...webui, secure: v })} label="Secure (HTTPS)" />
                 <div>
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Relative Path</label>
-                  <input type="text" value={webui.relativePath || ""} onChange={e => onChange({ ...webui, relativePath: e.target.value })} style={{ ...fieldInputStyle, minWidth: 120 }} />
+                  <label className="block mb-1 font-medium">Relative Path</label>
+                  <input type="text" value={webui.relativePath || ""} onChange={e => onChange({ ...webui, relativePath: e.target.value })} className={`${fieldInputClass} min-w-[120px]`} />
                 </div>
               </div>
-              <div style={{ color: "var(--rta-text-muted, #888)" }}>Base URL for API calls: {webUiInstance?.createBaseUrl()}</div>
+              <div className="text-rta-text-muted">Base URL for API calls: {webUiInstance?.createBaseUrl()}</div>
               {/* Username + Password */}
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
+              <div className="flex gap-4 items-end flex-wrap">
                 <div>
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Username</label>
-                  <input type="text" value={webui.username} onChange={e => onChange({ ...webui, username: e.target.value })} style={{ ...fieldInputStyle, minWidth: 120 }} />
+                  <label className="block mb-1 font-medium">Username</label>
+                  <input type="text" value={webui.username} onChange={e => onChange({ ...webui, username: e.target.value })} className={`${fieldInputClass} min-w-[120px]`} />
                 </div>
                 <div>
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Password</label>
-                  <input type="password" value={webui.password} onChange={e => onChange({ ...webui, password: e.target.value })} style={{ ...fieldInputStyle, minWidth: 120 }} />
+                  <label className="block mb-1 font-medium">Password</label>
+                  <input type="password" value={webui.password} onChange={e => onChange({ ...webui, password: e.target.value })} className={`${fieldInputClass} min-w-[120px]`} />
                 </div>
               </div>
               {/* Test connection */}
               {webUiInstance?.isConnectionTestSupported && (
-                <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <div className="flex gap-3 items-center flex-wrap">
                   <button
                     onClick={handleTest}
                     disabled={testing}
-                    style={{
-                      background: "var(--rta-info, #4682B4)",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "6px 16px",
-                      fontWeight: 700,
-                      cursor: testing ? "default" : "pointer",
-                      opacity: testing ? 0.7 : 1,
-                      transition: "all 0.15s",
-                    }}
+                    className={`bg-rta-info text-white border-none rounded-[8px] py-1.5 px-4 font-bold transition-all duration-150 ${testing ? "cursor-default opacity-70" : "cursor-pointer opacity-100"}`}
                   >{testing ? "Testing…" : "Test connection"}</button>
                   {testResult && (() => {
                     const color = !testResult.reachable
-                      ? "var(--rta-danger, #B22222)"
+                      ? "text-rta-danger"
                       : testResult.authenticated !== true
-                        ? "var(--rta-warning, #B8860B)"
-                        : "var(--rta-success, #228B22)";
+                        ? "text-rta-warning"
+                        : "text-rta-success";
                     const icon = !testResult.reachable ? "❌" : testResult.authenticated !== true ? "⚠" : "✅";
                     return (
-                      <span style={{ color, fontWeight: 600, fontSize: 14 }}>
+                      <span className={`${color} font-semibold text-[14px]`}>
                         {icon} {testResult.message}
                       </span>
                     );
@@ -423,7 +336,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
               )}
               {/* Only show these fields if supported by the WebUI instance */}
               {(webUiInstance?.isAddPausedSupported || webUiInstance?.isLabelDirChooserSupported) && (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+                <div className="flex flex-col items-start gap-3">
                   {webUiInstance?.isAddPausedSupported && (
                     <Toggle checked={webui.addPaused} onChange={v => onChange({ ...webui, addPaused: v })} label="Add torrents paused" />
                   )}
@@ -446,16 +359,16 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
           )}
           {(webUiInstance?.isLabelSupported || webUiInstance?.isDirSupported) && (
             <SettingsGroup title={labelDirGroupTitle}>
-              <div style={{ display: "flex", gap: 32, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div className="flex gap-8 items-start flex-wrap">
                 {webUiInstance?.isLabelSupported && (
-                  <div style={{ flex: 1, minWidth: 240 }}>
-                    <div style={{ marginBottom: 8 }}>
-                      <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Default Label</label>
+                  <div className="flex-1 min-w-[240px]">
+                    <div className="mb-2">
+                      <label className="block mb-1 font-medium">Default Label</label>
                       <input
                         type="text"
                         value={webui.defaultLabel ?? ""}
                         onChange={e => onChange({ ...webui, defaultLabel: e.target.value })}
-                        style={{ ...fieldInputStyle, minWidth: 180 }}
+                        className={`${fieldInputClass} min-w-[180px]`}
                         placeholder="Default label"
                       />
                     </div>
@@ -463,14 +376,14 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                   </div>
                 )}
                 {webUiInstance?.isDirSupported && (
-                  <div style={{ flex: 1, minWidth: 240 }}>
-                    <div style={{ marginBottom: 8 }}>
-                      <label style={{ fontWeight: 500, marginBottom: 4, display: "block" }}>Default Directory</label>
+                  <div className="flex-1 min-w-[240px]">
+                    <div className="mb-2">
+                      <label className="block mb-1 font-medium">Default Directory</label>
                       <input
                         type="text"
                         value={webui.defaultDir ?? ""}
                         onChange={e => onChange({ ...webui, defaultDir: e.target.value })}
-                        style={{ ...fieldInputStyle, minWidth: 180 }}
+                        className={`${fieldInputClass} min-w-[180px]`}
                         placeholder="Default directory"
                       />
                     </div>
@@ -553,43 +466,21 @@ export default function WebUIsPage() {
   const selected = webuis.find(w => w.id === selectedId) ?? null;
 
   return (
-    <div style={{ display: "flex", gap: 20, alignItems: "stretch", minHeight: 360 }}>
+    <div className="flex gap-5 items-stretch min-h-[360px]">
       {/* Left panel: list of configured WebUIs */}
-      <div
-        style={{
-          width: 260,
-          flexShrink: 0,
-          borderRight: "1px solid var(--rta-border, #b7c9a7)",
-          paddingRight: 16,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>WebUIs</span>
+      <div className="w-[260px] shrink-0 border-r border-rta-border pr-4 flex flex-col">
+        <div className="flex items-center justify-between mb-3">
+          <span className="font-bold text-[16px]">WebUIs</span>
           <button
             onClick={handleAdd}
             title="Add new WebUI"
             aria-label="Add new WebUI"
-            style={{
-              background: "var(--rta-success, #228B22)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              width: 32,
-              height: 32,
-              fontSize: 22,
-              lineHeight: 1,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className="bg-rta-success text-white border-none rounded-[8px] w-8 h-8 text-[22px] leading-none cursor-pointer flex items-center justify-center"
           >+</button>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="flex flex-col gap-1">
           {webuis.length === 0 ? (
-            <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 14, padding: "8px 4px" }}>
+            <div className="text-rta-text-muted text-[14px] py-2 px-1">
               No WebUIs yet. Click + to add one.
             </div>
           ) : (
@@ -619,7 +510,7 @@ export default function WebUIsPage() {
       </div>
 
       {/* Right panel: configuration for the selected WebUI */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="flex-1 min-w-0">
         {selected ? (
           <WebUIDetail
             key={selected.id}
@@ -630,7 +521,7 @@ export default function WebUIsPage() {
             isPrimary={webuis[0]?.id === selected.id}
           />
         ) : (
-          <div style={{ color: "var(--rta-text-muted, #888)", fontSize: 15, paddingTop: 8 }}>
+          <div className="text-rta-text-muted text-[15px] pt-2">
             Select a WebUI on the left, or click + to add a new one.
           </div>
         )}
