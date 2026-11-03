@@ -378,7 +378,11 @@ function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config: Torre
     new Settings().loadSettings().then(settings => {
         const webUiUrl = addTrailingSlash(webUi.createBaseUrl());
         webUi.sendTorrent(torrent, config ?? {}).then(async (torrentAddingResult: TorrentAddingResult) => {
-            console.log(`Torrent sent successfully: ${torrent.name} to -> ${webUi.name}`);
+            if (torrentAddingResult.success) {
+                console.log(`Torrent added: ${torrent.name} to -> ${webUi.name}`);
+            } else {
+                console.warn(`Torrent rejected by ${webUi.name}: ${torrent.name}`, torrentAddingResult);
+            }
             if (settings.notificationsEnabled) {
                 if (torrentAddingResult.success) {
                     showNotification("Torrent added successfully",
