@@ -80,9 +80,14 @@ export function registerMessageListener(): void {
                     break;
                 }
                 case SaveSettingsMessage.action: {
-                    willRespondAsync = true;
                     const saveSettingsMessage = message as ISaveSettingsMessage & { settings: string };
-                    settingsProvider.saveSettings(deserializeSettings(saveSettingsMessage.settings)!)
+                    const settings = deserializeSettings(saveSettingsMessage.settings);
+                    if (typeof settings !== "object" || settings === null || Array.isArray(settings)) {
+                        respondWithError(new Error("SaveSettings payload is not a settings object"));
+                        break;
+                    }
+                    willRespondAsync = true;
+                    settingsProvider.saveSettings(settings)
                         .then(() => finish({}))
                         .catch(respondWithError);
                     break;

@@ -1,0 +1,125 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { SettingsProvider } from "../../../src/options/SettingsContext";
+import ImportExportPage from "../../../src/options/pages/ImportExportPage";
+import { GetSettingsMessage, SaveSettingsMessage } from "../../../src/models/messages";
+import { serializeSettings, deserializeSettings } from "../../../src/util/serializer";
+import { getDefaultSettings } from "../../../src/util/settings-defaults";
+import { makeWebUISettings } from "../../helpers/fixtures";
+import { type WebUISettings } from "../../../src/models/webui";
+
+function respondWithSettings() {
+    (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
+        if (message.action === GetSettingsMessage.action) {
+            return Promise.resolve(serializeSettings(getDefaultSettings()));
+        }
+        return Promise.resolve();
+    });
+}
+
+function savedWebUiNames(): string[] | undefined {
+    const save = (chrome.runtime.sendMessage as any).mock.calls
+        .map((call: any[]) => call[0])
+        .filter((message: any) => message?.action === SaveSettingsMessage.action)
+        .at(-1);
+    return save && deserializeSettings(save.settings)!.webuiSettings.map(webUi => webUi.name);
+}
+
+function exportWithWebUis(webUis: unknown[]): string {
+    const settings = getDefaultSettings();
+    settings.webuiSettings = webUis as WebUISettings[];
+    return serializeSettings(settings);
+}
+
+const renderPage = () => render(<SettingsProvider><ImportExportPage /></SettingsProvider>);
+
+async function importText(text: string) {
+    fireEvent.change(await screen.findByLabelText(/Paste a previously exported/i, { selector: "textarea" }), { target: { value: text } });
+    fireEvent.click(screen.getByRole("button", { name: "Import settings" }));
+}
+
+describe("ImportExportPage export", () => {
+    const writeText = vi.fn();
+
+    beforeEach(() => {
+        writeText.mockReset();
+        Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    });
+
+    afterEach(() => {
+        Reflect.deleteProperty(navigator, "clipboard");
+    });
+
+    it("warns that the export contains passwords in plain text", async () => {
+        respondWithSettings();
+        renderPage();
+
+        expect(await screen.findByText(/passwords in plain text/i)).toBeInTheDocument();
+    });
+
+    it("styles the password warning as a warning and links it to the export text", async () => {
+        respondWithSettings();
+        renderPage();
+
+        const warning = await screen.findByText(/passwords in plain text/i);
+        expect(warning).toHaveClass("rta-notice--warning");
+        expect(screen.getByLabelText(/keep it somewhere safe/i)).toHaveAccessibleDescription(/passwords in plain text/i);
+    });
+
+    it("confirms a successful copy", async () => {
+        respondWithSettings();
+        writeText.mockResolvedValue(undefined);
+        renderPage();
+
+        fireEvent.click(await screen.findByRole("button", { name: "Copy to clipboard" }));
+
+        expect(await screen.findByRole("button", { name: "Copied!" })).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("shows an error and does not claim success when the copy fails", async () => {
+        respondWithSettings();
+        writeText.mockRejectedValue(new Error("denied"));
+        renderPage();
+
+        fireEvent.click(await screen.findByRole("button", { name: "Copy to clipboard" }));
+
+        expect(await screen.findByRole("alert")).toHaveTextContent("Could not copy to the clipboard");
+        expect(screen.queryByRole("button", { name: "Copied!" })).toBeNull();
+    });
+});
+
+describe("ImportExportPage import", () => {
+    it("imports a valid export and saves its WebUIs", async () => {
+        respondWithSettings();
+        renderPage();
+
+        await importText(exportWithWebUis([makeWebUISettings({ id: "w1", name: "Home" })]));
+
+        expect(savedWebUiNames()).toEqual(["Home"]);
+        expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("shows that text which is not JSON was rejected and saves nothing", async () => {
+        respondWithSettings();
+        renderPage();
+
+        await importText("{not json");
+
+        expect(screen.getByRole("alert")).toHaveTextContent("That is not valid JSON.");
+        expect(savedWebUiNames()).toBeUndefined();
+    });
+
+    it("lists every problem in a partially invalid import and saves nothing", async () => {
+        respondWithSettings();
+        renderPage();
+
+        await importText(exportWithWebUis([
+            makeWebUISettings({ id: "w1", name: "Good" }),
+            { ...makeWebUISettings({ id: "w2", name: "Home" }), host: undefined },
+        ]));
+
+        expect(screen.getByRole("alert")).toHaveTextContent('WebUI 2 ("Home"): missing host');
+        expect(savedWebUiNames()).toBeUndefined();
+    });
+});
