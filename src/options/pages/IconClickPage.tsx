@@ -31,7 +31,7 @@ export default function IconClickPage(): JSX.Element {
 
   if (loading || !settings) return <div>Loading...</div>;
 
-  const current: IconClickAction = settings.iconClickAction ?? "openPrimaryWebUi";
+  const current: IconClickAction = settings.iconClickAction;
   const multipleWebUisConfigured = settings.webuiSettings.length > 1;
 
   return (

@@ -343,7 +343,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                   {webUiInstance?.isLabelDirChooserSupported && (
                     <>
                       <Toggle checked={webui.showPerTorrentConfigSelector} onChange={v => onChange({ ...webui, showPerTorrentConfigSelector: v })} label="Show per-torrent config selector" />
-                      <Toggle checked={webui.useAlternativeLabelDirChooser ?? false} onChange={v => onChange({ ...webui, useAlternativeLabelDirChooser: v })} label="Use alternative container (window instead of popup)" />
+                      <Toggle checked={webui.useAlternativeLabelDirChooser} onChange={v => onChange({ ...webui, useAlternativeLabelDirChooser: v })} label="Use alternative container (window instead of popup)" />
                     </>
                   )}
                 </div>
@@ -353,7 +353,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
           {webUiInstance && webUiInstance.clientSpecificSettingDescriptors.length > 0 && (
             <ClientSpecificSettingsEditor
               descriptors={webUiInstance.clientSpecificSettingDescriptors}
-              value={webui.clientSpecificSettings ?? {}}
+              value={webui.clientSpecificSettings}
               onChange={clientSpecificSettings => onChange({ ...webui, clientSpecificSettings })}
             />
           )}
@@ -395,7 +395,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
           )}
           {webUiInstance?.isLabelDirChooserSupported && (
             <AutoLabelDirSettingsEditor
-              value={webui.autoLabelDirSettings ?? []}
+              value={webui.autoLabelDirSettings}
               onChange={autoLabelDirSettings => onChange({ ...webui, autoLabelDirSettings })}
               showLabel={!!webUiInstance?.isLabelSupported}
               showDir={!!webUiInstance?.isDirSupported}

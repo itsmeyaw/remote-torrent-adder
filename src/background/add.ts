@@ -162,7 +162,7 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, setting
 }
 
 async function createLabelAction(webUi: TorrentWebUI, torrent: Torrent, settings: RTASettings): Promise<NotificationLabelAction | undefined> {
-    if (!webUi.isLabelSupported || !(settings.notificationsLabelButtonEnabled ?? true)) {
+    if (!webUi.isLabelSupported || !settings.notificationsLabelButtonEnabled) {
         return undefined;
     }
     const infoHash = await computeInfoHash(torrent);

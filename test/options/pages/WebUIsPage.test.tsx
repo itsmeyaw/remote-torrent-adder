@@ -6,7 +6,7 @@ import WebUIsPage, { moveItem, parsePortInput } from "../../../src/options/pages
 import { GetSettingsMessage, SaveSettingsMessage, TestConnectionMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
 import { getDefaultSettings } from "../../../src/settings/settings-defaults";
-import { type ConnectionTestResult, type WebUISettings } from "../../../src/models/webui";
+import { type ConnectionTestResult } from "../../../src/models/webui";
 import { makeWebUISettings } from "../../helpers/fixtures";
 
 function respondWithWebUIs(
@@ -34,12 +34,6 @@ const savedWebUIs = () => {
 };
 
 const renderPage = () => render(<SettingsProvider><WebUIsPage /></SettingsProvider>);
-
-const webUIWithoutAutoLabelDirSettings = () => {
-    const webui = makeWebUISettings({ id: "a", name: "Alpha" });
-    delete (webui as Partial<WebUISettings>).autoLabelDirSettings;
-    return webui;
-};
 
 describe("WebUIsPage", () => {
     it("removes the selected WebUI once the removal is confirmed", async () => {
@@ -120,8 +114,8 @@ describe("WebUIsPage", () => {
         expect(savedWebUIs()![0]!.port).toBe(1);
     });
 
-    it("renders a WebUI whose stored settings predate autoLabelDirSettings", async () => {
-        respondWithWebUIs([webUIWithoutAutoLabelDirSettings()]);
+    it("renders the empty state for a WebUI with no Auto Label/Dir rules", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha", autoLabelDirSettings: [] })]);
         renderPage();
 
         expect(await screen.findByText("Auto Label/Dir Settings")).toBeInTheDocument();
@@ -129,8 +123,8 @@ describe("WebUIsPage", () => {
         expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
     });
 
-    it("keeps a rule editable after adding one to a WebUI that had no autoLabelDirSettings", async () => {
-        respondWithWebUIs([webUIWithoutAutoLabelDirSettings()]);
+    it("adds the first Auto Label/Dir rule to a WebUI that has none", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha", autoLabelDirSettings: [] })]);
         renderPage();
 
         await userEvent.click(await screen.findByRole("button", { name: "Add Rule" }));
