@@ -274,6 +274,30 @@ describe("AddTorrent flow", () => {
         expect(callArgs(showNotification, 0)[0]).toBe("Torrent adding failed");
     });
 
+    it("still reports a refused add to the popup but shows no notification when notifications are off", async () => {
+        const settings = { ...getDefaultSettings(), notificationsEnabled: false };
+        settings.webuiSettings = [makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, host: "h", port: 8080 })];
+        (chrome as any).__storage.settings = serializeSettings(settings);
+        (globalThis as any).fetch = vi.fn(() =>
+            Promise.resolve({ ok: false, status: 500, text: () => Promise.resolve("nope") } as any),
+        );
+        await saveBufferedTorrent({
+            torrent: makeMagnetTorrent(),
+            webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
+        });
+
+        const response = await dispatch({
+            action: AddTorrentMessageWithLabelAndDir.action,
+            webUiId: "w1",
+            config: {},
+            labels: [],
+            directories: [],
+        });
+
+        expect(response.error).toMatch(/failed \(HTTP 500\)/);
+        expect(showNotification).not.toHaveBeenCalled();
+    });
+
     it("keeps the buffered torrent and reports the thrown message when the WebUI throws", async () => {
         seedWebUi();
         const sendTorrent = vi.spyOn(QBittorrentWebUI.prototype, "sendTorrent").mockRejectedValueOnce(new Error("socket hang up"));

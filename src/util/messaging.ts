@@ -385,12 +385,14 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config:
         return;
     }
     console.warn(`Torrent rejected by ${webUi.name}: ${torrent.name}`, result);
-    showNotification("Torrent adding failed",
-        `HTTP Response code: ${result.httpResponseCode}\nResponse body: ${result.httpResponseBody}`,
-        true,
-        settings.notificationsDurationMs,
-        settings.notificationsSoundEnabled,
-        webUiUrl);
+    if (settings.notificationsEnabled) {
+        showNotification("Torrent adding failed",
+            `HTTP Response code: ${result.httpResponseCode}\nResponse body: ${result.httpResponseBody}`,
+            true,
+            settings.notificationsDurationMs,
+            settings.notificationsSoundEnabled,
+            webUiUrl);
+    }
     throw new Error(`Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`);
 }
 
