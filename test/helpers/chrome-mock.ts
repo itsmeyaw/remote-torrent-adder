@@ -44,9 +44,9 @@ export function createChromeMock(): any {
                 // The browser answers reads over IPC, so the promise never
                 // settles in the caller's tick. Deferring here is what lets
                 // concurrent readers interleave the way they do in the browser.
-                get: vi.fn((keys: string[], cb?: (items: Record<string, any>) => void) => {
+                get: vi.fn((keys: string[] | null, cb?: (items: Record<string, any>) => void) => {
                     const result: Record<string, any> = {};
-                    for (const key of keys) {
+                    for (const key of keys ?? Object.keys(storage)) {
                         if (key in storage) {
                             result[key] = storage[key];
                         }
