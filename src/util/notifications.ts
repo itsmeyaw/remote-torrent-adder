@@ -16,7 +16,7 @@ export interface NotificationLabelAction {
 
 export function registerNotificationClickListener(): void {
     ext.notifications.onClicked.addListener((notificationId) => {
-        void openNotificationWebUi(notificationId);
+        void openNotificationWebUi(notificationId).catch(error => console.error("Opening the webui for a notification failed", error));
     });
 }
 
