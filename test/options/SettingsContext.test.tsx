@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider, useSettings } from "../../src/options/SettingsContext";
@@ -169,6 +169,25 @@ describe("SettingsContext", () => {
         renderProbe();
 
         expect(await screen.findByRole("alert")).toHaveTextContent("Could not load settings");
+    });
+
+    it("shows why a save failed and clears the message after the next save succeeds", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => undefined);
+        let accept = false;
+        (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
+            if (message.action === "getSettings") return Promise.resolve({ value: serializeSettings(getDefaultSettings()) });
+            if (message.action === "saveSettings" && !accept) return Promise.resolve({ error: "Invalid notificationsDurationMs" });
+            return Promise.resolve({ value: undefined });
+        });
+        renderProbe();
+        await screen.findByTestId("duration");
+
+        await userEvent.click(screen.getByRole("button", { name: "bump" }));
+
+        expect(await screen.findByRole("alert")).toHaveTextContent("Could not save settings: Invalid notificationsDurationMs");
+        accept = true;
+        await userEvent.click(screen.getByRole("button", { name: "bump again" }));
+        await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
     });
 
     it("throws when used outside a provider, rather than silently returning nothing", () => {
