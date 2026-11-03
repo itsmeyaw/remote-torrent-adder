@@ -55,7 +55,8 @@ export function listenForMessages(handlers: Partial<MessageHandlers>): void {
             try {
                 envelope = { value: await handler(message, sender) };
             } catch (error) {
-                console.error("Message handling error", action, error);
+                // The sender gets the error and decides how loud to be; a failed in-page fetch, for one, is expected.
+                console.debug("Message handling error", action, error);
                 envelope = { error: error instanceof Error ? error.message : String(error) };
             }
             try {
