@@ -1,17 +1,17 @@
 import { type TorrentWebUI, type WebUISettings } from "./webui";
-import { BiglyBTWebUI } from "../webuis/biglybt-webui";
-import { RuTorrentWebUI } from "../webuis/rutorrent-webui";
-import { FloodWebUI } from "../webuis/flood-webui";
-import { QBittorrentWebUI } from "../webuis/qbittorrent-webui";
-import { DelugeWebUI } from "../webuis/deluge-webui";
-import { ElementumWebUI } from "../webuis/elementum-webui";
-import { TransmissionWebUI } from "../webuis/transmission-webui";
-import { PorlaWebUI } from "../webuis/porla-webui";
-import { TixatiWebUI } from "../webuis/tixati-webui";
-import { TTorrentWebUI } from "../webuis/ttorrent-webui";
-import { QNAPDownloadStationWebUI } from "../webuis/qnapdownloadstation-webui";
-import { SynologyDownloadStationWebUI } from "../webuis/synologydownloadstation-webui";
-import { RqbitWebUI } from "../webuis/rqbit-webui";
+import { BiglyBTWebUI } from "../webuis/biglybt";
+import { RuTorrentWebUI } from "../webuis/rutorrent";
+import { FloodWebUI } from "../webuis/flood";
+import { QBittorrentWebUI } from "../webuis/qbittorrent";
+import { DelugeWebUI } from "../webuis/deluge";
+import { ElementumWebUI } from "../webuis/elementum";
+import { TransmissionWebUI } from "../webuis/transmission";
+import { PorlaWebUI } from "../webuis/porla";
+import { TixatiWebUI } from "../webuis/tixati";
+import { TTorrentWebUI } from "../webuis/ttorrent";
+import { QNAPDownloadStationWebUI } from "../webuis/qnapdownloadstation";
+import { SynologyDownloadStationWebUI } from "../webuis/synologydownloadstation";
+import { RqbitWebUI } from "../webuis/rqbit";
 
 /**
  * Stable, opaque identifiers for each supported client. These values are

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { callArgs } from "../helpers/assert";
-import { DelugeWebUI } from "../../src/webuis/deluge-webui";
+import { DelugeWebUI } from "../../src/webuis/deluge";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 

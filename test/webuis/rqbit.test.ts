@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { callArgs } from "../helpers/assert";
-import { RqbitWebUI } from "../../src/webuis/rqbit-webui";
+import { RqbitWebUI } from "../../src/webuis/rqbit";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { callArgs } from "../helpers/assert";
-import { TransmissionWebUI } from "../../src/webuis/transmission-webui";
+import { TransmissionWebUI } from "../../src/webuis/transmission";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 

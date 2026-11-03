@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { callArgs } from "../helpers/assert";
-import { BiglyBTWebUI } from "../../src/webuis/biglybt-webui";
+import { BiglyBTWebUI } from "../../src/webuis/biglybt";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 

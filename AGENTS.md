@@ -30,7 +30,7 @@ For Firefox, `pnpm run dev:firefox` launches a scratch profile with `dist/firefo
 - **`src/content-script/rta.ts`** — injected into all pages, intercepts torrent/magnet link clicks
 - **`src/popup/`** — React app: torrent preview + add configuration
 - **`src/options/`** — React app: all settings (clients, notifications, link catching)
-- **`src/webuis/<name>-webui.ts`** — one class per BitTorrent client (13), extends `TorrentWebUI`
+- **`src/webuis/<name>.ts`** — one class per BitTorrent client (13), extends `TorrentWebUI`
 - **`src/models/clients.ts`** — `Client` enum + `ClientDisplayName` + `ClientClassByClient` + `WebUIFactory`
 - **`src/models/webui.ts`** — abstract `TorrentWebUI` base class
 - **`src/background/`** — code only the service worker runs: messaging, context menu, action, notifications, auth listener, CORS rules, Buffered Torrent storage. `add.ts` is the Add module: every Add entry point (message router, context menu) calls its `addLink` / `addBufferedTorrent`, which load settings once and report failures the same way
@@ -41,7 +41,7 @@ For Firefox, `pnpm run dev:firefox` launches a scratch profile with `dist/firefo
 - **`src/util/platform.ts`** — build-time browser constant (`isFirefox()`, `canUseOffscreen()`)
 - **`src/util/errors.ts`** / **`src/util/idb.ts`** — `HandledFailure`; the IndexedDB promise wrapper
 - **`scripts/build.ts` / `scripts/browsers.ts` / `scripts/generate-manifest.ts`** — the build matrix and the derived Firefox manifest
-- **`test/`** — vitest suite mirroring `src/`; every client has a `test/webuis/<name>-webui.test.ts`
+- **`test/`** — vitest suite mirroring `src/`; every client has a `test/webuis/<name>.test.ts`
 - **`e2e/`** — Playwright drives Chrome; `e2e/firefox/` drives real Firefox through geckodriver
 
 ## Critical Constraints

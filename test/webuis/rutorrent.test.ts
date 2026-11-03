@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { callArgs } from "../helpers/assert";
-import { RuTorrentWebUI } from "../../src/webuis/rutorrent-webui";
+import { RuTorrentWebUI } from "../../src/webuis/rutorrent";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 

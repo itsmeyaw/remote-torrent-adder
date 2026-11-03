@@ -10,10 +10,10 @@ Use when a user reports that adding a torrent to a specific client is failing �
 
 ### 1. Identify the client file and run its tests
 
-Client implementations are in `src/webuis/<clientname>-webui.ts`. Read the relevant file first, then run its existing test file — it encodes what the request is *supposed* to look like, and is the fastest way to see whether the bug is in our request construction or in the client's behaviour:
+Client implementations are in `src/webuis/<clientname>.ts`. Read the relevant file first, then run its existing test file — it encodes what the request is *supposed* to look like, and is the fastest way to see whether the bug is in our request construction or in the client's behaviour:
 
 ```bash
-pnpm exec vitest run test/webuis/<clientname>-webui.test.ts
+pnpm exec vitest run test/webuis/<clientname>.test.ts
 ```
 
 If the tests pass but the real client rejects the request, the bug is a mismatch between our model of the API and the real one — the test is asserting the wrong thing, and it needs updating alongside the fix.
@@ -72,7 +72,7 @@ Most clients use session-based auth that expires. Check:
 ### 5. API format issues
 
 Check the client's actual API:
-- qBittorrent v5+ changed login flow (check `qbittorrent-webui.ts` for reference)
+- qBittorrent v5+ changed login flow (check `qbittorrent.ts` for reference)
 - Some clients require `Content-Type: application/x-www-form-urlencoded` even for binary uploads
 - Deluge uses JSON-RPC with a specific method name and params array
 - ruTorrent uses XML-RPC
@@ -108,7 +108,7 @@ if (torrent.isMagnet) {
 
 ### 7. Close the loop
 
-Every fix should land with a regression test in `test/webuis/<clientname>-webui.test.ts` that fails before the fix and passes after. If the bug was only reproducible against a real client, say so explicitly and note which `smoke-test-matrix.md` row covers it.
+Every fix should land with a regression test in `test/webuis/<clientname>.test.ts` that fails before the fix and passes after. If the bug was only reproducible against a real client, say so explicitly and note which `smoke-test-matrix.md` row covers it.
 
 ## Output
 
@@ -116,8 +116,8 @@ Report the failure mode, root cause, and fix in the conversation. A debugging se
 
 ## Relevant Files
 
-- `src/webuis/<clientname>-webui.ts` — client implementation
-- `test/webuis/<clientname>-webui.test.ts` — its tests
+- `src/webuis/<clientname>.ts` — client implementation
+- `test/webuis/<clientname>.test.ts` — its tests
 - `src/models/webui.ts` — base class with `fetch()` wrapper, `HttpError`, and helpers
 - `src/background/cors-tricks.ts` — CORS bypass implementation
 - `src/util/browser-api.ts` / `src/util/platform.ts` — the `ext` shim and the build-time browser constant; first stop for a browser-specific failure

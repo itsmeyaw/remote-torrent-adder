@@ -4,7 +4,7 @@ import {
     executeMethodWrappedWithReferer,
     clearDynamicRules,
 } from "../../src/background/cors-tricks";
-import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
+import { QBittorrentWebUI } from "../../src/webuis/qbittorrent";
 import { makeWebUISettings } from "../helpers/fixtures";
 
 const webUi = (over = {}) => new QBittorrentWebUI(makeWebUISettings(over));

@@ -19,7 +19,7 @@ Before starting, collect from the user:
 
 ### Step 1: Create the client file
 
-Create `src/webuis/<clientname>-webui.ts` — lowercase, with `-webui` as the suffix. Multi-word client names are run together rather than hyphenated (`qnapdownloadstation-webui.ts`, `synologydownloadstation-webui.ts`); only the `-webui` suffix takes a hyphen.
+Create `src/webuis/<clientname>.ts` — lowercase, no suffix (the `src/webuis/` folder already says what it is). Multi-word client names are run together rather than hyphenated (`qnapdownloadstation.ts`, `synologydownloadstation.ts`).
 
 ```typescript
 import { TorrentWebUI, type TorrentAddingResult } from '../models/webui';
@@ -125,7 +125,7 @@ export const ClientDisplayName: Record<Client, string> = {
 
 3. Add the constructor to `ClientClassByClient`:
 ```typescript
-import { <ClientName>WebUI } from '../webuis/<clientname>-webui';
+import { <ClientName>WebUI } from '../webuis/<clientname>';
 
 export const ClientClassByClient: Record<Client, ConcreteTorrentWebUIConstructor> = {
     // ... existing entries ...
@@ -154,7 +154,7 @@ Read the value with `this.getClientSpecific("forceStart", config)`. The options 
 
 ### Step 3: Add tests
 
-Every client has a matching test file. Create `test/webuis/<clientname>-webui.test.ts` and follow the closest existing one. Use the helpers in `test/helpers/` (`fetch-mock.ts`, `fixtures.ts`, `chrome-mock.ts`) rather than hand-rolling mocks.
+Every client has a matching test file. Create `test/webuis/<clientname>.test.ts` and follow the closest existing one. Use the helpers in `test/helpers/` (`fetch-mock.ts`, `fixtures.ts`, `chrome-mock.ts`) rather than hand-rolling mocks.
 
 Cover at minimum:
 - `.torrent` upload: correct URL, method, and body shape; the `File` filename is set
@@ -179,22 +179,22 @@ pnpm run lint
 
 Each pattern points to a real client implementation in `src/webuis/` — copy from there rather than the abstract snippet.
 
-### Session cookie via login endpoint — see `qbittorrent-webui.ts`
+### Session cookie via login endpoint — see `qbittorrent.ts`
 POST `username`/`password` as `application/x-www-form-urlencoded` to `/api/v2/auth/login`; the SID cookie is set automatically by the browser for subsequent fetches.
 
-### Session-header challenge — see `transmission-webui.ts`
+### Session-header challenge — see `transmission.ts`
 First POST to `/transmission/rpc` returns HTTP 409 with `X-Transmission-Session-Id` header; resend with that header set.
 
-### JSON-RPC login returning a token — see `porla-webui.ts`, `deluge-webui.ts`
+### JSON-RPC login returning a token — see `porla.ts`, `deluge.ts`
 Porla: POST JSON `{username, password}` to `/api/v1/auth/login`, receive token, pass in subsequent JSON-RPC calls. Deluge: POST JSON-RPC `auth.login` with the password.
 
-### JSON-body login returning a cookie — see `flood-webui.ts`
+### JSON-body login returning a cookie — see `flood.ts`
 POST JSON `{username, password}` to `/api/auth/authenticate`; session cookie set by browser.
 
-### Basic auth — see `rqbit-webui.ts`, `tixati-webui.ts`, `rutorrent-webui.ts`
-Use `this.createBasicAuthHeaders()`, and `this.probeWithBasicAuth(url)` for `testConnection()`. `biglybt-webui.ts` and `transmission-webui.ts` also probe this way.
+### Basic auth — see `rqbit.ts`, `tixati.ts`, `rutorrent.ts`
+Use `this.createBasicAuthHeaders()`, and `this.probeWithBasicAuth(url)` for `testConnection()`. `biglybt.ts` and `transmission.ts` also probe this way.
 
-### XML-RPC — see `rutorrent-webui.ts`
+### XML-RPC — see `rutorrent.ts`
 Build an XML body and POST with `Content-Type: text/xml`.
 
 ## Common Upload Patterns
@@ -217,7 +217,7 @@ await this.fetch(`${this.createBaseUrl()}/api/endpoint`, {
 });
 ```
 
-### Split branches by magnet vs file — see `flood-webui.ts`, `deluge-webui.ts`, `rutorrent-webui.ts`
+### Split branches by magnet vs file — see `flood.ts`, `deluge.ts`, `rutorrent.ts`
 Different endpoints or payload shapes for `torrent.isMagnet === true` vs `false`. Branch in `sendTorrent` itself; do not try to unify.
 
 ## Output
@@ -230,5 +230,5 @@ Adding a client touches several files and is usually worth a `.tmp/add-client-<c
 
 - The CORS bypass (removing Origin, setting Referer) is applied automatically by `cors-tricks.ts` for each configured WebUI — you don't need to handle this in the client class.
 - If the client needs custom state persisted across service-worker restarts, use the IndexedDB helper in `src/util/idb.ts`, not `ext.storage.session` — the session area is size-capped, which is why `src/background/buffered-torrent.ts` avoids it. And never reach for the bare `chrome` namespace: everything goes through `ext` from `src/util/browser-api.ts`.
-- Extra per-client options go through the **descriptor** system, not a new `WebUISettings` field: declare a `ClientSpecificSettingDescriptor` on the class and read it with `this.getClientSpecific(key, config)`. The options page and (when `perTorrent` is true) the popup render it automatically — see `qbittorrent-webui.ts`, `rutorrent-webui.ts`, and `.agents/skills/add-setting.md`.
+- Extra per-client options go through the **descriptor** system, not a new `WebUISettings` field: declare a `ClientSpecificSettingDescriptor` on the class and read it with `this.getClientSpecific(key, config)`. The options page and (when `perTorrent` is true) the popup render it automatically — see `qbittorrent.ts`, `rutorrent.ts`, and `.agents/skills/add-setting.md`.
 - The supported-client list and count appear in `.agents/README.md`, the root `README.md`, `AGENTS.md`, and the row table in `.agents/skills/smoke-test-matrix.md`. Update all four, or they go stale.
