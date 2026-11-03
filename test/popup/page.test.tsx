@@ -17,6 +17,7 @@ import { callArgs } from "../helpers/assert";
 
 function popupData(overrides: Partial<PopupData> = {}): PopupData {
     return {
+        bufferedId: "b1",
         torrent: makeMagnetTorrent({ name: "Ubuntu 24.04" }),
         webUiSettings: makeWebUISettings({ id: "w1" }),
         supports: { label: true, directory: true, paused: true },
@@ -43,6 +44,7 @@ describe("mode routing", () => {
         render(<Home />);
 
         expect(await screen.findByText("Nothing to add")).toBeInTheDocument();
+        expect(loadPopupData).toHaveBeenCalledWith("");
     });
 
     it("renders the WebUI picker when mode=picker", () => {

@@ -61,8 +61,16 @@ export async function openWebUi(webUi: TorrentWebUI): Promise<void> {
     await ext.tabs.update(tab.id, { url });
 }
 
-export async function openActionPopup(windowId: number, mode?: PopupMode): Promise<void> {
-    const popup = mode ? `${POPUP_PAGE}?mode=${mode}` : POPUP_PAGE;
+function popupUrl(mode?: PopupMode, bufferedId?: string): string {
+    const params = new URLSearchParams();
+    if (mode) params.set("mode", mode);
+    if (bufferedId) params.set("buffered", bufferedId);
+    const query = params.toString();
+    return query ? `${POPUP_PAGE}?${query}` : POPUP_PAGE;
+}
+
+export async function openActionPopup(windowId: number, mode?: PopupMode, bufferedId?: string): Promise<void> {
+    const popup = popupUrl(mode, bufferedId);
     await ext.action.setPopup({ popup });
     try {
         await ext.action.openPopup({ windowId });
@@ -71,8 +79,8 @@ export async function openActionPopup(windowId: number, mode?: PopupMode): Promi
     }
 }
 
-export function openPopupWindow(mode?: PopupMode): Promise<chrome.windows.Window | undefined> {
-    const url = mode ? `${POPUP_PAGE}?mode=${mode}` : POPUP_PAGE;
+export function openPopupWindow(mode?: PopupMode, bufferedId?: string): Promise<chrome.windows.Window | undefined> {
+    const url = popupUrl(mode, bufferedId);
     return ext.windows.create({
         url,
         type: "popup",

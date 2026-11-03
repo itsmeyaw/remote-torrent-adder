@@ -1,6 +1,7 @@
 import { type Torrent } from "../models/torrent";
 import { type WebUISettings } from "../models/webui";
 import { type IdbStore, withStore } from "./idb";
+import { generateId } from "./utils";
 
 /**
  * The torrent a click handed off to the popup, parked between the service
@@ -24,18 +25,43 @@ const BUFFERED_TORRENT_STORE: IdbStore = {
     version: 1,
 };
 
-const BUFFERED_TORRENT_KEY = "pending";
+const RETENTION_MS = 24 * 60 * 60 * 1000;
+// The one key used before each click got its own record; it sorts after the timestamped ids, so the range delete misses it.
+const LEGACY_BUFFERED_TORRENT_KEY = "pending";
 
-export function saveBufferedTorrent(buffered: BufferedTorrent): Promise<void> {
-    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.put(buffered, BUFFERED_TORRENT_KEY))
-        .then(() => undefined);
+/**
+ * Each click gets its own record, so a second click while a Config Selector is
+ * open cannot overwrite the first. The id travels to the popup in its URL and
+ * back in the Add message.
+ *
+ * Ids start with a zero-padded timestamp so the keys sort by age, which lets a
+ * save drop the expired ones with a single range delete.
+ *
+ * shortcut: records are pruned on the next save once they are older than 24 hours, so a Config Selector left open longer than that can no longer add its torrent; upgrade to a timer-based or tab-close cleanup if that is reported.
+ */
+export async function saveBufferedTorrent(buffered: BufferedTorrent): Promise<string> {
+    const now = Date.now();
+    const id = `${sortableTimestamp(now)}-${generateId()}`;
+    const expiredBefore = sortableTimestamp(now - RETENTION_MS);
+    await withStore(BUFFERED_TORRENT_STORE, "readwrite", store => {
+        // Queued first, so it runs before the put in the same transaction.
+        store.delete(IDBKeyRange.upperBound(expiredBefore, true));
+        store.delete(LEGACY_BUFFERED_TORRENT_KEY);
+        return store.put(buffered, id);
+    });
+    return id;
 }
 
-export async function readBufferedTorrent(): Promise<BufferedTorrent | null> {
+function sortableTimestamp(time: number): string {
+    return String(time).padStart(13, "0");
+}
+
+
+export async function readBufferedTorrent(id: string): Promise<BufferedTorrent | null> {
     const buffered = await withStore<BufferedTorrent | undefined>(
         BUFFERED_TORRENT_STORE,
         "readonly",
-        store => store.get(BUFFERED_TORRENT_KEY),
+        store => store.get(id),
     );
     if (!buffered) {
         return null;
@@ -51,7 +77,7 @@ async function detachTorrentData(torrent: Torrent): Promise<Torrent> {
     return { ...torrent, data: new Blob([await data.arrayBuffer()], { type: data.type }) };
 }
 
-export function clearBufferedTorrent(): Promise<void> {
-    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.delete(BUFFERED_TORRENT_KEY))
+export function clearBufferedTorrent(id: string): Promise<void> {
+    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.delete(id))
         .then(() => undefined);
 }

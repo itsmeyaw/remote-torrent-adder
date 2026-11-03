@@ -64,6 +64,7 @@ export interface IAddTorrentMessage extends IPreAddTorrentMessage {
 }
 
 export interface IAddTorrentMessageWithLabelAndDir extends IMessagable {
+    bufferedId: string;
     webUiId: string;
     config: TorrentUploadConfig;
     labels: string[];

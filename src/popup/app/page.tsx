@@ -36,7 +36,8 @@ function BufferedTorrentForm() {
 
   useEffect(() => {
     let cancelled = false;
-    loadPopupData()
+    const bufferedId = new URLSearchParams(window.location.search).get('buffered') ?? '';
+    loadPopupData(bufferedId)
       .then(data => {
         if (cancelled) return;
         setState(data ? { status: 'ready', data } : { status: 'empty' });
@@ -80,6 +81,7 @@ function AddTorrentForm({ data }: { data: PopupData }) {
     setSubmitError(null);
     try {
       await submitTorrent({
+        bufferedId: data.bufferedId,
         webUiId: data.webUiSettings.id,
         label,
         directory,

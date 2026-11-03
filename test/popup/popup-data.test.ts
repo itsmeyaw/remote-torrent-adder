@@ -13,61 +13,71 @@ const park = (webUiOverrides = {}, torrentOverrides = {}) =>
     });
 
 describe("loadPopupData", () => {
-    it("returns null when nothing is waiting to be added", async () => {
-        expect(await loadPopupData()).toBeNull();
+    it("returns null when no torrent is waiting under that id", async () => {
+        expect(await loadPopupData("unknown")).toBeNull();
+    });
+
+    it("resolves only the torrent parked under the requested id", async () => {
+        await park({}, { name: "first" });
+        const second = await saveBufferedTorrent({
+            torrent: makeMagnetTorrent({ name: "second" }),
+            webUiSettings: makeWebUISettings({ id: "w2", client: Client.QBittorrentWebUI }),
+        });
+
+        expect((await loadPopupData(second))!.torrent.name).toBe("second");
     });
 
     it("exposes the parked torrent and its webui", async () => {
-        await park();
+        const id = await park();
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         expect(data.torrent.name).toBe("Cool Torrent");
         expect(data.webUiSettings.id).toBe("w1");
     });
 
     it("reports which controls the client supports", async () => {
-        await park();
+        const id = await park();
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         // qBittorrent supports all three
         expect(data.supports).toEqual({ label: true, directory: true, paused: true });
     });
 
     it("hides controls the client does not support", async () => {
-        await park({ client: Client.TTorrentWebUI });
+        const id = await park({ client: Client.TTorrentWebUI });
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         expect(data.supports.label).toBe(false);
         expect(data.supports.directory).toBe(false);
     });
 
     it("prefers the configured defaults over the first stored option", async () => {
-        await park({ defaultLabel: "tv", defaultDir: "/media", labels: ["movies"], dirs: ["/other"] });
+        const id = await park({ defaultLabel: "tv", defaultDir: "/media", labels: ["movies"], dirs: ["/other"] });
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         expect(data.initial.label).toBe("tv");
         expect(data.initial.directory).toBe("/media");
     });
 
     it("falls back to the first stored option when there is no default", async () => {
-        await park({ defaultLabel: null, defaultDir: null, labels: ["movies", "tv"], dirs: ["/data"] });
+        const id = await park({ defaultLabel: null, defaultDir: null, labels: ["movies", "tv"], dirs: ["/data"] });
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         expect(data.initial.label).toBe("movies");
         expect(data.initial.directory).toBe("/data");
     });
 
     it("leaves the fields empty when nothing is configured, rather than inventing options", async () => {
-        await park({ defaultLabel: null, defaultDir: null, labels: [], dirs: [] });
+        const id = await park({ defaultLabel: null, defaultDir: null, labels: [], dirs: [] });
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         expect(data.initial.label).toBe("");
         expect(data.initial.directory).toBe("");
         expect(data.labelOptions).toEqual([]);
     });
 
     it("applies a matching auto-label rule and flags it as automatic", async () => {
-        await park(
+        const id = await park(
             {
                 defaultLabel: "manual",
                 autoLabelDirSettings: [
@@ -77,20 +87,20 @@ describe("loadPopupData", () => {
             { trackers: ["http://tracker.example/announce"] },
         );
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         expect(data.initial.label).toBe("auto-tv");
         expect(data.initial.directory).toBe("/auto");
         expect(data.auto).toEqual({ label: true, directory: true });
     });
 
     it("applies a rule matching the torrent name", async () => {
-        await park({
+        const id = await park({
             autoLabelDirSettings: [
                 { criteria: [{ field: "torrentName", value: "cool" }], label: "auto-name", dir: "/by-name" },
             ],
         });
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         // the parked magnet's name is "Cool Torrent"; the match is case-insensitive
         expect(data.initial.label).toBe("auto-name");
         expect(data.initial.directory).toBe("/by-name");
@@ -98,7 +108,7 @@ describe("loadPopupData", () => {
     });
 
     it("does not flag values as automatic when no rule matched", async () => {
-        await park(
+        const id = await park(
             {
                 defaultLabel: "manual",
                 autoLabelDirSettings: [
@@ -108,40 +118,40 @@ describe("loadPopupData", () => {
             { trackers: ["http://tracker.example/announce"] },
         );
 
-        const data = (await loadPopupData())!;
+        const data = (await loadPopupData(id))!;
         expect(data.initial.label).toBe("manual");
         expect(data.auto.label).toBe(false);
     });
 
     it("carries the paused default through", async () => {
-        await park({ addPaused: true });
-        expect((await loadPopupData())!.initial.paused).toBe(true);
+        const id = await park({ addPaused: true });
+        expect((await loadPopupData(id))!.initial.paused).toBe(true);
     });
 
     it("offers the client's per-torrent client-specific settings", async () => {
-        await park();
+        const id = await park();
 
-        const { descriptors, initial } = (await loadPopupData())!.clientSpecific;
+        const { descriptors, initial } = (await loadPopupData(id))!.clientSpecific;
         expect(descriptors.map(descriptor => descriptor.key)).toEqual(["forceStart"]);
         expect(initial).toEqual({ forceStart: false });
     });
 
     it("seeds a client-specific setting from the stored per-client value", async () => {
-        await park({ clientSpecificSettings: { forceStart: true } });
+        const id = await park({ clientSpecificSettings: { forceStart: true } });
 
-        expect((await loadPopupData())!.clientSpecific.initial).toEqual({ forceStart: true });
+        expect((await loadPopupData(id))!.clientSpecific.initial).toEqual({ forceStart: true });
     });
 
     it("omits client-specific settings the client does not offer per torrent", async () => {
-        await park({ client: Client.RuTorrentWebUI });
+        const id = await park({ client: Client.RuTorrentWebUI });
 
-        expect((await loadPopupData())!.clientSpecific.descriptors).toEqual([]);
+        expect((await loadPopupData(id))!.clientSpecific.descriptors).toEqual([]);
     });
 
     it("offers nothing for a client that declares no client-specific settings", async () => {
-        await park({ client: Client.TransmissionWebUI });
+        const id = await park({ client: Client.TransmissionWebUI });
 
-        const { descriptors, initial } = (await loadPopupData())!.clientSpecific;
+        const { descriptors, initial } = (await loadPopupData(id))!.clientSpecific;
         expect(descriptors).toEqual([]);
         expect(initial).toEqual({});
     });
@@ -149,6 +159,7 @@ describe("loadPopupData", () => {
 
 describe("submitTorrent", () => {
     const request = {
+        bufferedId: "b1",
         webUiId: "w1",
         label: "movies",
         directory: "/data",
@@ -163,6 +174,7 @@ describe("submitTorrent", () => {
 
         const message = callArgs(chrome.runtime.sendMessage as any, 0)[0];
         expect(message.action).toBe(AddTorrentMessageWithLabelAndDir.action);
+        expect(message.bufferedId).toBe("b1");
         expect(message.webUiId).toBe("w1");
         expect(message.config).toEqual({ label: "movies", dir: "/data", addPaused: true, clientSpecificSettings: { forceStart: true } });
         expect(message.labels).toEqual(["movies", "tv"]);
@@ -194,8 +206,9 @@ describe("submitTorrent", () => {
 describe("message payload", () => {
     it("never serializes torrent data into the message", async () => {
         vi.clearAllMocks();
-        await park();
+        const id = await park();
         await submitTorrent({
+            bufferedId: id,
             webUiId: "w1",
             label: "",
             directory: "",
