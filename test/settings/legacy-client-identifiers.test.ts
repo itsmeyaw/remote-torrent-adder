@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     resolveClientIdentifier,
     migrateSettingsClientIdentifiers,
-} from "../../src/util/legacy-client-identifiers";
+} from "../../src/settings/legacy-client-identifiers";
 import { Client } from "../../src/models/clients";
 import { type RTASettings } from "../../src/models/settings";
 import { makeWebUISettings } from "../helpers/fixtures";

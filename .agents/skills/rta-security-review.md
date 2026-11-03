@@ -2,7 +2,7 @@
 
 Project-specific security checklist for Remote Torrent Adder. The built-in `/security-review` is generic; this one targets the surfaces this extension actually has. Use alongside `rta-code-review.md`.
 
-Several of these properties are already asserted by the test suite — `test/util/cors-tricks.test.ts` covers rule scoping and cleanup, `test/util/settings.test.ts` covers credential storage round-trips, and `test/torrent/parsers.test.ts` / `test/torrent/download.test.ts` cover malformed torrent input. Run `pnpm test` first, and when you find a gap here, close it with a test rather than only a note.
+Several of these properties are already asserted by the test suite — `test/util/cors-tricks.test.ts` covers rule scoping and cleanup, `test/settings/settings.test.ts` covers credential storage round-trips, and `test/torrent/parsers.test.ts` / `test/torrent/download.test.ts` cover malformed torrent input. Run `pnpm test` first, and when you find a gap here, close it with a test rather than only a note.
 
 ## Attack surfaces in this extension
 
@@ -48,7 +48,7 @@ Several of these properties are already asserted by the test suite — `test/uti
 ### Link-catching regexes (`linkCatchingRegexes`)
 
 - [ ] Each pattern is anchored or bounded enough to avoid catastrophic backtracking on long URLs. Patterns with nested quantifiers (`(a+)+`, `(.*)+`) are a foot-gun.
-- [ ] Defaults in `src/util/settings-defaults.ts` are not redos-prone (check current entries).
+- [ ] Defaults in `src/settings/settings-defaults.ts` are not redos-prone (check current entries).
 - [ ] User-supplied regex is `RegExp`-constructed in a `try`/`catch` so an invalid pattern doesn't break link-catching for all sites.
 
 ### Torrent parsing (`src/torrent/download.ts`, `src/torrent/parsers.ts`)

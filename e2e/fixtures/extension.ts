@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { ConsoleCollector } from "./console-collector";
 import { EXTENSION_DIR } from "./paths";
 import { type RTASettings } from "../../src/models/settings";
-import { serializeSettings } from "../../src/util/serializer";
-import { SETTINGS_KEY } from "../../src/util/settings";
+import { serializeSettings } from "../../src/settings/serializer";
+import { SETTINGS_KEY } from "../../src/settings/settings";
 
 /**
  * Drives one Chrome profile with the unpacked extension loaded.

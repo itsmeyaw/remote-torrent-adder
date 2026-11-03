@@ -11,8 +11,8 @@ vi.mock("../../../src/util/platform", async (importOriginal) => ({
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import NotificationsPage from "../../../src/options/pages/NotificationsPage";
 import { GetSettingsMessage, SaveSettingsMessage } from "../../../src/models/messages";
-import { serializeSettings, deserializeSettings } from "../../../src/util/serializer";
-import { getDefaultSettings } from "../../../src/util/settings-defaults";
+import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
+import { getDefaultSettings } from "../../../src/settings/settings-defaults";
 
 const BUTTON_TOGGLE = /Offer an "Add label" button after adding/;
 

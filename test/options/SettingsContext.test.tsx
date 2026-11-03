@@ -3,8 +3,8 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider, useSettings } from "../../src/options/SettingsContext";
 import { GetSettingsMessage, SaveSettingsMessage } from "../../src/models/messages";
-import { serializeSettings, deserializeSettings } from "../../src/util/serializer";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { serializeSettings, deserializeSettings } from "../../src/settings/serializer";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { callArgs } from "../helpers/assert";
 import { makeWebUISettings } from "../helpers/fixtures";
 

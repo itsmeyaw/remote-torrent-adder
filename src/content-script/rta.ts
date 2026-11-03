@@ -1,7 +1,7 @@
 import { ext, sendMessageAndForget, trySendMessage } from '../util/browser-api';
 import { observe } from './mutations';
 import { deriveLinkLabel, isMagnetLink } from './link-labels';
-import {deserializeObject} from '../util/serializer';
+import {deserializeObject} from '../settings/serializer';
 import {
     FetchTorrentInPageMessage,
     GetLinkCatchingConfig,

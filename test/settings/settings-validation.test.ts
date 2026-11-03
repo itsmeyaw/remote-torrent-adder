@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { parseSettingsExport } from "../../src/util/settings-validation";
-import { serializeSettings } from "../../src/util/serializer";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { parseSettingsExport } from "../../src/settings/settings-validation";
+import { serializeSettings } from "../../src/settings/serializer";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { Client } from "../../src/models/clients";
 import { makeWebUISettings } from "../helpers/fixtures";
 

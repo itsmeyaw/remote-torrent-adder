@@ -54,7 +54,7 @@ export interface RTASettings {
 }
 ```
 
-### 2. `src/util/settings-defaults.ts`
+### 2. `src/settings/settings-defaults.ts`
 Add the default value in `getDefaultSettings()`:
 ```typescript
 return {
@@ -76,11 +76,11 @@ Add the control in the appropriate tab page under `src/options/pages/`:
 Follow existing patterns: use `SettingsContext` (`src/options/SettingsContext.tsx`) to read/write, Tailwind for styling, Radix UI primitives for interactive controls.
 
 ### 4. Usage
-Use the setting wherever the behaviour is implemented. Background code loads settings freshly per event — `const settings = await new Settings().loadSettings();` (see `src/util/action.ts`, `src/util/webuis.ts`, `src/util/messaging.ts`) — because the worker is stateless and must not cache them across invocations. Then read `settings.myNewSetting`.
+Use the setting wherever the behaviour is implemented. Background code loads settings freshly per event — `const settings = await new Settings().loadSettings();` (see `src/util/action.ts`, `src/settings/webuis.ts`, `src/util/messaging.ts`) — because the worker is stateless and must not cache them across invocations. Then read `settings.myNewSetting`.
 
 ### 5. Tests
-- `test/util/settings-defaults.test.ts` — assert the new default
-- `test/util/settings.test.ts` — assert load/save round-trips the field, and that settings missing the key fall back to the default
+- `test/settings/settings-defaults.test.ts` — assert the new default
+- `test/settings/settings.test.ts` — assert load/save round-trips the field, and that settings missing the key fall back to the default
 - `test/options/SettingsContext.test.tsx` / `test/options/OptionsPage.test.tsx` — if you added UI
 
 ---

@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SetLabelView from "../../src/popup/app/SetLabelView";
 import { GetSettingsMessage, SetTorrentLabelMessage } from "../../src/models/messages";
-import { serializeSettings } from "../../src/util/serializer";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
+import { serializeSettings } from "../../src/settings/serializer";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { makeWebUISettings } from "../helpers/fixtures";
 
 const infoHash = "0123456789abcdef0123456789abcdef01234567";

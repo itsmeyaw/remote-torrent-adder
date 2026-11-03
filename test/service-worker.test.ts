@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SETTINGS_KEY } from "../src/util/settings";
+import { SETTINGS_KEY } from "../src/settings/settings";
 import { makeWebUISettings, seedWebUISettings } from "./helpers/fixtures";
 
 /**
@@ -131,7 +131,7 @@ describe("service worker boot on a configured profile", () => {
 
         await bootServiceWorker();
 
-        const { Settings } = await import("../src/util/settings");
+        const { Settings } = await import("../src/settings/settings");
         const settings = new Settings();
         const loaded = await settings.loadSettings();
         loaded.webuiSettings = [

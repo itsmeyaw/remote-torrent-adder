@@ -33,10 +33,10 @@ import { CloudflareChallengeError, downloadTorrent, type TorrentDownloadContext 
 import { HandledFailure } from "./errors";
 import { computeInfoHash } from "../torrent/info-hash";
 import { type NotificationLabelAction, showNotification } from "./notifications";
-import { serializeSettings, serializeObject, deserializeSettings } from "./serializer";
+import { serializeSettings, serializeObject, deserializeSettings } from "../settings/serializer";
 import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "./buffered-torrent";
-import { Settings } from "./settings";
-import { initiateWebUis } from "./webuis";
+import { Settings } from "../settings/settings";
+import { initiateWebUis } from "../settings/webuis";
 
 
 function handledFailure(error: unknown): HandledFailure {

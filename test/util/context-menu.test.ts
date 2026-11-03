@@ -14,9 +14,9 @@ import { HandledFailure } from "../../src/util/errors";
 import { PreAddTorrentMessage } from "../../src/models/messages";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent-webui";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
-import { getDefaultSettings } from "../../src/util/settings-defaults";
-import { serializeSettings } from "../../src/util/serializer";
-import { SETTINGS_KEY } from "../../src/util/settings";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
+import { serializeSettings } from "../../src/settings/serializer";
+import { SETTINGS_KEY } from "../../src/settings/settings";
 
 const settingsFor = (id: string, name: string) => makeWebUISettings({ id, name, host: "h", port: 8080 });
 const webUi = (id: string, name: string) => new QBittorrentWebUI(settingsFor(id, name));

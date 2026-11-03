@@ -1,7 +1,7 @@
 import { test, expect } from "./fixtures/extension";
 import { FakeQBittorrent } from "./fixtures/fake-qbittorrent";
 import { makeSettings, makeWebUISettings } from "./fixtures/settings";
-import { deserializeSettings } from "../src/util/serializer";
+import { deserializeSettings } from "../src/settings/serializer";
 
 const INFO_HASH = "0123456789abcdef0123456789abcdef01234567";
 

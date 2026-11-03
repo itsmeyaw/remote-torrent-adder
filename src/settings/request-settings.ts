@@ -1,4 +1,4 @@
-import { trySendMessage } from "./browser-api";
+import { trySendMessage } from "../util/browser-api";
 import { GetSettingsMessage } from "../models/messages";
 
 const MAX_ATTEMPTS = 3;

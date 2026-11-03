@@ -133,7 +133,7 @@ export const ClientClassByClient: Record<Client, ConcreteTorrentWebUIConstructor
 };
 ```
 
-Only touch `src/util/legacy-client-identifiers.ts` if you are *renaming* an existing client's slug — a new client has no legacy identifier to migrate.
+Only touch `src/settings/legacy-client-identifiers.ts` if you are *renaming* an existing client's slug — a new client has no legacy identifier to migrate.
 
 ### Step 2b: Client-specific options (only if the client has any)
 

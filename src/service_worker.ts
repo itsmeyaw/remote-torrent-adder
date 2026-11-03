@@ -1,10 +1,10 @@
 import { ext } from './util/browser-api';
 import { refreshContextMenu, registerContextMenuClickListener } from './util/context-menu';
 import { registerAuthenticationListener } from './util/authentication-listener';
-import { SETTINGS_KEY } from './util/settings';
+import { SETTINGS_KEY } from './settings/settings';
 import { registerMessageListener } from './util/messaging';
 import { registerActionClickListener } from './util/action';
-import { loadWebUis } from './util/webuis';
+import { loadWebUis } from './settings/webuis';
 import { clearDynamicRules, registerCorsCircumventionForWebUis } from './util/cors-tricks';
 import { registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from './util/notifications';
 

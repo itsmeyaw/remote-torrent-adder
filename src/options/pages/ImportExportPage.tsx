@@ -1,7 +1,7 @@
 import { useState, type JSX } from "react";
 import { useSettings } from "../SettingsContext";
-import { serializeSettings } from "../../util/serializer";
-import { parseSettingsExport } from "../../util/settings-validation";
+import { serializeSettings } from "../../settings/serializer";
+import { parseSettingsExport } from "../../settings/settings-validation";
 
 export default function ImportExportPage(): JSX.Element {
   const { settings, setSettings, loading } = useSettings();
