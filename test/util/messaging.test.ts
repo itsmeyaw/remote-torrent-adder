@@ -202,7 +202,7 @@ describe("AddTorrent flow", () => {
         await new Promise((r) => setTimeout(r, 0));
 
         expect(callArgs(showNotification, 0)[0]).toBe("Cloudflare is blocking this download");
-        expect(callArgs(showNotification, 0)[5]).toBe("https://tracker.org/get/1.torrent");
+        expect(callArgs(showNotification, 0)[5]).toEqual({ url: "https://tracker.org/get/1.torrent" });
     });
 
     it("persists updated labels and dirs for AddTorrentMessageWithLabelAndDir", async () => {
@@ -693,6 +693,26 @@ describe("labelling after the add", () => {
 
         expect(callArgs(showNotification, 0)[0]).toBe("Torrent added successfully");
         expect(callArgs(showNotification, 0)[6]).toBeUndefined();
+    });
+
+    it("links the success notification to the webui that received the torrent", async () => {
+        seedWebUi();
+        respondToEveryFetchWith(true, 200);
+
+        await addMagnet();
+
+        expect(callArgs(showNotification, 0)[0]).toBe("Torrent added successfully");
+        expect(callArgs(showNotification, 0)[5]).toEqual({ webUiId: "w1" });
+    });
+
+    it("links the failure notification to the webui that rejected the torrent", async () => {
+        seedWebUi();
+        respondToEveryFetchWith(false, 500);
+
+        await addMagnet();
+
+        expect(callArgs(showNotification, 0)[0]).toBe("Torrent adding failed");
+        expect(callArgs(showNotification, 0)[5]).toEqual({ webUiId: "w1" });
     });
 
     it("sets the label, remembers the label list and confirms with a notification", async () => {

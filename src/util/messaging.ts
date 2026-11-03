@@ -35,7 +35,6 @@ import { type NotificationLabelAction, showNotification } from "./notifications"
 import { serializeSettings, serializeObject, deserializeSettings } from "./serializer";
 import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "./buffered-torrent";
 import { Settings } from "./settings";
-import { addTrailingSlash } from "./utils";
 import { initiateWebUis } from "./webuis";
 
 
@@ -204,7 +203,7 @@ export async function dispatchPreAddTorrent(message: IPreAddTorrentMessage, wind
             torrent = await downloadTorrent(message.url, context);
         } catch (error) {
             console.error("Error downloading torrent:", error);
-            notifyDownloadFailure(error, await settingsProvider.loadSettings(), addTrailingSlash(webUi.createBaseUrl()));
+            notifyDownloadFailure(error, await settingsProvider.loadSettings(), webUi.settings.id);
             throw error;
         }
         const bufferedId = await saveBufferedTorrent({ torrent, webUiSettings: webUi.settings });
@@ -270,7 +269,7 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
         torrent = await downloadTorrent(url, context);
     } catch (error) {
         console.error("Error downloading torrent:", error);
-        notifyDownloadFailure(error, settings, addTrailingSlash(webUi.createBaseUrl()));
+        notifyDownloadFailure(error, settings, webUi.settings.id);
         throw error;
     }
     const fallbackConfig: TorrentUploadConfig = {
@@ -281,7 +280,7 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
     await sendTorrentToWebUi(webUi, torrent, config ?? fallbackConfig);
 }
 
-function notifyDownloadFailure(error: unknown, settings: RTASettings, webUiUrl: string): void {
+function notifyDownloadFailure(error: unknown, settings: RTASettings, webUiId: string): void {
     if (!settings.notificationsEnabled) {
         return;
     }
@@ -291,7 +290,7 @@ function notifyDownloadFailure(error: unknown, settings: RTASettings, webUiUrl: 
             true,
             settings.notificationsDurationMs,
             settings.notificationsSoundEnabled,
-            error.challengeUrl);
+            { url: error.challengeUrl });
         return;
     }
 
@@ -300,7 +299,7 @@ function notifyDownloadFailure(error: unknown, settings: RTASettings, webUiUrl: 
         true,
         settings.notificationsDurationMs,
         settings.notificationsSoundEnabled,
-        webUiUrl);
+        { webUiId });
 }
 
 /**
@@ -363,7 +362,7 @@ async function setTorrentLabel(message: ISetTorrentLabelMessage, settingsProvide
             false,
             settings.notificationsDurationMs,
             settings.notificationsSoundEnabled,
-            addTrailingSlash(webUi.createBaseUrl()));
+            { webUiId: webUi.settings.id });
     }
 }
 
@@ -377,7 +376,6 @@ async function createLabelAction(webUi: TorrentWebUI, torrent: Torrent, settings
 
 async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config: TorrentUploadConfig | null): Promise<void> {
     const settings = await new Settings().loadSettings();
-    const webUiUrl = addTrailingSlash(webUi.createBaseUrl());
     const result = await webUi.sendTorrent(torrent, config ?? {}).catch((error: unknown): TorrentAddingResult => {
         console.error("Error sending torrent:", error);
         return { success: false, httpResponseCode: 0, httpResponseBody: error instanceof Error ? error.message : String(error) };
@@ -390,7 +388,7 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config:
                 false,
                 settings.notificationsDurationMs,
                 settings.notificationsSoundEnabled,
-                webUiUrl,
+                { webUiId: webUi.settings.id },
                 await createLabelAction(webUi, torrent, settings));
         }
         return;
@@ -402,7 +400,7 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, config:
             true,
             settings.notificationsDurationMs,
             settings.notificationsSoundEnabled,
-            webUiUrl);
+            { webUiId: webUi.settings.id });
     }
     throw new Error(`Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`);
 }

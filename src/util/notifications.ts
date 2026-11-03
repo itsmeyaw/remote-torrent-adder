@@ -2,9 +2,10 @@ import { ext, sendMessageAndForget } from "./browser-api";
 import { type IPlaySoundMessage, PlaySoundMessage } from "../models/messages";
 import { canUseOffscreen, isFirefox } from "./platform";
 import { playNotificationSound } from "./play-sound";
-import { openSetLabelWindow } from "./action";
+import { openSetLabelWindow, openWebUi } from "./action";
+import { loadWebUis } from "./webuis";
 
-const URL_KEY_PREFIX = "notificationUrl:";
+const LINK_KEY_PREFIX = "notificationLink:";
 const LABEL_ACTION_KEY_PREFIX = "notificationLabelAction:";
 const CLEANUP_ALARM_PREFIX = "notification-cleanup:";
 
@@ -14,9 +15,12 @@ export interface NotificationLabelAction {
     torrentName: string;
 }
 
+/** A WebUI is opened with its credentials; any other link is a plain tab. */
+export type NotificationLink = { webUiId: string } | { url: string };
+
 export function registerNotificationClickListener(): void {
     ext.notifications.onClicked.addListener((notificationId) => {
-        void openNotificationWebUi(notificationId).catch(error => console.error("Opening the webui for a notification failed", error));
+        void openNotificationLink(notificationId).catch(error => console.error("Opening the link of a notification failed", error));
     });
 }
 
@@ -37,7 +41,7 @@ export function registerNotificationCleanupListeners(): void {
     });
 }
 
-export function showNotification(title: string, message: string, isFailed: boolean = true, popupDurationMs: number = 2000, playSound: boolean = false, webUiUrl?: string, labelAction?: NotificationLabelAction): void {
+export function showNotification(title: string, message: string, isFailed: boolean = true, popupDurationMs: number = 2000, playSound: boolean = false, link?: NotificationLink, labelAction?: NotificationLabelAction): void {
     const notificationCreateOptions: chrome.notifications.NotificationCreateOptions = {
         type: "basic",
         iconUrl: isFailed ? "assets/icons/BitTorrent128-red.png" : "assets/icons/BitTorrent128.png",
@@ -50,8 +54,8 @@ export function showNotification(title: string, message: string, isFailed: boole
     }
 
     void ext.notifications.create("", notificationCreateOptions).then(async myId => {
-        if (webUiUrl) {
-            await ext.storage.session.set({ [URL_KEY_PREFIX + myId]: webUiUrl });
+        if (link) {
+            await ext.storage.session.set({ [LINK_KEY_PREFIX + myId]: link });
         }
         if (offeredLabelAction) {
             await ext.storage.session.set({ [LABEL_ACTION_KEY_PREFIX + myId]: offeredLabelAction });
@@ -84,11 +88,24 @@ async function openSetLabelWindowFor(notificationId: string): Promise<void> {
     }
 }
 
-async function openNotificationWebUi(notificationId: string): Promise<void> {
-    const key = URL_KEY_PREFIX + notificationId;
-    const url = (await ext.storage.session.get(key))[key] as string | undefined;
-    if (url) {
-        openWebUi(url);
+async function openNotificationLink(notificationId: string): Promise<void> {
+    const key = LINK_KEY_PREFIX + notificationId;
+    const link = (await ext.storage.session.get(key))[key] as NotificationLink | undefined;
+    if (!link) {
+        return;
+    }
+    try {
+        if ("webUiId" in link) {
+            const webUi = (await loadWebUis()).find(candidate => candidate.settings.id === link.webUiId);
+            if (webUi) {
+                await openWebUi(webUi);
+            } else {
+                console.warn(`Notification's WebUI ${link.webUiId} no longer exists`);
+            }
+        } else {
+            void ext.tabs.create({ url: link.url }).then();
+        }
+    } finally {
         forgetNotification(notificationId);
     }
 }
@@ -100,7 +117,7 @@ function forgetNotification(notificationId: string): void {
 
 function clearStoredNotification(notificationId: string): void {
     void ext.alarms.clear(CLEANUP_ALARM_PREFIX + notificationId);
-    void ext.storage.session.remove(URL_KEY_PREFIX + notificationId);
+    void ext.storage.session.remove(LINK_KEY_PREFIX + notificationId);
     void ext.storage.session.remove(LABEL_ACTION_KEY_PREFIX + notificationId);
 }
 
@@ -111,8 +128,4 @@ async function ensureOffscreenDocument(): Promise<void> {
         url: 'notifications/offscreen.html',
         justification: "playing a lil audio along with the notification"
     });
-}
-
-function openWebUi(url: string): void {
-    ext.tabs.create({url: url}).then();
 }
