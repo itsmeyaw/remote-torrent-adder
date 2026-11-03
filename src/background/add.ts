@@ -6,8 +6,7 @@ import { openActionPopup, openPopupWindow } from "./action";
 import { resolveUploadConfig } from "../torrent/upload-config";
 import { CloudflareChallengeError, downloadTorrent, type TorrentDownloadContext } from "../torrent/download";
 import { HandledFailure } from "../util/errors";
-import { computeInfoHash } from "../torrent/info-hash";
-import { type NotificationLabelAction, type NotificationLink, showNotification } from "./notifications";
+import { notify } from "./notifications";
 import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "./buffered-torrent";
 import { loadSettings, saveSettings } from "../settings/settings";
 import { getDefaultSettings } from "../settings/settings-defaults";
@@ -35,7 +34,7 @@ export async function addLink(url: string, target: AddTarget, page: AddPage = {}
         const targets = resolveTargets(target, settings);
         const [first] = targets;
         if (!first) {
-            notify(settings, "No WebUI configured", "Check your settings.", true);
+            void notify({ type: "addFailed", reason: "No WebUI configured. Check your settings." }, settings);
             throw new HandledFailure("No WebUI configured");
         }
 
@@ -44,7 +43,9 @@ export async function addLink(url: string, target: AddTarget, page: AddPage = {}
             torrent = await downloadTorrent(url, { tabId: page.tabId, frameId: page.frameId, pageUrl: page.pageUrl });
         } catch (error) {
             console.error("Error downloading torrent:", error);
-            notifyDownloadFailure(settings, error, first.settings.id);
+            void notify(error instanceof CloudflareChallengeError
+                ? { type: "cloudflareChallenge", message: error.message, challengeUrl: error.challengeUrl }
+                : { type: "downloadFailed", error, webUiId: first.settings.id }, settings);
             throw handledFailure(error);
         }
 
@@ -101,7 +102,7 @@ async function reportingFailures(run: (settings: RTASettings) => Promise<void>):
         if (!settings) {
             console.error("Could not load settings to show the failure; using defaults");
         }
-        notify(settings ?? getDefaultSettings(), "Adding torrent failed", failure.message, true);
+        void notify({ type: "addFailed", reason: failure.message }, settings ?? getDefaultSettings());
         throw failure;
     }
 }
@@ -144,28 +145,16 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, setting
     });
     if (result.success) {
         console.debug(`Torrent added: ${torrent.name} to -> ${webUi.name}`);
-        const labelAction = settings.notificationsEnabled ? await createLabelAction(webUi, torrent, settings) : undefined;
-        notify(settings, "Torrent added successfully",
-            `${torrent.name} successfully added to ${webUi.name}${result.warning ? `\n${result.warning}` : ""}`,
-            false,
-            { webUiId: webUi.settings.id },
-            labelAction);
+        void notify({ type: "added", webUi, torrent, warning: result.warning }, settings);
         return;
     }
     console.warn(`Torrent rejected by ${webUi.name}: ${torrent.name}`, result);
-    notify(settings, "Torrent adding failed",
-        `HTTP Response code: ${result.httpResponseCode}\nResponse body: ${result.httpResponseBody}`,
-        true,
-        { webUiId: webUi.settings.id });
+    void notify({
+        type: "addFailed",
+        reason: `HTTP Response code: ${result.httpResponseCode}\nResponse body: ${result.httpResponseBody}`,
+        webUiId: webUi.settings.id,
+    }, settings);
     throw new HandledFailure(`Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`);
-}
-
-async function createLabelAction(webUi: TorrentWebUI, torrent: Torrent, settings: RTASettings): Promise<NotificationLabelAction | undefined> {
-    if (!webUi.isLabelSupported || !settings.notificationsLabelButtonEnabled) {
-        return undefined;
-    }
-    const infoHash = await computeInfoHash(torrent);
-    return infoHash ? { webUiId: webUi.settings.id, infoHash, torrentName: torrent.name } : undefined;
 }
 
 async function rememberLabelsAndDirs(settings: RTASettings, webUiId: string, labels: string[], directories: string[]): Promise<void> {
@@ -178,21 +167,6 @@ async function rememberLabelsAndDirs(settings: RTASettings, webUiId: string, lab
     webUiSettings.labels = labels;
     webUiSettings.dirs = directories;
     await saveSettings(settings);
-}
-
-function notifyDownloadFailure(settings: RTASettings, error: unknown, webUiId: string): void {
-    if (error instanceof CloudflareChallengeError) {
-        notify(settings, "Cloudflare is blocking this download", error.message, true, { url: error.challengeUrl });
-        return;
-    }
-    notify(settings, "Error downloading torrent", `Error: ${error}`, true, { webUiId });
-}
-
-function notify(settings: RTASettings, title: string, message: string, isFailed: boolean, link?: NotificationLink, labelAction?: NotificationLabelAction): void {
-    if (!settings.notificationsEnabled) {
-        return;
-    }
-    showNotification(title, message, isFailed, settings.notificationsDurationMs, settings.notificationsSoundEnabled, link, labelAction);
 }
 
 function handledFailure(error: unknown): HandledFailure {

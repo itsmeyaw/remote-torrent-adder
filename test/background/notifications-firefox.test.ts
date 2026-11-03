@@ -12,14 +12,28 @@ vi.mock("../../src/util/platform", () => ({
 
 vi.mock("../../src/notifications/play-sound", () => ({ playNotificationSound }));
 
-const { showNotification } = await import("../../src/background/notifications");
+vi.mock("../../src/torrent/info-hash", async (importOriginal) => {
+    const actual = await importOriginal<Record<string, unknown>>();
+    return { ...actual, computeInfoHash: vi.fn(actual.computeInfoHash as () => Promise<string | null>) };
+});
 
-describe("showNotification without an offscreen API", () => {
-    beforeEach(() => playNotificationSound.mockClear());
+import { computeInfoHash } from "../../src/torrent/info-hash";
+import { WebUIFactory, Client } from "../../src/models/clients";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
+import { makeMagnetTorrent, makeWebUISettings } from "../helpers/fixtures";
+
+const { notify } = await import("../../src/background/notifications");
+
+const qbit = WebUIFactory.createWebUI(makeWebUISettings({ id: "w1", name: "qBit", client: Client.QBittorrentWebUI, host: "h", port: 8080 }))!;
+
+describe("notify without an offscreen API", () => {
+    beforeEach(() => {
+        playNotificationSound.mockClear();
+        vi.mocked(computeInfoHash).mockClear();
+    });
 
     it("plays the sound in-process instead of spawning an offscreen document", async () => {
-        showNotification("T", "B", false, 2000, true);
-        await Promise.resolve();
+        await notify({ type: "test", isFailed: false }, { ...getDefaultSettings(), notificationsSoundEnabled: true });
 
         expect(playNotificationSound).toHaveBeenCalledWith(false);
         expect(chrome.offscreen.hasDocument).not.toHaveBeenCalled();
@@ -27,19 +41,20 @@ describe("showNotification without an offscreen API", () => {
     });
 
     it("still shows the notification itself", async () => {
-        showNotification("T", "B", true, 2000, false);
-        await Promise.resolve();
+        await notify({ type: "addFailed", reason: "nope" }, getDefaultSettings());
 
         expect(chrome.notifications.create).toHaveBeenCalled();
         expect(playNotificationSound).not.toHaveBeenCalled();
     });
 
-    it("leaves the add-label button off, since firefox rejects notifications with buttons", async () => {
-        showNotification("T", "B", false, 2000, false, { url: "http://h/" }, { webUiId: "w1", infoHash: "0123456789abcdef0123456789abcdef01234567", torrentName: "Cool" });
+    it("leaves the add-label button off without computing the info hash, since firefox rejects notifications with buttons", async () => {
+        const torrent = makeMagnetTorrent({ data: "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567", name: "Cool" });
+        await notify({ type: "added", webUi: qbit, torrent }, getDefaultSettings());
         await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
 
         expect((chrome.notifications.create as any).mock.calls[0][1].buttons).toBeUndefined();
-        expect(chrome.storage.session.set).toHaveBeenCalledWith({ "notificationLink:notif-id": { url: "http://h/" } });
+        expect(computeInfoHash).not.toHaveBeenCalled();
+        expect(chrome.storage.session.set).toHaveBeenCalledWith({ "notificationLink:notif-id": { webUiId: "w1" } });
         expect(chrome.storage.session.set).toHaveBeenCalledTimes(1);
     });
 });

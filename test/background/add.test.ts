@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { callArgs } from "../helpers/assert";
 
 // Mock the heavy collaborators so the Add module can be exercised in isolation.
-const { showNotification, downloadTorrent } = vi.hoisted(() => ({
-    showNotification: vi.fn(),
+const { notify, downloadTorrent } = vi.hoisted(() => ({
+    notify: vi.fn((_event: unknown, _settings: unknown) => Promise.resolve()),
     downloadTorrent: vi.fn(),
 }));
-vi.mock("../../src/background/notifications", () => ({ showNotification }));
+vi.mock("../../src/background/notifications", () => ({ notify }));
 vi.mock("../../src/settings/settings", async (importOriginal) => {
     const actual = await importOriginal<Record<string, unknown>>();
     return { ...actual, loadSettings: vi.fn(actual.loadSettings as () => Promise<RTASettings>) };
@@ -32,6 +32,8 @@ import { loadPopupData } from "../../src/popup/popup-data";
 
 const qbit = (over: Partial<WebUISettings> = {}) => makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, host: "h", port: 8080, ...over });
 
+const event = (over: Record<string, unknown>) => expect.objectContaining(over);
+
 function seed(webuiSettings: WebUISettings[], over: Partial<RTASettings> = {}) {
     (chrome as any).__storage.settings = serializeSettings({ ...getDefaultSettings(), ...over, webuiSettings });
 }
@@ -52,16 +54,14 @@ function popupBufferedIds(): string[] {
         .filter((id: string | null): id is string => !!id);
 }
 
-const titles = (): string[] => showNotification.mock.calls.map((call: any[]) => call[0]);
-
 beforeEach(() => {
-    showNotification.mockClear();
+    notify.mockClear();
     downloadTorrent.mockReset();
     (chrome.action.setPopup as any).mockClear();
 });
 
 describe("addLink: direct add", () => {
-    it("downloads and sends the torrent, then shows a success notification", async () => {
+    it("downloads and sends the torrent, then raises an added event", async () => {
         seed([qbit()]);
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
         const fetchMock = respondOk();
@@ -70,10 +70,11 @@ describe("addLink: direct add", () => {
 
         expect(downloadTorrent).toHaveBeenCalledWith("magnet:?x", {});
         expect(uploadUrls(fetchMock)).toHaveLength(1);
-        expect(titles()).toEqual(["Torrent added successfully"]);
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith(event({ type: "added" }), expect.anything());
     });
 
-    it("shows the success notification with the warning when a follow-up step does not apply", async () => {
+    it("raises the added event with the warning when a follow-up step does not apply", async () => {
         seed([qbit({ client: Client.RqbitWebUI, host: "h", port: 1337, addPaused: true })]);
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
         (globalThis as any).fetch = vi.fn()
@@ -82,9 +83,7 @@ describe("addLink: direct add", () => {
 
         await addLink("magnet:?x", { webUiId: "w1" });
 
-        expect(callArgs(showNotification, 0)[0]).toBe("Torrent added successfully");
-        expect(callArgs(showNotification, 0)[1]).toContain("Add Paused was not applied");
-        expect(callArgs(showNotification, 0)[2]).toBe(false);
+        expect(notify).toHaveBeenCalledWith(event({ type: "added", warning: expect.stringContaining("Add Paused was not applied") }), expect.anything());
     });
 
     it("hands the download over to the tab the link was clicked in", async () => {
@@ -149,17 +148,19 @@ describe("addLink: direct add", () => {
         );
 
         await expect(addLink("magnet:?x", { webUiId: "w1" })).rejects.toThrow(/failed \(HTTP 500\)/);
-        expect(titles()).toEqual(["Torrent adding failed"]);
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", webUiId: "w1", reason: "HTTP Response code: 500\nResponse body: nope" }), expect.anything());
     });
 });
 
 describe("addLink: download failures", () => {
-    it("notifies once and rejects with the download error when downloading fails", async () => {
+    it("raises one download failure and rejects with the download error", async () => {
         seed([qbit({ showPerTorrentConfigSelector: true })]);
         downloadTorrent.mockRejectedValue(new Error("network down"));
 
         await expect(addLink("magnet:?x", { webUiId: "w1" })).rejects.toThrow(/network down/);
-        expect(titles()).toEqual(["Error downloading torrent"]);
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith(event({ type: "downloadFailed", webUiId: "w1" }), expect.anything());
     });
 
     it("keeps the original error as cause", async () => {
@@ -170,22 +171,16 @@ describe("addLink: download failures", () => {
             .rejects.toHaveProperty("cause", expect.any(CloudflareChallengeError));
     });
 
-    it("rejects without a notification when notifications are off", async () => {
-        seed([qbit()], { notificationsEnabled: false });
-        downloadTorrent.mockRejectedValue(new Error("network down"));
-
-        await expect(addLink("magnet:?x", { webUiId: "w1" })).rejects.toThrow(/network down/);
-        expect(showNotification).not.toHaveBeenCalled();
-    });
-
-    it("points the notification at the tracker when Cloudflare challenges the download", async () => {
+    it("raises a Cloudflare challenge event pointing at the tracker", async () => {
         seed([qbit()]);
         downloadTorrent.mockRejectedValue(new CloudflareChallengeError("https://tracker.org/get/1.torrent"));
 
         await expect(addLink("https://tracker.org/get/1.torrent", { webUiId: "w1" })).rejects.toBeInstanceOf(HandledFailure);
 
-        expect(callArgs(showNotification, 0)[0]).toBe("Cloudflare is blocking this download");
-        expect(callArgs(showNotification, 0)[5]).toEqual({ url: "https://tracker.org/get/1.torrent" });
+        expect(notify).toHaveBeenCalledWith(event({
+            type: "cloudflareChallenge",
+            challengeUrl: "https://tracker.org/get/1.torrent",
+        }), expect.anything());
     });
 });
 
@@ -280,12 +275,13 @@ describe("addLink: Send to All", () => {
         expect(urls.some(url => url.includes("beta.test"))).toBe(true);
     });
 
-    it("shows exactly one notification and rejects when the download fails", async () => {
+    it("raises exactly one download failure and rejects when the download fails", async () => {
         seed([alpha(), beta()]);
         downloadTorrent.mockRejectedValue(new Error("network down"));
 
         await expect(addLink("magnet:?x", { sendToAll: true })).rejects.toBeInstanceOf(HandledFailure);
-        expect(titles()).toEqual(["Error downloading torrent"]);
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith(event({ type: "downloadFailed" }), expect.anything());
     });
 
     it("still adds to the other WebUI when one refuses, and reports each outcome once", async () => {
@@ -301,8 +297,9 @@ describe("addLink: Send to All", () => {
         await expect(addLink("magnet:?x", { sendToAll: true })).rejects.toThrow(/Alpha failed \(HTTP 500\)/);
 
         expect(uploadUrls(fetchMock).some(url => url.includes("beta.test"))).toBe(true);
-        expect(titles()).toHaveLength(2);
-        expect(titles()).toEqual(expect.arrayContaining(["Torrent adding failed", "Torrent added successfully"]));
+        expect(notify).toHaveBeenCalledTimes(2);
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", webUiId: "a" }), expect.anything());
+        expect(notify).toHaveBeenCalledWith(event({ type: "added" }), expect.anything());
     });
 });
 
@@ -322,21 +319,20 @@ describe("addLink: choosing the WebUI", () => {
         expect(urls[0]).toContain("alpha.test");
     });
 
-    it("notifies 'No WebUI configured' and rejects when there is no WebUI at all", async () => {
+    it("raises a failure for 'No WebUI configured' and rejects when there is no WebUI at all", async () => {
         seed([]);
 
         await expect(addLink("magnet:?x", {})).rejects.toThrow("No WebUI configured");
-        expect(callArgs(showNotification, 0)[0]).toBe("No WebUI configured");
-        expect(callArgs(showNotification, 0)[1]).toBe("Check your settings.");
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", reason: "No WebUI configured. Check your settings." }), expect.anything());
         expect(downloadTorrent).not.toHaveBeenCalled();
     });
 
-    it("notifies an unknown WebUI id once and downloads nothing", async () => {
+    it("raises a failure for an unknown WebUI id once and downloads nothing", async () => {
         seed([qbit()]);
 
         await expect(addLink("magnet:?x", { webUiId: "missing" })).rejects.toBeInstanceOf(HandledFailure);
-        expect(titles()).toEqual(["Adding torrent failed"]);
-        expect(callArgs(showNotification, 0)[1]).toBe("No WebUI found for id missing");
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", reason: "No WebUI found for id missing" }), expect.anything());
         expect(downloadTorrent).not.toHaveBeenCalled();
     });
 });
@@ -460,7 +456,7 @@ describe("addBufferedTorrent", () => {
             .rejects.toThrow("No WebUI found for id w1");
 
         expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
-        expect(titles()).toEqual(["Adding torrent failed"]);
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed" }), expect.anything());
     });
 
     it("clears only the buffered torrent its own Config Selector added, leaving the other one", async () => {
@@ -485,7 +481,7 @@ describe("addBufferedTorrent", () => {
         expect(await readBufferedTorrent(bufferedId)).toBeNull();
     });
 
-    it("keeps the buffered torrent and notifies once when the WebUI refuses the add", async () => {
+    it("keeps the buffered torrent and raises one failure when the WebUI refuses the add", async () => {
         seed([qbit()]);
         (globalThis as any).fetch = vi.fn(() =>
             Promise.resolve({ ok: false, status: 500, text: () => Promise.resolve("nope") } as any),
@@ -496,19 +492,8 @@ describe("addBufferedTorrent", () => {
             .rejects.toThrow(/failed \(HTTP 500\)/);
 
         expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
-        expect(titles()).toEqual(["Torrent adding failed"]);
-    });
-
-    it("rejects without a notification when the WebUI refuses and notifications are off", async () => {
-        seed([qbit()], { notificationsEnabled: false });
-        (globalThis as any).fetch = vi.fn(() =>
-            Promise.resolve({ ok: false, status: 500, text: () => Promise.resolve("nope") } as any),
-        );
-        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
-
-        await expect(addBufferedTorrent({ bufferedId, config: {}, labels: [], directories: [] }))
-            .rejects.toThrow(/failed \(HTTP 500\)/);
-        expect(showNotification).not.toHaveBeenCalled();
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", webUiId: "w1" }), expect.anything());
     });
 
     it("keeps the buffered torrent and reports the thrown message when the WebUI throws", async () => {
@@ -520,8 +505,10 @@ describe("addBufferedTorrent", () => {
             .rejects.toThrow(/socket hang up/);
 
         expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
-        expect(callArgs(showNotification, 0)[1]).toMatch(/socket hang up/);
-        expect(callArgs(showNotification, 0)[1]).not.toMatch(/undefined/);
+        expect(notify).toHaveBeenCalledWith(event({
+            type: "addFailed",
+            reason: "HTTP Response code: 0\nResponse body: socket hang up",
+        }), expect.anything());
     });
 });
 
@@ -532,8 +519,8 @@ describe("failure reporting", () => {
         await expect(addBufferedTorrent({ bufferedId: "unknown", config: {}, labels: [], directories: [] }))
             .rejects.toBeInstanceOf(HandledFailure);
 
-        expect(titles()).toEqual(["Adding torrent failed"]);
-        expect(callArgs(showNotification, 0)[1]).toMatch(/No buffered torrent/i);
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", reason: expect.stringMatching(/No buffered torrent/i) }), expect.anything());
     });
 
     it("reports a settings load failure, using defaults to notify, and keeps the buffered torrent", async () => {
@@ -547,7 +534,7 @@ describe("failure reporting", () => {
 
         expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
         expect(errorSpy).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ message: "storage unavailable" }));
-        expect(titles()).toEqual(["Adding torrent failed"]);
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", reason: "storage unavailable" }), expect.objectContaining({ webuiSettings: [] }));
     });
 
     it("notifies with defaults when settings cannot be loaded at all", async () => {
@@ -556,11 +543,10 @@ describe("failure reporting", () => {
 
         await expect(addLink("magnet:?x", { webUiId: "w1" })).rejects.toBeInstanceOf(HandledFailure);
 
-        expect(callArgs(showNotification, 0)[0]).toBe("Adding torrent failed");
-        expect(callArgs(showNotification, 0)[1]).toBe("storage unavailable");
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", reason: "storage unavailable" }), expect.objectContaining({ webuiSettings: [] }));
     });
 
-    it("notifies once when the Config Selector window cannot be opened", async () => {
+    it("raises one failure when the Config Selector window cannot be opened", async () => {
         seed([qbit({ showPerTorrentConfigSelector: true })]);
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
         (chrome.action.openPopup as any).mockRejectedValue(new Error("nope"));
@@ -568,11 +554,11 @@ describe("failure reporting", () => {
 
         await expect(addLink("magnet:?x", { webUiId: "w1" }, { windowId: 7 })).rejects.toBeInstanceOf(HandledFailure);
 
-        expect(titles()).toEqual(["Adding torrent failed"]);
-        expect(callArgs(showNotification, 0)[1]).toBe("no window for you");
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", reason: "no window for you" }), expect.anything());
     });
 
-    it("does not notify a refused add a second time", async () => {
+    it("does not report a refused add a second time", async () => {
         seed([qbit({ showPerTorrentConfigSelector: false })]);
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
         (globalThis as any).fetch = vi.fn(() =>
@@ -581,7 +567,7 @@ describe("failure reporting", () => {
 
         await expect(addLink("magnet:?x", { webUiId: "w1" })).rejects.toBeInstanceOf(HandledFailure);
 
-        expect(titles()).toEqual(["Torrent adding failed"]);
+        expect(notify).toHaveBeenCalledTimes(1);
     });
 });
 
@@ -603,54 +589,24 @@ describe("labelling after the add", () => {
         await addLink("magnet:?x", { webUiId: "w1" });
     }
 
-    it("offers the label action on the success notification of a client with labels", async () => {
+    it("raises the added event for the WebUI that received the torrent", async () => {
         seedLabelled();
         respondToEveryFetchWith(true, 200);
 
         await addMagnet();
 
-        expect(callArgs(showNotification, 0)[6]).toEqual({ webUiId: "w1", infoHash, torrentName: "Cool Torrent" });
+        expect(notify).toHaveBeenCalledWith(event({
+            type: "added",
+            webUi: expect.objectContaining({ settings: expect.objectContaining({ id: "w1" }) }),
+        }), expect.anything());
     });
 
-    it("offers no label action when the button is turned off in the options", async () => {
-        seedLabelled({}, { notificationsLabelButtonEnabled: false });
-        respondToEveryFetchWith(true, 200);
-
-        await addMagnet();
-
-        expect(callArgs(showNotification, 0)[0]).toBe("Torrent added successfully");
-        expect(callArgs(showNotification, 0)[6]).toBeUndefined();
-    });
-
-    it("offers no label action for a client without labels", async () => {
-        seedLabelled({ client: Client.RqbitWebUI });
-        (globalThis as any).fetch = vi.fn(() =>
-            Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("{}"), json: () => Promise.resolve({}) } as any),
-        );
-
-        await addMagnet();
-
-        expect(callArgs(showNotification, 0)[0]).toBe("Torrent added successfully");
-        expect(callArgs(showNotification, 0)[6]).toBeUndefined();
-    });
-
-    it("links the success notification to the webui that received the torrent", async () => {
-        seedLabelled();
-        respondToEveryFetchWith(true, 200);
-
-        await addMagnet();
-
-        expect(callArgs(showNotification, 0)[0]).toBe("Torrent added successfully");
-        expect(callArgs(showNotification, 0)[5]).toEqual({ webUiId: "w1" });
-    });
-
-    it("links the failure notification to the webui that rejected the torrent", async () => {
+    it("raises the failure for the WebUI that rejected the torrent", async () => {
         seedLabelled();
         respondToEveryFetchWith(false, 500);
 
         await expect(addMagnet()).rejects.toBeInstanceOf(HandledFailure);
 
-        expect(callArgs(showNotification, 0)[0]).toBe("Torrent adding failed");
-        expect(callArgs(showNotification, 0)[5]).toEqual({ webUiId: "w1" });
+        expect(notify).toHaveBeenCalledWith(event({ type: "addFailed", webUiId: "w1" }), expect.anything());
     });
 });
