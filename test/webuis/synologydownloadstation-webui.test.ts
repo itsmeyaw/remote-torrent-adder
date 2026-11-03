@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { callArgs } from "../helpers/assert";
 import { SynologyDownloadStationWebUI } from "../../src/webuis/synologydownloadstation-webui";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
@@ -208,6 +208,29 @@ describe("SynologyDownloadStationWebUI", () => {
 
         expect(result).toMatchObject({ reachable: true, authenticated: false });
         expect(result.message).toContain("No such account or incorrect password");
+    });
+
+    it("reports a failed API discovery as reachable, with the Synology error", async () => {
+        queueFetch(mockResponse({ status: 200, json: { success: false, error: { code: 102 } } }));
+        const result = await build().testConnection();
+
+        expect(result).toMatchObject({ reachable: true, authenticated: null, httpResponseCode: 200 });
+        expect(result.message).toContain("The requested API does not exist");
+    });
+
+    it("reports a non-OK discovery response as unreachable with its status", async () => {
+        queueFetch(mockResponse({ status: 503, body: "busy" }));
+        const result = await build().testConnection();
+
+        expect(result).toMatchObject({ reachable: false, authenticated: null, httpResponseCode: 503 });
+    });
+
+    it("reports a network failure as unreachable", async () => {
+        vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+        const result = await build().testConnection();
+
+        expect(result).toMatchObject({ reachable: false, authenticated: null, httpResponseCode: 0 });
+        expect(result.message).toContain("Failed to fetch");
     });
 
     it("supports dirs only", () => {
