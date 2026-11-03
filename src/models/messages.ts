@@ -56,7 +56,6 @@ export const FetchTorrentInPageMessage: IMessagable = {
 
 export interface IAddTorrentMessageWithLabelAndDir extends IMessagable {
     bufferedId: string;
-    webUiId: string;
     config: TorrentUploadConfig;
     labels: string[];
     directories: string[];

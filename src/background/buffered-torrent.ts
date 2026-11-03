@@ -1,10 +1,13 @@
 import { type Torrent } from "../models/torrent";
-import { type WebUISettings } from "../models/webui";
 import { type IdbStore, withStore } from "../util/idb";
 
 /**
  * The torrent a click handed off to the popup, parked between the service
  * worker downloading it and the popup confirming where it should go.
+ *
+ * Only the WebUI id is kept, not its settings: the Config Selector and the Add
+ * both read the WebUI's current settings, so a change made while the selector
+ * is open is picked up and no WebUI password is copied into IndexedDB.
  *
  * This lives in IndexedDB rather than chrome.storage.session because the
  * payload is a `.torrent` Blob. chrome.storage only holds JSON, which meant
@@ -15,7 +18,7 @@ import { type IdbStore, withStore } from "../util/idb";
  */
 export interface BufferedTorrent {
     torrent: Torrent;
-    webUiSettings: WebUISettings;
+    webUiId: string;
 }
 
 const BUFFERED_TORRENT_STORE: IdbStore = {
@@ -65,6 +68,7 @@ export async function readBufferedTorrent(id: string): Promise<BufferedTorrent |
     if (!buffered) {
         return null;
     }
+    // shortcut: records written before webUiId existed have no id and read back as undefined, which callers report as "No WebUI found"; they expire within 24 hours, so no migration.
     return { ...buffered, torrent: await detachTorrentData(buffered.torrent) };
 }
 

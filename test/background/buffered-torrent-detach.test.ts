@@ -5,7 +5,7 @@ const { withStore } = vi.hoisted(() => ({ withStore: vi.fn() }));
 vi.mock("../../src/util/idb", () => ({ withStore }));
 
 import { readBufferedTorrent } from "../../src/background/buffered-torrent";
-import { makeWebUISettings, makeFileTorrent, makeMagnetTorrent } from "../helpers/fixtures";
+import { makeFileTorrent, makeMagnetTorrent } from "../helpers/fixtures";
 
 describe("readBufferedTorrent detaching the payload", () => {
     beforeEach(() => {
@@ -17,7 +17,7 @@ describe("readBufferedTorrent detaching the payload", () => {
         const arrayBuffer = vi.spyOn(stored, "arrayBuffer");
         withStore.mockResolvedValue({
             torrent: makeFileTorrent({ data: stored }),
-            webUiSettings: makeWebUISettings(),
+            webUiId: "w1",
         });
 
         const buffered = await readBufferedTorrent("b1");
@@ -32,7 +32,7 @@ describe("readBufferedTorrent detaching the payload", () => {
 
     it("leaves a magnet payload untouched", async () => {
         const torrent = makeMagnetTorrent();
-        withStore.mockResolvedValue({ torrent, webUiSettings: makeWebUISettings() });
+        withStore.mockResolvedValue({ torrent, webUiId: "w1" });
 
         const buffered = await readBufferedTorrent("b1");
 

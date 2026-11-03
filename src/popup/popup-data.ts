@@ -5,6 +5,9 @@ import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ClientSpecificSettingDescriptor, resolveClientSpecificSetting, type WebUISettings } from "../models/webui";
 import { readBufferedTorrent } from "../background/buffered-torrent";
 import { resolveUploadConfig } from "../torrent/upload-config";
+import { requestSerializedSettings } from "../settings/request-settings";
+import { deserializeSettings } from "../settings/serializer";
+import { findWebUiSettings } from "../settings/webuis";
 
 /**
  * Everything the popup needs, resolved once before the form is rendered, so the
@@ -48,7 +51,8 @@ export async function loadPopupData(bufferedId: string): Promise<PopupData | nul
         return null;
     }
 
-    const { torrent, webUiSettings } = buffered;
+    const { torrent } = buffered;
+    const webUiSettings = await loadCurrentWebUiSettings(buffered.webUiId);
     const webUi = WebUIFactory.createWebUI(webUiSettings);
 
     // The resolver is pure, so the popup resolves this itself rather than having
@@ -87,9 +91,21 @@ export async function loadPopupData(bufferedId: string): Promise<PopupData | nul
     };
 }
 
+async function loadCurrentWebUiSettings(webUiId: string): Promise<WebUISettings> {
+    const serialized = await requestSerializedSettings();
+    const settings = serialized ? deserializeSettings(serialized) : null;
+    if (!settings) {
+        throw new Error("Could not load Remote Torrent Adder's settings. Close this window and try again.");
+    }
+    const webUiSettings = findWebUiSettings(settings, webUiId);
+    if (!webUiSettings) {
+        throw new Error("The WebUI this torrent was meant for no longer exists.");
+    }
+    return webUiSettings;
+}
+
 export interface AddTorrentRequest {
     bufferedId: string;
-    webUiId: string;
     label: string;
     directory: string;
     paused: boolean;
@@ -99,15 +115,14 @@ export interface AddTorrentRequest {
 }
 
 /**
- * The torrent bytes stay in IndexedDB; this only reports which WebUI and which
- * label/dir the user settled on. Rejects if the service worker reports a
- * problem, so the popup can surface it instead of closing on a failure.
+ * The torrent bytes stay in IndexedDB; this only reports which label/dir the
+ * user settled on. Rejects if the service worker reports a problem, so the
+ * popup can surface it instead of closing on a failure.
  */
 export async function submitTorrent(request: AddTorrentRequest): Promise<void> {
     const message: IAddTorrentMessageWithLabelAndDir = {
         action: AddTorrentMessageWithLabelAndDir.action,
         bufferedId: request.bufferedId,
-        webUiId: request.webUiId,
         config: {
             label: request.label,
             dir: request.directory,

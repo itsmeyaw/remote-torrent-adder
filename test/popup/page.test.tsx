@@ -163,7 +163,7 @@ describe("submitting", () => {
 
         await waitFor(() => expect(submitTorrent).toHaveBeenCalled());
         const request = callArgs(submitTorrent, 0)[0];
-        expect(request.webUiId).toBe("w1");
+        expect(request).not.toHaveProperty("webUiId");
         expect(request.label).toBe("movies");
         expect(request.directory).toBe("/data");
         expect(window.close).toHaveBeenCalled();
