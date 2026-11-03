@@ -60,7 +60,7 @@ Do not bump versions or create tags locally. Releases run through the manually-t
 This project keeps a detailed guide per task in `.agents/skills/`. They are plain Markdown with no tool-specific syntax: any agent that can read a file can use them. **Before starting one of these tasks, read the matching file.** They contain the exact steps, the file lists, and the mistakes that have actually been made here.
 
 | If you are asked to… | Read |
-|---|---|
+| --- | --- |
 | add support for a new BitTorrent client | [`.agents/skills/add-webui-client.md`](.agents/skills/add-webui-client.md) |
 | add a setting, option, flag, or toggle | [`.agents/skills/add-setting.md`](.agents/skills/add-setting.md) |
 | fix a client that fails to add torrents (auth, CORS, HTTP errors) | [`.agents/skills/debug-client.md`](.agents/skills/debug-client.md) |
@@ -73,6 +73,21 @@ This project keeps a detailed guide per task in `.agents/skills/`. They are plai
 Project background and the release process: [`.agents/README.md`](.agents/README.md).
 
 Some harnesses can load these automatically and don't need the table — Claude Code has stubs in `.claude/skills/`, GitHub Copilot has prompt files in `.github/prompts/`. Those are thin pointers to the files above, which stay the single place to edit.
+
+## Workflow
+
+1. Create a git worktree inside .worktrees/ and ensure the directory is gitignored.
+2. Create GitHub stack using skill `gh-stack`.
+3. Perform the implementation using miniagents with `tdd` skill.
+4. Format and lint.
+5. Review the implementation using miniagents with skill `code-review` and following the `CODING_STANDARDS.md`.
+6. Commit and sync the stack. Use `pr` skill top create the proper PR content.
+7. Update all related tickets with comments.
+
+## Development Note
+
+- Commit in small functional change instead of one big change if possible to make review easier.
+- Use `miniagent` for implementation
 
 ## Agent skills
 
