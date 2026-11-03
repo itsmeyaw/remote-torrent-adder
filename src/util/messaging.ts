@@ -207,16 +207,16 @@ export async function dispatchPreAddTorrent(message: IPreAddTorrentMessage, wind
             notifyDownloadFailure(error, await settingsProvider.loadSettings(), addTrailingSlash(webUi.createBaseUrl()));
             throw error;
         }
-        await saveBufferedTorrent({ torrent, webUiSettings: webUi.settings });
+        const bufferedId = await saveBufferedTorrent({ torrent, webUiSettings: webUi.settings });
         if (webUi.settings.useAlternativeLabelDirChooser) {
-            await openPopupWindow();
+            await openPopupWindow(undefined, bufferedId);
         } else {
             await ext.windows.update(windowId, { focused: true });
             try {
-                await openActionPopup(windowId);
+                await openActionPopup(windowId, undefined, bufferedId);
             } catch (error) {
                 console.warn("Could not open the action popup; falling back to a window.", error);
-                await openPopupWindow();
+                await openPopupWindow(undefined, bufferedId);
             }
         }
     } else {
@@ -309,7 +309,7 @@ function notifyDownloadFailure(error: unknown, settings: RTASettings, webUiUrl: 
  * say which WebUI and which label/dir the user picked.
  */
 async function addBufferedTorrent(message: IAddTorrentMessageWithLabelAndDir, settingsProvider: Settings): Promise<void> {
-    const buffered = await readBufferedTorrent();
+    const buffered = await readBufferedTorrent(message.bufferedId);
     if (!buffered) {
         throw new Error("No buffered torrent to add; it may already have been consumed.");
     }
@@ -321,7 +321,7 @@ async function addBufferedTorrent(message: IAddTorrentMessageWithLabelAndDir, se
 
     await sendTorrentToWebUi(webUi, buffered.torrent, message.config);
     // The Add already succeeded; failing here would invite a retry that adds the torrent twice.
-    await clearBufferedTorrent().catch(e => console.error("Failed clearing the buffered torrent", e));
+    await clearBufferedTorrent(message.bufferedId).catch(e => console.error("Failed clearing the buffered torrent", e));
     await updateWebUiSettingsForWebUi(settingsProvider, message.webUiId, message.labels, message.directories)
         .catch(e => console.error("Failed updating labels/dirs", e));
 }

@@ -20,7 +20,7 @@ describe("readBufferedTorrent detaching the payload", () => {
             webUiSettings: makeWebUISettings(),
         });
 
-        const buffered = await readBufferedTorrent();
+        const buffered = await readBufferedTorrent("b1");
 
         expect(arrayBuffer).toHaveBeenCalled();
         expect(buffered!.torrent.data).not.toBe(stored);
@@ -34,7 +34,7 @@ describe("readBufferedTorrent detaching the payload", () => {
         const torrent = makeMagnetTorrent();
         withStore.mockResolvedValue({ torrent, webUiSettings: makeWebUISettings() });
 
-        const buffered = await readBufferedTorrent();
+        const buffered = await readBufferedTorrent("b1");
 
         expect(buffered!.torrent.data).toBe(torrent.data);
     });
@@ -42,6 +42,6 @@ describe("readBufferedTorrent detaching the payload", () => {
     it("still returns null when nothing is buffered", async () => {
         withStore.mockResolvedValue(undefined);
 
-        expect(await readBufferedTorrent()).toBeNull();
+        expect(await readBufferedTorrent("b1")).toBeNull();
     });
 });

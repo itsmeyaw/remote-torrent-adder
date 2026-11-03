@@ -10,14 +10,14 @@ import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";
 
 describe("buffered torrent store", () => {
-    it("returns null when nothing has been buffered", async () => {
-        expect(await readBufferedTorrent()).toBeNull();
+    it("returns null when no torrent is buffered under that id", async () => {
+        expect(await readBufferedTorrent("unknown")).toBeNull();
     });
 
     it("round-trips a magnet torrent", async () => {
-        await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: makeWebUISettings({ id: "w1" }) });
+        const id = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: makeWebUISettings({ id: "w1" }) });
 
-        const buffered = await readBufferedTorrent();
+        const buffered = await readBufferedTorrent(id);
         expect(buffered!.torrent.isMagnet).toBe(true);
         expect(buffered!.torrent.data).toBe("magnet:?xt=urn:btih:abc123&dn=Cool+Torrent");
         expect(buffered!.webUiSettings.id).toBe("w1");
@@ -25,9 +25,9 @@ describe("buffered torrent store", () => {
 
     it("keeps a .torrent payload as a Blob instead of encoding it", async () => {
         const torrent = makeFileTorrent({ name: "ubuntu.torrent" });
-        await saveBufferedTorrent({ torrent, webUiSettings: makeWebUISettings() });
+        const id = await saveBufferedTorrent({ torrent, webUiSettings: makeWebUISettings() });
 
-        const buffered = await readBufferedTorrent();
+        const buffered = await readBufferedTorrent(id);
         expect(buffered!.torrent.data).toBeInstanceOf(Blob);
         expect(buffered!.torrent.name).toBe("ubuntu.torrent");
         const bytes = new Uint8Array(await (buffered!.torrent.data as Blob).arrayBuffer());
@@ -40,35 +40,46 @@ describe("buffered torrent store", () => {
         const size = 12 * 1024 * 1024;
         const torrent = makeFileTorrent({ data: new Blob([new Uint8Array(size)]) });
 
-        await saveBufferedTorrent({ torrent, webUiSettings: makeWebUISettings() });
+        const id = await saveBufferedTorrent({ torrent, webUiSettings: makeWebUISettings() });
 
-        const buffered = await readBufferedTorrent();
+        const buffered = await readBufferedTorrent(id);
         expect((buffered!.torrent.data as Blob).size).toBe(size);
     });
 
-    it("replaces the previous entry rather than accumulating", async () => {
-        await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "first" }), webUiSettings: makeWebUISettings() });
-        await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "second" }), webUiSettings: makeWebUISettings() });
+    it("keeps each saved torrent under its own id so two Config Selectors stay independent", async () => {
+        const first = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "first" }), webUiSettings: makeWebUISettings() });
+        const second = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "second" }), webUiSettings: makeWebUISettings() });
 
-        expect((await readBufferedTorrent())!.torrent.name).toBe("second");
+        expect(second).not.toBe(first);
+        expect((await readBufferedTorrent(first))!.torrent.name).toBe("first");
+        expect((await readBufferedTorrent(second))!.torrent.name).toBe("second");
     });
 
     it("leaves a magnet payload alone", async () => {
-        await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: makeWebUISettings() });
+        const id = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: makeWebUISettings() });
 
-        const buffered = await readBufferedTorrent();
+        const buffered = await readBufferedTorrent(id);
 
         expect(typeof buffered!.torrent.data).toBe("string");
     });
 
     it("clears the entry", async () => {
-        await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: makeWebUISettings() });
-        await clearBufferedTorrent();
+        const id = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: makeWebUISettings() });
+        await clearBufferedTorrent(id);
 
-        expect(await readBufferedTorrent()).toBeNull();
+        expect(await readBufferedTorrent(id)).toBeNull();
+    });
+
+    it("clears only the entry it is given", async () => {
+        const first = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "first" }), webUiSettings: makeWebUISettings() });
+        const second = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "second" }), webUiSettings: makeWebUISettings() });
+        await clearBufferedTorrent(first);
+
+        expect(await readBufferedTorrent(first)).toBeNull();
+        expect((await readBufferedTorrent(second))!.torrent.name).toBe("second");
     });
 
     it("tolerates clearing when nothing is buffered", async () => {
-        await expect(clearBufferedTorrent()).resolves.toBeUndefined();
+        await expect(clearBufferedTorrent("unknown")).resolves.toBeUndefined();
     });
 });

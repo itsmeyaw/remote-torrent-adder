@@ -1,6 +1,7 @@
 import { type Torrent } from "../models/torrent";
 import { type WebUISettings } from "../models/webui";
 import { type IdbStore, withStore } from "./idb";
+import { generateId } from "./utils";
 
 /**
  * The torrent a click handed off to the popup, parked between the service
@@ -24,18 +25,24 @@ const BUFFERED_TORRENT_STORE: IdbStore = {
     version: 1,
 };
 
-const BUFFERED_TORRENT_KEY = "pending";
-
-export function saveBufferedTorrent(buffered: BufferedTorrent): Promise<void> {
-    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.put(buffered, BUFFERED_TORRENT_KEY))
-        .then(() => undefined);
+/**
+ * Each click gets its own record, so a second click while a Config Selector is
+ * open cannot overwrite the first. The id travels to the popup in its URL and
+ * back in the Add message.
+ *
+ * shortcut: records of Config Selectors closed without an Add are never removed, so the store grows by one per such close; upgrade to pruning old records on save once that is measurable.
+ */
+export async function saveBufferedTorrent(buffered: BufferedTorrent): Promise<string> {
+    const id = generateId();
+    await withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.put(buffered, id));
+    return id;
 }
 
-export async function readBufferedTorrent(): Promise<BufferedTorrent | null> {
+export async function readBufferedTorrent(id: string): Promise<BufferedTorrent | null> {
     const buffered = await withStore<BufferedTorrent | undefined>(
         BUFFERED_TORRENT_STORE,
         "readonly",
-        store => store.get(BUFFERED_TORRENT_KEY),
+        store => store.get(id),
     );
     if (!buffered) {
         return null;
@@ -51,7 +58,7 @@ async function detachTorrentData(torrent: Torrent): Promise<Torrent> {
     return { ...torrent, data: new Blob([await data.arrayBuffer()], { type: data.type }) };
 }
 
-export function clearBufferedTorrent(): Promise<void> {
-    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.delete(BUFFERED_TORRENT_KEY))
+export function clearBufferedTorrent(id: string): Promise<void> {
+    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.delete(id))
         .then(() => undefined);
 }

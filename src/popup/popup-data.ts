@@ -12,6 +12,7 @@ import { readBufferedTorrent } from "../util/buffered-torrent";
  * field after mounting.
  */
 export interface PopupData {
+    bufferedId: string;
     torrent: Torrent;
     webUiSettings: WebUISettings;
     /** Which controls this client understands. */
@@ -40,9 +41,9 @@ export interface PopupData {
     };
 }
 
-/** Resolves the pending torrent, or null when there is nothing waiting to be added. */
-export async function loadPopupData(): Promise<PopupData | null> {
-    const buffered = await readBufferedTorrent();
+/** Resolves the Buffered Torrent with this id, or null when there is none waiting to be added. */
+export async function loadPopupData(bufferedId: string): Promise<PopupData | null> {
+    const buffered = await readBufferedTorrent(bufferedId);
     if (!buffered) {
         return null;
     }
@@ -58,6 +59,7 @@ export async function loadPopupData(): Promise<PopupData | null> {
     const clientSpecificDescriptors = (webUi?.clientSpecificSettingDescriptors ?? []).filter(descriptor => descriptor.perTorrent);
 
     return {
+        bufferedId,
         torrent,
         webUiSettings,
         supports: {
@@ -87,6 +89,7 @@ export async function loadPopupData(): Promise<PopupData | null> {
 }
 
 export interface AddTorrentRequest {
+    bufferedId: string;
     webUiId: string;
     label: string;
     directory: string;
@@ -104,6 +107,7 @@ export interface AddTorrentRequest {
 export async function submitTorrent(request: AddTorrentRequest): Promise<void> {
     const message: IAddTorrentMessageWithLabelAndDir = {
         action: AddTorrentMessageWithLabelAndDir.action,
+        bufferedId: request.bufferedId,
         webUiId: request.webUiId,
         config: {
             label: request.label,

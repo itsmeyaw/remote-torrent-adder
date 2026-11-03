@@ -39,6 +39,12 @@ function getListener() {
     return calls[calls.length - 1][0];
 }
 
+function popupBufferedIds(): string[] {
+    return (chrome.action.setPopup as any).mock.calls
+        .map((call: any[]) => new URLSearchParams(String(call[0].popup).split("?")[1]).get("buffered"))
+        .filter((id: string | null): id is string => !!id);
+}
+
 /** Invokes the listener and resolves with the value passed to sendResponse. */
 function dispatch(message: any, sender: any = {}): Promise<any> {
     const listener = getListener();
@@ -53,6 +59,7 @@ function dispatch(message: any, sender: any = {}): Promise<any> {
 beforeEach(() => {
     showNotification.mockClear();
     downloadTorrent.mockReset();
+    (chrome.action.setPopup as any).mockClear();
 });
 
 describe("registerMessageListener routing", () => {
@@ -203,13 +210,14 @@ describe("AddTorrent flow", () => {
         (globalThis as any).fetch = vi.fn(() =>
             Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("Ok.") } as any),
         );
-        await saveBufferedTorrent({
+        const bufferedId = await saveBufferedTorrent({
             torrent: makeMagnetTorrent(),
             webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
         });
 
         await dispatch({
             action: AddTorrentMessageWithLabelAndDir.action,
+            bufferedId,
             webUiId: "w1",
             config: {},
             labels: ["movies", "tv"],
@@ -228,13 +236,14 @@ describe("AddTorrent flow", () => {
             Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("Ok.") } as any),
         );
         (globalThis as any).fetch = fetchMock;
-        await saveBufferedTorrent({
+        const bufferedId = await saveBufferedTorrent({
             torrent: makeFileTorrent({ name: "parked.torrent" }),
             webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
         });
 
         await dispatch({
             action: AddTorrentMessageWithLabelAndDir.action,
+            bufferedId,
             webUiId: "w1",
             config: { label: "movies" },
             labels: [],
@@ -250,18 +259,46 @@ describe("AddTorrent flow", () => {
         expect(body.get("category")).toBe("movies");
     });
 
+    it("clears only the buffered torrent its own Config Selector added, leaving the other one", async () => {
+        seedWebUi();
+        (globalThis as any).fetch = vi.fn(() =>
+            Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("Ok.") } as any),
+        );
+        const first = await saveBufferedTorrent({
+            torrent: makeMagnetTorrent({ name: "first" }),
+            webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
+        });
+        const second = await saveBufferedTorrent({
+            torrent: makeMagnetTorrent({ name: "second" }),
+            webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
+        });
+
+        await dispatch({
+            action: AddTorrentMessageWithLabelAndDir.action,
+            bufferedId: first,
+            webUiId: "w1",
+            config: {},
+            labels: [],
+            directories: [],
+        });
+
+        expect(await readBufferedTorrent(first)).toBeNull();
+        expect((await readBufferedTorrent(second))!.torrent.name).toBe("second");
+    });
+
     it("clears the buffered torrent once it has been handed to the client", async () => {
         seedWebUi();
         (globalThis as any).fetch = vi.fn(() =>
             Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("Ok.") } as any),
         );
-        await saveBufferedTorrent({
+        const bufferedId = await saveBufferedTorrent({
             torrent: makeMagnetTorrent(),
             webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
         });
 
         await dispatch({
             action: AddTorrentMessageWithLabelAndDir.action,
+            bufferedId,
             webUiId: "w1",
             config: {},
             labels: [],
@@ -269,7 +306,6 @@ describe("AddTorrent flow", () => {
         });
         await new Promise((r) => setTimeout(r, 0));
 
-        expect(await readBufferedTorrent()).toBeNull();
     });
 
     it("reports an error when the popup adds with nothing buffered", async () => {
@@ -277,6 +313,7 @@ describe("AddTorrent flow", () => {
 
         const response = await dispatch({
             action: AddTorrentMessageWithLabelAndDir.action,
+            bufferedId: "unknown",
             webUiId: "w1",
             config: {},
             labels: [],
@@ -291,13 +328,14 @@ describe("AddTorrent flow", () => {
         (globalThis as any).fetch = vi.fn(() =>
             Promise.resolve({ ok: false, status: 500, text: () => Promise.resolve("nope") } as any),
         );
-        await saveBufferedTorrent({
+        const bufferedId = await saveBufferedTorrent({
             torrent: makeMagnetTorrent(),
             webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
         });
 
         const response = await dispatch({
             action: AddTorrentMessageWithLabelAndDir.action,
+            bufferedId,
             webUiId: "w1",
             config: {},
             labels: [],
@@ -305,7 +343,7 @@ describe("AddTorrent flow", () => {
         });
 
         expect(response.error).toMatch(/failed \(HTTP 500\)/);
-        expect(await readBufferedTorrent()).not.toBeNull();
+        expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
         expect(callArgs(showNotification, 0)[0]).toBe("Torrent adding failed");
     });
 
@@ -316,13 +354,14 @@ describe("AddTorrent flow", () => {
         (globalThis as any).fetch = vi.fn(() =>
             Promise.resolve({ ok: false, status: 500, text: () => Promise.resolve("nope") } as any),
         );
-        await saveBufferedTorrent({
+        const bufferedId = await saveBufferedTorrent({
             torrent: makeMagnetTorrent(),
             webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
         });
 
         const response = await dispatch({
             action: AddTorrentMessageWithLabelAndDir.action,
+            bufferedId,
             webUiId: "w1",
             config: {},
             labels: [],
@@ -337,13 +376,14 @@ describe("AddTorrent flow", () => {
         seedWebUi();
         const sendTorrent = vi.spyOn(QBittorrentWebUI.prototype, "sendTorrent").mockRejectedValueOnce(new Error("socket hang up"));
         try {
-            await saveBufferedTorrent({
+            const bufferedId = await saveBufferedTorrent({
                 torrent: makeMagnetTorrent(),
                 webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
             });
 
             const response = await dispatch({
                 action: AddTorrentMessageWithLabelAndDir.action,
+                bufferedId,
                 webUiId: "w1",
                 config: {},
                 labels: [],
@@ -351,7 +391,7 @@ describe("AddTorrent flow", () => {
             });
 
             expect(response.error).toMatch(/socket hang up/);
-            expect(await readBufferedTorrent()).not.toBeNull();
+            expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
             expect(callArgs(showNotification, 0)[1]).toMatch(/socket hang up/);
             expect(callArgs(showNotification, 0)[1]).not.toMatch(/undefined/);
         } finally {
@@ -361,7 +401,7 @@ describe("AddTorrent flow", () => {
 
     it("reports a settings load failure and keeps the buffered torrent", async () => {
         seedWebUi();
-        await saveBufferedTorrent({
+        const bufferedId = await saveBufferedTorrent({
             torrent: makeMagnetTorrent(),
             webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI }),
         });
@@ -369,6 +409,7 @@ describe("AddTorrent flow", () => {
         try {
             const response = await dispatch({
                 action: AddTorrentMessageWithLabelAndDir.action,
+                bufferedId,
                 webUiId: "w1",
                 config: {},
                 labels: [],
@@ -376,7 +417,7 @@ describe("AddTorrent flow", () => {
             });
 
             expect(response.error).toMatch(/storage unavailable/);
-            expect(await readBufferedTorrent()).not.toBeNull();
+            expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
         } finally {
             loadSettings.mockRestore();
         }
@@ -448,7 +489,6 @@ describe("dispatchPreAddTorrent", () => {
 
         expect(callArgs(showNotification, 0)[0]).toBe("Cloudflare is blocking this download");
         expect(chrome.action.openPopup).not.toHaveBeenCalled();
-        expect(await readBufferedTorrent()).toBeNull();
     });
 
     it("responds to the message caller with the download error", async () => {
@@ -524,7 +564,7 @@ describe("dispatchPreAddTorrent", () => {
         await new Promise((r) => setTimeout(r, 0));
 
         expect(chrome.windows.create).toHaveBeenCalledWith(
-            expect.objectContaining({ url: "popup/popup.html", type: "popup" })
+            expect.objectContaining({ url: expect.stringMatching(/^popup\/popup\.html\?buffered=/), type: "popup" })
         );
     });
 
@@ -574,9 +614,31 @@ describe("dispatchPreAddTorrent", () => {
         await dispatchPreAddTorrent({ action: PreAddTorrentMessage.action, url: "magnet:?x", webUiId: "w1" }, 7);
         await new Promise((r) => setTimeout(r, 0));
 
-        const buffered = await readBufferedTorrent();
+        const [bufferedId] = popupBufferedIds();
+        const buffered = await readBufferedTorrent(bufferedId!);
         expect(buffered!.torrent.data).toBe("magnet:?xt=urn:btih:abc123&dn=Cool+Torrent");
         expect(buffered!.webUiSettings.id).toBe("w1");
+    });
+
+    it("opens a separate Config Selector per torrent, each bound to its own buffered torrent", async () => {
+        const settings = getDefaultSettings();
+        settings.webuiSettings = [
+            makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, showPerTorrentConfigSelector: true }),
+        ];
+        (chrome as any).__storage.settings = serializeSettings(settings);
+        downloadTorrent
+            .mockResolvedValueOnce(makeMagnetTorrent({ name: "first" }))
+            .mockResolvedValueOnce(makeMagnetTorrent({ name: "second" }));
+
+        await dispatchPreAddTorrent({ action: PreAddTorrentMessage.action, url: "magnet:?a", webUiId: "w1" }, 7);
+        await dispatchPreAddTorrent({ action: PreAddTorrentMessage.action, url: "magnet:?b", webUiId: "w1" }, 7);
+        await new Promise((r) => setTimeout(r, 0));
+
+        const popupIds = popupBufferedIds();
+        expect(popupIds).toHaveLength(2);
+        expect(popupIds[0]).not.toBe(popupIds[1]);
+        expect((await readBufferedTorrent(popupIds[0]!))!.torrent.name).toBe("first");
+        expect((await readBufferedTorrent(popupIds[1]!))!.torrent.name).toBe("second");
     });
 });
 
