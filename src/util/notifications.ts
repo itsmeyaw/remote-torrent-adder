@@ -94,17 +94,20 @@ async function openNotificationLink(notificationId: string): Promise<void> {
     if (!link) {
         return;
     }
-    if ("webUiId" in link) {
-        const webUi = (await loadWebUis()).find(candidate => candidate.settings.id === link.webUiId);
-        if (webUi) {
-            await openWebUi(webUi);
+    try {
+        if ("webUiId" in link) {
+            const webUi = (await loadWebUis()).find(candidate => candidate.settings.id === link.webUiId);
+            if (webUi) {
+                await openWebUi(webUi);
+            } else {
+                console.warn(`Notification's WebUI ${link.webUiId} no longer exists`);
+            }
         } else {
-            console.warn(`Notification's WebUI ${link.webUiId} no longer exists`);
+            void ext.tabs.create({ url: link.url }).then();
         }
-    } else {
-        void ext.tabs.create({ url: link.url }).then();
+    } finally {
+        forgetNotification(notificationId);
     }
-    forgetNotification(notificationId);
 }
 
 function forgetNotification(notificationId: string): void {

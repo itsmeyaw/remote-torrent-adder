@@ -149,6 +149,21 @@ describe("showNotification", () => {
         expect(await chrome.storage.session.get("notificationLink:notif-id")).toEqual({});
     });
 
+    it("forgets the notification even when its webui cannot be opened", async () => {
+        seedWebUISettings([makeWebUISettings({ id: "w1", host: "h", port: 8080 })]);
+        vi.mocked(chrome.tabs.create).mockRejectedValueOnce(new Error("tabs unavailable"));
+        vi.spyOn(console, "error").mockImplementation(() => undefined);
+        registerNotificationClickListener();
+        showNotification("T", "B", false, 2000, false, { webUiId: "w1" });
+        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
+        const onClicked = (chrome.notifications.onClicked.addListener as any).mock.calls[0][0];
+
+        onClicked("notif-id");
+
+        await vi.waitFor(() => expect(chrome.notifications.clear).toHaveBeenCalledWith("notif-id"));
+        expect(await chrome.storage.session.get("notificationLink:notif-id")).toEqual({});
+    });
+
     it("clears the stored url and label and the notification when a cleanup alarm fires after a worker restart", async () => {
         showNotification("T", "B", false, 2000, false, { url: "http://h/" }, labelAction);
         await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
