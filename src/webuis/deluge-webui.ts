@@ -34,7 +34,7 @@ export class DelugeWebUI extends TorrentWebUI {
             if (!result.success || !label) {
                 return result;
             }
-            const warning = await this.runFollowUp(`Label "${label}" was not applied`, () => {
+            const warning = await this.runLabelFollowUp(label, () => {
                 const torrentId: string | undefined = JSON.parse(result.httpResponseBody ?? "")["result"][0][1];
                 if (!torrentId) {
                     throw new Error("the added torrent's id is missing from the response");

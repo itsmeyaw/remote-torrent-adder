@@ -31,7 +31,7 @@ export class TransmissionWebUI extends TorrentWebUI {
             if (!success || !label) {
                 return { success, httpResponseCode: response.status, httpResponseBody: responseText };
             }
-            const warning = await this.runFollowUp(`Label "${label}" was not applied`, () => {
+            const warning = await this.runLabelFollowUp(label, () => {
                 if (!hashString) {
                     throw new Error("the added torrent's hash is missing from the response");
                 }

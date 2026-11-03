@@ -208,6 +208,10 @@ export abstract class TorrentWebUI {
         }
     }
 
+    protected runLabelFollowUp(label: string, step: () => Promise<TorrentAddingResult | void>): Promise<string | undefined> {
+        return this.runFollowUp(`Label "${label}" was not applied`, step);
+    }
+
     protected addLeadingAndTrimTrailingSlashes(urlPart: string): string {
         if (!urlPart) {
             return "";

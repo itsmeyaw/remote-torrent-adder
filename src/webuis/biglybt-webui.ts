@@ -25,7 +25,7 @@ export class BiglyBTWebUI extends TorrentWebUI {
             if (!success || !label) {
                 return { success, httpResponseCode: response.status, httpResponseBody: responseBody };
             }
-            const warning = await this.runFollowUp(`Label "${label}" was not applied`, async () => {
+            const warning = await this.runLabelFollowUp(label, async () => {
                 const infoHash = await computeInfoHash(torrent);
                 if (!infoHash) {
                     throw new Error("the info hash could not be computed");
