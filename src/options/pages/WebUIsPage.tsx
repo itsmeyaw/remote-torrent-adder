@@ -409,10 +409,10 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                   {testResult && (() => {
                     const color = !testResult.reachable
                       ? "var(--rta-danger, #B22222)"
-                      : testResult.authenticated === false
+                      : testResult.authenticated !== true
                         ? "var(--rta-warning, #B8860B)"
                         : "var(--rta-success, #228B22)";
-                    const icon = !testResult.reachable ? "❌" : testResult.authenticated === false ? "⚠" : "✅";
+                    const icon = !testResult.reachable ? "❌" : testResult.authenticated !== true ? "⚠" : "✅";
                     return (
                       <span style={{ color, fontWeight: 600, fontSize: 14 }}>
                         {icon} {testResult.message}

@@ -42,6 +42,9 @@ class TestWebUI extends TorrentWebUI {
     publicFetch(url: string, options?: RequestInit) {
         return this.fetch(url, options);
     }
+    publicProbeWithBasicAuth(url: string) {
+        return this.probeWithBasicAuth(url);
+    }
 }
 
 const build = (over = {}) => new TestWebUI(makeWebUISettings(over));
@@ -178,5 +181,38 @@ describe("fetch", () => {
             status: 500,
             body: "boom",
         });
+    });
+});
+
+describe("probeWithBasicAuth", () => {
+    const probeWithStatus = (status: number) => {
+        (globalThis as any).fetch = async () => ({ ok: status >= 200 && status < 300, status });
+        return build().publicProbeWithBasicAuth("http://x/");
+    };
+
+    it("reports authenticated on a 2xx response", async () => {
+        expect(await probeWithStatus(200)).toEqual({
+            reachable: true,
+            authenticated: true,
+            httpResponseCode: 200,
+            message: "Reachable & authenticated",
+        });
+    });
+
+    it("reports an authentication failure on 401 and 403", async () => {
+        for (const status of [401, 403]) {
+            expect(await probeWithStatus(status)).toMatchObject({ reachable: true, authenticated: false, httpResponseCode: status });
+        }
+    });
+
+    it("reports reachable but not verified on 404 and 500", async () => {
+        for (const status of [404, 500]) {
+            expect(await probeWithStatus(status)).toMatchObject({
+                reachable: true,
+                authenticated: null,
+                httpResponseCode: status,
+                message: `Reachable, but the server answered HTTP ${status}; check the host and relative path`,
+            });
+        }
     });
 });

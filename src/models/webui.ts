@@ -128,8 +128,18 @@ export abstract class TorrentWebUI {
     protected async probeWithBasicAuth(url: string): Promise<ConnectionTestResult> {
         try {
             const response = await fetch(url, { method: "GET", headers: this.createBasicAuthHeaders() });
-            const authenticated = response.status !== 401 && response.status !== 403;
-            return this.toReachableResult(authenticated, response.status);
+            if (response.ok) {
+                return this.toReachableResult(true, response.status);
+            }
+            if (response.status === 401 || response.status === 403) {
+                return this.toReachableResult(false, response.status);
+            }
+            return {
+                reachable: true,
+                authenticated: null,
+                httpResponseCode: response.status,
+                message: `Reachable, but the server answered HTTP ${response.status}; check the host and relative path`,
+            };
         } catch (error) {
             return this.toUnreachableResult(error);
         }
