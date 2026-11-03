@@ -235,16 +235,19 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
   const handleTest = async () => {
     setTestState({ signature: endpointSignature, testing: true, result: null });
     try {
-      const result = await ext.runtime.sendMessage({
+      const response = await ext.runtime.sendMessage({
         action: TestConnectionMessage.action,
         webUiSettings: webui,
       } as ITestConnectionMessage);
-      setTestState({ signature: endpointSignature, testing: false, result: result as ConnectionTestResult });
+      if (response && typeof response === "object" && "error" in response) {
+        throw new Error(String(response.error));
+      }
+      setTestState({ signature: endpointSignature, testing: false, result: response as ConnectionTestResult });
     } catch (error) {
       setTestState({
         signature: endpointSignature,
         testing: false,
-        result: { reachable: false, authenticated: null, httpResponseCode: 0, message: String(error) },
+        result: { reachable: false, authenticated: null, httpResponseCode: 0, message: error instanceof Error ? error.message : String(error) },
       });
     }
   };
