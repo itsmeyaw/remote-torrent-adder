@@ -1,6 +1,6 @@
 import { ext } from "../util/browser-api";
 import { initiateWebUis, loadWebUis } from "../settings/webuis";
-import { Settings } from "../settings/settings";
+import { loadSettings } from "../settings/settings";
 import { rememberWebUiTab } from "./authentication-listener";
 import { type TorrentWebUI } from "../models/webui";
 
@@ -16,7 +16,7 @@ export function registerActionClickListener(): void {
 }
 
 async function handleActionClick(tab: chrome.tabs.Tab): Promise<void> {
-    const settings = await new Settings().loadSettings();
+    const settings = await loadSettings();
     const iconClickAction = settings.iconClickAction ?? "openPrimaryWebUi";
 
     if (tab.windowId !== undefined) {

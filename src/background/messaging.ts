@@ -27,7 +27,7 @@ import { executeMethodWrappedWithOriginStripped } from "./cors-tricks";
 import { type TorrentDownloadContext } from "../torrent/download";
 import { showNotification } from "./notifications";
 import { serializeSettings, serializeObject, deserializeSettings } from "../settings/serializer";
-import { Settings } from "../settings/settings";
+import { loadSettings, saveSettings } from "../settings/settings";
 import { initiateWebUis } from "../settings/webuis";
 import { addBufferedTorrent, addLink } from "./add";
 
@@ -51,19 +51,17 @@ export function registerMessageListener(): void {
             }
 
             console.debug(`Received message of type ${message.action}`);
-            const settingsProvider = new Settings();
-
             switch (message.action) {
                 case GetSettingsMessage.action: {
                     willRespondAsync = true;
-                    settingsProvider.loadSettings()
+                    loadSettings()
                         .then(settings => finish(serializeSettings(settings)))
                         .catch(respondWithError);
                     break;
                 }
                 case GetLinkCatchingConfig.action: {
                     willRespondAsync = true;
-                    settingsProvider.loadSettings()
+                    loadSettings()
                         .then(settings => finish(serializeObject({
                             linkCatchingEnabled: settings.linkCatchingEnabled,
                             linkCatchingRegexes: settings.linkCatchingRegexes,
@@ -79,7 +77,7 @@ export function registerMessageListener(): void {
                         break;
                     }
                     willRespondAsync = true;
-                    settingsProvider.saveSettings(settings)
+                    saveSettings(settings)
                         .then(() => finish({}))
                         .catch(respondWithError);
                     break;
@@ -123,7 +121,7 @@ export function registerMessageListener(): void {
                 }
                 case SetTorrentLabelMessage.action: {
                     willRespondAsync = true;
-                    setTorrentLabel(message as ISetTorrentLabelMessage, settingsProvider)
+                    setTorrentLabel(message as ISetTorrentLabelMessage)
                         .then(() => finish({}))
                         .catch(respondWithError);
                     break;
@@ -138,7 +136,7 @@ export function registerMessageListener(): void {
                         break;
                     }
                     willRespondAsync = true;
-                    getWebUiById((message as IOpenWebUiMessage).webUiId, settingsProvider)
+                    getWebUiById((message as IOpenWebUiMessage).webUiId)
                         .then(webUi => {
                             if (!webUi) {
                                 throw new Error(`No WebUI found for id ${(message as IOpenWebUiMessage).webUiId}`);
@@ -178,17 +176,17 @@ async function testConnectionForWebUiSettings(webUiSettings: WebUISettings): Pro
     return executeMethodWrappedWithOriginStripped(() => webUi.testConnection(), webUi.createBaseUrl());
 }
 
-async function getWebUiById(webUiId: string, settingsProvider: Settings): Promise<TorrentWebUI | null> {
+async function getWebUiById(webUiId: string): Promise<TorrentWebUI | null> {
     if (!webUiId) {
         return null;
     }
 
-    const allWebUis = await initiateWebUis(await settingsProvider.loadSettings());
+    const allWebUis = await initiateWebUis(await loadSettings());
     return allWebUis.find(webUi => webUi.settings.id === webUiId) ?? null;
 }
 
-async function setTorrentLabel(message: ISetTorrentLabelMessage, settingsProvider: Settings): Promise<void> {
-    const webUi = await getWebUiById(message.webUiId, settingsProvider);
+async function setTorrentLabel(message: ISetTorrentLabelMessage): Promise<void> {
+    const webUi = await getWebUiById(message.webUiId);
     if (!webUi) {
         throw new Error(`No WebUI found for id ${message.webUiId}`);
     }
@@ -198,11 +196,11 @@ async function setTorrentLabel(message: ISetTorrentLabelMessage, settingsProvide
         throw new Error(`Setting the label failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody ?? ""}`);
     }
 
-    const settings = await settingsProvider.loadSettings();
+    const settings = await loadSettings();
     const webUiSettings = settings.webuiSettings.find(candidate => candidate.id === message.webUiId);
     if (webUiSettings) {
         webUiSettings.labels = message.labels;
-        await settingsProvider.saveSettings(settings);
+        await saveSettings(settings);
     }
 
     if (settings.notificationsEnabled) {

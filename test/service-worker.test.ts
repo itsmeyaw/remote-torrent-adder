@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SETTINGS_KEY } from "../src/settings/settings";
+import { SETTINGS_KEY, loadSettings, saveSettings } from "../src/settings/settings";
+import { showNotification } from "../src/background/notifications";
 import { makeWebUISettings, seedWebUISettings } from "./helpers/fixtures";
+
+vi.mock("../src/background/notifications", async (importOriginal) => ({
+    ...(await importOriginal<Record<string, unknown>>()),
+    showNotification: vi.fn(),
+}));
 
 /**
  * Boots the real service worker entrypoint, side effects and all. The module
@@ -131,14 +137,12 @@ describe("service worker boot on a configured profile", () => {
 
         await bootServiceWorker();
 
-        const { Settings } = await import("../src/settings/settings");
-        const settings = new Settings();
-        const loaded = await settings.loadSettings();
+        const loaded = await loadSettings();
         loaded.webuiSettings = [
             makeWebUISettings({ id: "a", name: "Server A" }),
             makeWebUISettings({ id: "b", name: "Server B" }),
         ];
-        await settings.saveSettings(loaded);
+        await saveSettings(loaded);
         await settle();
 
         expect(consoleError).not.toHaveBeenCalled();
@@ -149,6 +153,52 @@ describe("service worker boot on a configured profile", () => {
             "sendall-separator",
             "server-all",
         ]);
+    });
+});
+
+describe("service worker when a settings backup is written", () => {
+    const resetTitle = "Settings were reset";
+    const resetMessage = "Your stored settings could not be read and were reset to defaults. Re-import an export or set up your WebUIs again.";
+
+    function fireStorageChange(changes: Record<string, chrome.storage.StorageChange>): void {
+        (chrome.storage.local.onChanged.addListener as any).mock.calls.forEach(([listener]: [(changes: Record<string, chrome.storage.StorageChange>) => void]) => listener(changes));
+    }
+
+    beforeEach(() => {
+        vi.mocked(showNotification).mockClear();
+    });
+
+    it("tells the user once when a new backup key appears", async () => {
+        await bootServiceWorker("none");
+
+        fireStorageChange({ "settingsBackup:1": { newValue: "{corrupt" } });
+
+        expect(showNotification).toHaveBeenCalledTimes(1);
+        expect(showNotification).toHaveBeenCalledWith(resetTitle, resetMessage);
+    });
+
+    it("does not tell the user again when an existing backup key changes", async () => {
+        await bootServiceWorker("none");
+
+        fireStorageChange({ "settingsBackup:1": { oldValue: "{corrupt", newValue: "{corrupt" } });
+
+        expect(showNotification).not.toHaveBeenCalled();
+    });
+
+    it("does not tell the user when a backup key is removed", async () => {
+        await bootServiceWorker("none");
+
+        fireStorageChange({ "settingsBackup:1": { oldValue: "{corrupt" } });
+
+        expect(showNotification).not.toHaveBeenCalled();
+    });
+
+    it("ignores changes to other keys", async () => {
+        await bootServiceWorker("none");
+
+        fireStorageChange({ "notificationLink:1": { newValue: "{}" } });
+
+        expect(showNotification).not.toHaveBeenCalled();
     });
 });
 

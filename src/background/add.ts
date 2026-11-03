@@ -9,7 +9,7 @@ import { HandledFailure } from "../util/errors";
 import { computeInfoHash } from "../torrent/info-hash";
 import { type NotificationLabelAction, type NotificationLink, showNotification } from "./notifications";
 import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "./buffered-torrent";
-import { Settings } from "../settings/settings";
+import { loadSettings, saveSettings } from "../settings/settings";
 import { getDefaultSettings } from "../settings/settings-defaults";
 import { initiateWebUis } from "../settings/webuis";
 
@@ -91,7 +91,7 @@ export async function addBufferedTorrent(choice: ConfigSelectorChoice): Promise<
 async function reportingFailures(run: (settings: RTASettings) => Promise<void>): Promise<void> {
     let settings: RTASettings | undefined;
     try {
-        settings = await new Settings().loadSettings();
+        settings = await loadSettings();
         await run(settings);
     } catch (error) {
         if (error instanceof HandledFailure) {
@@ -177,7 +177,7 @@ async function rememberLabelsAndDirs(settings: RTASettings, webUiId: string, lab
     }
     webUiSettings.labels = labels;
     webUiSettings.dirs = directories;
-    await new Settings().saveSettings(settings);
+    await saveSettings(settings);
 }
 
 function notifyDownloadFailure(settings: RTASettings, error: unknown, webUiId: string): void {

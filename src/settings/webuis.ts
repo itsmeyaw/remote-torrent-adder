@@ -1,7 +1,7 @@
 import { WebUIFactory } from "../models/clients";
 import { type RTASettings } from "../models/settings";
 import { type TorrentWebUI } from "../models/webui";
-import { Settings } from "./settings";
+import { loadSettings } from "./settings";
 
 export async function initiateWebUis(settings: RTASettings): Promise<TorrentWebUI[]> {
     const allWebUis = settings.webuiSettings.map(webUiSettings => WebUIFactory.createWebUI(webUiSettings)).filter(webUi => webUi !== null);
@@ -9,5 +9,5 @@ export async function initiateWebUis(settings: RTASettings): Promise<TorrentWebU
 }
 
 export async function loadWebUis(): Promise<TorrentWebUI[]> {
-    return initiateWebUis(await new Settings().loadSettings());
+    return initiateWebUis(await loadSettings());
 }

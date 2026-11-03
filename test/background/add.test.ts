@@ -7,6 +7,10 @@ const { showNotification, downloadTorrent } = vi.hoisted(() => ({
     downloadTorrent: vi.fn(),
 }));
 vi.mock("../../src/background/notifications", () => ({ showNotification }));
+vi.mock("../../src/settings/settings", async (importOriginal) => {
+    const actual = await importOriginal<Record<string, unknown>>();
+    return { ...actual, loadSettings: vi.fn(actual.loadSettings as () => Promise<RTASettings>) };
+});
 vi.mock("../../src/torrent/download", async (importOriginal) => ({
     ...(await importOriginal<Record<string, unknown>>()),
     downloadTorrent,
@@ -23,7 +27,7 @@ import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helper
 import { readBufferedTorrent, saveBufferedTorrent } from "../../src/background/buffered-torrent";
 import { CloudflareChallengeError } from "../../src/torrent/download";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent";
-import { Settings } from "../../src/settings/settings";
+import { loadSettings } from "../../src/settings/settings";
 import { loadPopupData } from "../../src/popup/popup-data";
 
 const qbit = (over: Partial<WebUISettings> = {}) => makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, host: "h", port: 8080, ...over });
@@ -371,11 +375,14 @@ describe("addLink: Upload Config parity", () => {
 });
 
 describe("addLink and addBufferedTorrent: settings are loaded once per Add", () => {
+    beforeEach(() => {
+        vi.mocked(loadSettings).mockClear();
+    });
+
     it("loads settings once for a direct add", async () => {
         seed([qbit()]);
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
         respondOk();
-        const loadSettings = vi.spyOn(Settings.prototype, "loadSettings");
 
         await addLink("magnet:?x", { webUiId: "w1" });
 
@@ -385,7 +392,6 @@ describe("addLink and addBufferedTorrent: settings are loaded once per Add", () 
     it("loads settings once when opening the Config Selector", async () => {
         seed([qbit({ showPerTorrentConfigSelector: true })]);
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
-        const loadSettings = vi.spyOn(Settings.prototype, "loadSettings");
 
         await addLink("magnet:?x", { webUiId: "w1" }, { windowId: 7 });
 
@@ -396,7 +402,6 @@ describe("addLink and addBufferedTorrent: settings are loaded once per Add", () 
         seed([qbit({ id: "a", host: "alpha.test" }), qbit({ id: "b", host: "beta.test" })]);
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
         respondOk();
-        const loadSettings = vi.spyOn(Settings.prototype, "loadSettings");
 
         await addLink("magnet:?x", { sendToAll: true });
 
@@ -407,7 +412,6 @@ describe("addLink and addBufferedTorrent: settings are loaded once per Add", () 
         seed([qbit()]);
         respondOk();
         const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: qbit() });
-        const loadSettings = vi.spyOn(Settings.prototype, "loadSettings");
 
         await addBufferedTorrent({ bufferedId, webUiId: "w1", config: {}, labels: ["movies", "tv"], directories: ["/data"] });
 
@@ -511,7 +515,7 @@ describe("failure reporting", () => {
     it("reports a settings load failure, using defaults to notify, and keeps the buffered torrent", async () => {
         seed([qbit()]);
         const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: qbit() });
-        vi.spyOn(Settings.prototype, "loadSettings").mockRejectedValueOnce(new Error("storage unavailable"));
+        vi.mocked(loadSettings).mockRejectedValueOnce(new Error("storage unavailable"));
         const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
         await expect(addBufferedTorrent({ bufferedId, webUiId: "w1", config: {}, labels: [], directories: [] }))
@@ -523,7 +527,7 @@ describe("failure reporting", () => {
     });
 
     it("notifies with defaults when settings cannot be loaded at all", async () => {
-        vi.spyOn(Settings.prototype, "loadSettings").mockRejectedValue(new Error("storage unavailable"));
+        vi.mocked(loadSettings).mockRejectedValueOnce(new Error("storage unavailable"));
         vi.spyOn(console, "error").mockImplementation(() => undefined);
 
         await expect(addLink("magnet:?x", { webUiId: "w1" })).rejects.toBeInstanceOf(HandledFailure);
