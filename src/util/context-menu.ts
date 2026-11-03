@@ -19,6 +19,7 @@ export function registerContextMenuClickListener(): void {
     });
 }
 
+// Deliberate exception to the stateless-worker rule: it only serializes rebuilds within one worker lifetime and must not outlive a restart.
 let pendingRefresh: Promise<void> = Promise.resolve();
 
 export function refreshContextMenu(allWebUis: TorrentWebUI[]): Promise<void> {
