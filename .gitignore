@@ -11,3 +11,4 @@ test-results/
 .idea
 web-ext-artifacts*/
 *.xpi
+.worktrees/
