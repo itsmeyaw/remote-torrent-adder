@@ -15,6 +15,8 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
+type StorageChangedListener = Parameters<typeof ext.storage.local.onChanged.addListener>[0];
+
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<RTASettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // The background writes settings too (e.g. new Label/Directory Lists), so take those
   // in; the echo of this page's own saves is skipped, or it would undo a newer edit.
   useEffect(() => {
-    const onChanged = (changes: Record<string, chrome.storage.StorageChange>) => {
+    const onChanged: StorageChangedListener = (changes) => {
       const newValue = changes[SETTINGS_KEY]?.newValue as string | undefined;
       if (newValue === undefined) return;
       const echoIndex = pendingSaves.current.indexOf(newValue);
@@ -54,10 +56,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         pendingSaves.current.splice(0, echoIndex + 1);
         return;
       }
-      setSettings(deserializeSettings(newValue));
+      const next = deserializeSettings(newValue);
+      if (next) setSettings(next);
     };
-    ext.storage.local.onChanged.addListener(onChanged as Parameters<typeof ext.storage.local.onChanged.addListener>[0]);
-    return () => ext.storage.local.onChanged.removeListener(onChanged as Parameters<typeof ext.storage.local.onChanged.removeListener>[0]);
+    ext.storage.local.onChanged.addListener(onChanged);
+    return () => ext.storage.local.onChanged.removeListener(onChanged);
   }, []);
 
   // Save settings to service worker whenever they change

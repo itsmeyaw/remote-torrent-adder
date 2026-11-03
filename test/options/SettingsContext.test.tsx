@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider, useSettings } from "../../src/options/SettingsContext";
 import { GetSettingsMessage, SaveSettingsMessage } from "../../src/models/messages";
@@ -26,6 +26,7 @@ function Probe() {
             <span data-testid="duration">{settings?.notificationsDurationMs}</span>
             <span data-testid="labels">{settings?.webuiSettings[0]?.labels.join(",")}</span>
             <button onClick={() => updateSetting("notificationsDurationMs", 9999)}>bump</button>
+            <button onClick={() => updateSetting("notificationsDurationMs", 7777)}>bump again</button>
         </div>
     );
 }
@@ -135,11 +136,24 @@ describe("SettingsContext", () => {
         await screen.findByTestId("duration");
 
         await userEvent.click(screen.getByRole("button", { name: "bump" }));
-        await userEvent.click(screen.getByRole("button", { name: "bump" }));
-        await chrome.storage.local.set({ settings: saves[0] });
-        await chrome.storage.local.set({ settings: saves[1] });
+        await userEvent.click(screen.getByRole("button", { name: "bump again" }));
+        await act(async () => {
+            await chrome.storage.local.set({ settings: saves[0] });
+        });
 
-        expect(screen.getByTestId("duration")).toHaveTextContent("9999");
+        expect(screen.getByTestId("duration")).toHaveTextContent("7777");
+    });
+
+    it("ignores a storage change that is not settings", async () => {
+        respondWithSettings();
+        renderProbe();
+        await screen.findByTestId("duration");
+
+        await act(async () => {
+            await chrome.storage.local.set({ settings: "null" });
+        });
+
+        expect(screen.getByTestId("duration")).toHaveTextContent("2000");
     });
 
     it("shows an error instead of loading forever when settings cannot be read", async () => {
