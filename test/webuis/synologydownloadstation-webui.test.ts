@@ -226,7 +226,7 @@ describe("SynologyDownloadStationWebUI", () => {
     });
 
     it("reports a network failure as unreachable", async () => {
-        (globalThis as any).fetch = vi.fn(() => Promise.reject(new TypeError("Failed to fetch")));
+        vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
         const result = await build().testConnection();
 
         expect(result).toMatchObject({ reachable: false, authenticated: null, httpResponseCode: 0 });
