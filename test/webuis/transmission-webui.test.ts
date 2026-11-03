@@ -51,6 +51,50 @@ describe("TransmissionWebUI", () => {
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({ success: false });
     });
 
+    it("reports the real status and body when the session-id request is rejected", async () => {
+        queueFetch(mockResponse({ status: 403, body: "forbidden" }));
+        await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toEqual({
+            success: false,
+            httpResponseCode: 403,
+            httpResponseBody: "forbidden",
+        });
+    });
+
+    it("reports a non-JSON 200 response from the add request as a failure carrying the body", async () => {
+        queueFetch(
+            mockResponse({ status: 200, headers: { "X-Transmission-Session-Id": "s" } }),
+            mockResponse({ status: 200, body: "<html>login</html>" }),
+        );
+        await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toEqual({
+            success: false,
+            httpResponseCode: 200,
+            httpResponseBody: "<html>login</html>",
+        });
+    });
+
+    it("reports a non-JSON 200 response from the label request as a failure carrying the body", async () => {
+        queueFetch(
+            mockResponse({ status: 200, headers: { "X-Transmission-Session-Id": "s" } }),
+            mockResponse({ status: 200, json: { result: "success", arguments: { "torrent-added": { hashString: "abc", id: 1 } } } }),
+            mockResponse({ status: 200, body: "<html>login</html>" }),
+        );
+        await expect(build().sendTorrent(makeFileTorrent(), { label: "movies" })).resolves.toMatchObject({
+            success: false,
+            httpResponseCode: 200,
+        });
+    });
+
+    it("never sends an undefined id when the add response has no hash, and skips the label request", async () => {
+        const fetch = queueFetch(
+            mockResponse({ status: 200, headers: { "X-Transmission-Session-Id": "s" } }),
+            mockResponse({ status: 200, json: { result: "success", arguments: {} } }),
+        );
+        const result = await build().sendTorrent(makeFileTorrent(), { label: "movies" });
+
+        expect(result.success).toBe(true);
+        expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
     it("reports failure when the rpc result is not success", async () => {
         queueFetch(
             mockResponse({ status: 200, headers: { "X-Transmission-Session-Id": "s" } }),

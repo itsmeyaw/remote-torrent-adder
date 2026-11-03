@@ -1,6 +1,11 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import { type ConnectionTestResult, HttpError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 import { blobToBase64 } from "../util/converter";
+
+interface TransmissionRpcResponse {
+    result?: string;
+    arguments?: Record<string, { hashString?: string } | undefined>;
+}
 
 /** Transmission answers an authenticated request without a session id with 409 + the session id header. */
 export const isTransmissionSessionHandshake = (response: Response): boolean =>
@@ -18,12 +23,12 @@ export class TransmissionWebUI extends TorrentWebUI {
             const response = await this.fetch(this.createBaseUrl() + "/transmission/rpc", fetchOpts);
 
             const responseText = await response.text();
-            const responseData = JSON.parse(responseText);
-            const success = responseData["result"] === "success";
+            const responseData = this.parseRpcResponse(responseText);
+            const success = responseData?.result === "success";
             const label = this.getLabel(config);
-            if (success && label) {
-                const addedArguments: Record<string, { hashString?: string }> = responseData["arguments"];
-                const hashString = (addedArguments["torrent-added"] ?? addedArguments["torrent-duplicate"])?.hashString;
+            const addedArguments = responseData?.arguments;
+            const hashString = (addedArguments?.["torrent-added"] ?? addedArguments?.["torrent-duplicate"])?.hashString;
+            if (success && label && hashString) {
                 const labelResult = await this.setLabelWithSessionId(hashString, label, sessionId);
                 return { ...labelResult, httpResponseBody: responseText };
             }
@@ -45,7 +50,7 @@ export class TransmissionWebUI extends TorrentWebUI {
         }
     }
 
-    private async setLabelWithSessionId(hashString: string | undefined, label: string, sessionId: string): Promise<TorrentAddingResult> {
+    private async setLabelWithSessionId(hashString: string, label: string, sessionId: string): Promise<TorrentAddingResult> {
         const response = await this.fetch(this.createBaseUrl() + "/transmission/rpc", {
             method: "POST",
             headers: {
@@ -56,29 +61,27 @@ export class TransmissionWebUI extends TorrentWebUI {
         });
         const responseText = await response.text();
         return {
-            success: JSON.parse(responseText)["result"] === "success",
+            success: this.parseRpcResponse(responseText)?.result === "success",
             httpResponseCode: response.status,
             httpResponseBody: responseText,
         };
     }
 
-    private fetchTransmissionSessionId(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const rpcUrl = this.createBaseUrl() + "/transmission/rpc";
-            fetch(rpcUrl, {
-                method: "POST",
-                body: ""
-            }).then(response => {
-                if (response.status === 200 || response.status === 409) {
-                    const sessionId = response.headers.get("X-Transmission-Session-Id") ?? "";
-                    resolve(sessionId);
-                } else {
-                    reject(new Error("Authentication failed"));
-                }
-            }).catch(error => {
-                reject(error);
-            });
-        });
+    private parseRpcResponse(responseText: string): TransmissionRpcResponse | null {
+        try {
+            return JSON.parse(responseText);
+        } catch {
+            return null;
+        }
+    }
+
+    private async fetchTransmissionSessionId(): Promise<string> {
+        // Raw fetch: the 409 handshake is not an error, so this.fetch would throw on it.
+        const response = await fetch(this.createBaseUrl() + "/transmission/rpc", { method: "POST", body: "" });
+        if (response.status !== 200 && response.status !== 409) {
+            throw new HttpError(response.status, await response.text().catch(() => ""));
+        }
+        return response.headers.get("X-Transmission-Session-Id") ?? "";
     }
 
     private async createTorrentFetchOptions(torrent: Torrent, config: TorrentUploadConfig, transmissionSessionId: string): Promise<RequestInit> {
