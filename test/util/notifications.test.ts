@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { showNotification, registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from "../../src/util/notifications";
 import { BROWSER } from "../../src/util/platform";
 
+const labelAction = { webUiId: "w1", infoHash: "0123456789abcdef0123456789abcdef01234567", torrentName: "Cool Torrent" };
+
 function firedAlarm(name: string): void {
     const [listener] = (chrome.alarms.onAlarm.addListener as any).mock.calls[0];
     listener({ name });
@@ -95,12 +97,59 @@ describe("showNotification", () => {
     it("ignores clicks on notifications without a stored url", async () => {
         registerNotificationClickListener();
         showNotification("T", "B", false); // no webui url
-        await Promise.resolve();
+        (chrome.notifications.create as any).mockResolvedValueOnce("other-id");
+        showNotification("T", "B", false, 2000, false, "http://other/");
+        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalledWith({ "notificationUrl:other-id": "http://other/" }));
         const onClicked = (chrome.notifications.onClicked.addListener as any).mock.calls[0][0];
 
         onClicked("notif-id");
-        await new Promise(resolve => setTimeout(resolve, 0));
-        expect(chrome.tabs.create).not.toHaveBeenCalled();
+        onClicked("other-id");
+
+        await vi.waitFor(() => expect(chrome.tabs.create).toHaveBeenCalledTimes(1));
+        expect(chrome.tabs.create).toHaveBeenCalledWith({ url: "http://other/" });
+    });
+
+    it("forgets the stored url and dismisses the notification after a click", async () => {
+        registerNotificationClickListener();
+        showNotification("T", "B", false, 2000, false, "http://h/");
+        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
+        const onClicked = (chrome.notifications.onClicked.addListener as any).mock.calls[0][0];
+
+        onClicked("notif-id");
+
+        await vi.waitFor(() => expect(chrome.notifications.clear).toHaveBeenCalledWith("notif-id"));
+        expect(await chrome.storage.session.get("notificationUrl:notif-id")).toEqual({});
+    });
+
+    it("clears the stored url and label and the notification when a cleanup alarm fires after a worker restart", async () => {
+        showNotification("T", "B", false, 2000, false, "http://h/", labelAction);
+        await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
+        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalledTimes(2));
+
+        vi.resetModules();
+        const restarted = await import("../../src/util/notifications");
+        restarted.registerNotificationCleanupListeners();
+        firedAlarm("notification-cleanup:notif-id");
+
+        await vi.waitFor(() => expect(chrome.notifications.clear).toHaveBeenCalledWith("notif-id"));
+        expect(await chrome.storage.session.get("notificationUrl:notif-id")).toEqual({});
+        expect(await chrome.storage.session.get("notificationLabelAction:notif-id")).toEqual({});
+    });
+
+    it("clears the stored url and label when the user dismisses the notification after a worker restart", async () => {
+        showNotification("T", "B", false, 2000, false, "http://h/", labelAction);
+        await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
+        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalledTimes(2));
+
+        vi.resetModules();
+        const restarted = await import("../../src/util/notifications");
+        restarted.registerNotificationCleanupListeners();
+        const onClosed = (chrome.notifications.onClosed.addListener as any).mock.calls[0][0];
+        onClosed("notif-id", true);
+
+        await vi.waitFor(() => expect(chrome.alarms.clear).toHaveBeenCalledWith("notification-cleanup:notif-id"));
+        expect(await chrome.storage.session.get("notificationUrl:notif-id")).toEqual({});
+        expect(await chrome.storage.session.get("notificationLabelAction:notif-id")).toEqual({});
     });
 
     it.skipIf(BROWSER !== "chrome")("creates an offscreen document to play sound when requested", async () => {
@@ -112,8 +161,6 @@ describe("showNotification", () => {
 });
 
 describe("the add-label button", () => {
-    const labelAction = { webUiId: "w1", infoHash: "0123456789abcdef0123456789abcdef01234567", torrentName: "Cool Torrent" };
-
     it("is only shown when a label action is given", async () => {
         showNotification("T", "B", false, 2000, false, "http://h/");
         showNotification("T", "B", false, 2000, false, "http://h/", labelAction);
@@ -139,17 +186,14 @@ describe("the add-label button", () => {
     });
 
     it("forgets the label action once the notification times out", async () => {
-        registerNotificationButtonListener();
         registerNotificationCleanupListeners();
         showNotification("T", "B", false, 1500, false, "http://h/", labelAction);
         await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
-        const onButtonClicked = (chrome.notifications.onButtonClicked.addListener as any).mock.calls[0][0];
+        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
+        expect(await chrome.storage.session.get("notificationLabelAction:notif-id")).toEqual({ "notificationLabelAction:notif-id": labelAction });
 
         firedAlarm("notification-cleanup:notif-id");
-        await vi.waitFor(() => expect(chrome.storage.session.remove).toHaveBeenCalledWith("notificationLabelAction:notif-id"));
-        onButtonClicked("notif-id", 0);
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        expect(chrome.windows.create).not.toHaveBeenCalled();
+        await vi.waitFor(() => expect(chrome.notifications.clear).toHaveBeenCalledWith("notif-id"));
+        expect(await chrome.storage.session.get("notificationLabelAction:notif-id")).toEqual({});
     });
 });
