@@ -35,10 +35,14 @@ const SETTING_CHECKS: ReadonlyArray<readonly [keyof RTASettings, FieldCheck]> = 
     ["iconClickAction", isIconClickAction],
 ];
 
-/** Every field a WebUI needs for the client code, the popup and the options page to work with it. */
-const WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldCheck]> = [
+// Without these a WebUI cannot be told apart or talked to, so they are never made up.
+const REQUIRED_WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldCheck]> = [
     ["id", isNonEmptyString],
     ["client", isClientOrDraft],
+];
+
+// Absent ones are filled from the defaults before they are checked.
+const WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldCheck]> = [
     ["name", isString],
     ["host", isString],
     ["port", isPort],
@@ -47,16 +51,12 @@ const WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldChec
     ["username", isString],
     ["password", isString],
     ["showPerTorrentConfigSelector", isBoolean],
+    ["useAlternativeLabelDirChooser", isBoolean],
     ["defaultLabel", isNullableString],
     ["defaultDir", isNullableString],
     ["labels", isStringArray],
     ["dirs", isStringArray],
     ["addPaused", isBoolean],
-];
-
-// Fields added after older configs were saved: absent ones are filled from the defaults, present ones must be valid.
-const LATER_WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldCheck]> = [
-    ["useAlternativeLabelDirChooser", isBoolean],
     ["autoLabelDirSettings", Array.isArray],
     ["clientSpecificSettings", isObject],
 ];
@@ -67,14 +67,20 @@ function settingProblems(raw: Record<string, unknown>): string[] {
         .map(([field]) => `Invalid ${field}`);
 }
 
+// The id goes first, as in createWebUiSettings, so a WebUI serializes the same however it was made.
+function withWebUiDefaults<T extends { id?: unknown }>(webUi: T): T & Omit<WebUISettings, "id"> {
+    return { id: webUi.id, ...getDefaultWebUiFields(), ...webUi };
+}
+
 function webUiProblems(webUi: unknown, position: number): string[] {
     if (!isObject(webUi)) {
         return [`WebUI ${position} is not an object.`];
     }
     const name = typeof webUi.name === "string" && webUi.name !== "" ? ` ("${webUi.name}")` : "";
+    const filled: Record<string, unknown> = withWebUiDefaults(webUi);
     const failing = [
-        ...WEBUI_FIELD_CHECKS.filter(([field, check]) => !check(webUi[field])),
-        ...LATER_WEBUI_FIELD_CHECKS.filter(([field, check]) => webUi[field] !== undefined && !check(webUi[field])),
+        ...REQUIRED_WEBUI_FIELD_CHECKS.filter(([field, check]) => !check(webUi[field])),
+        ...WEBUI_FIELD_CHECKS.filter(([field, check]) => !check(filled[field])),
     ];
     return failing.map(([field]) => `WebUI ${position}${name}: ${webUi[field] === undefined || webUi[field] === "" ? "missing" : "invalid"} ${field}`);
 }
@@ -129,7 +135,7 @@ export function parseSettings(text: string): SettingsParseResult {
         settings: migrateSettingsClientIdentifiers({
             ...getDefaultSettings(),
             ...settings,
-            webuiSettings: settings.webuiSettings.map(webUi => ({ ...getDefaultWebUiFields(), ...webUi })),
+            webuiSettings: settings.webuiSettings.map(withWebUiDefaults),
         }),
     };
 }

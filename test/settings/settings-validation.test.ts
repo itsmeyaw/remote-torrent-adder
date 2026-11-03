@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseSettings } from "../../src/settings/settings-validation";
 import { serializeSettings } from "../../src/settings/serializer";
-import { getDefaultSettings } from "../../src/settings/settings-defaults";
+import { createWebUiSettings, getDefaultSettings } from "../../src/settings/settings-defaults";
 import { Client } from "../../src/models/clients";
 import { makeWebUISettings } from "../helpers/fixtures";
 
@@ -41,9 +41,35 @@ describe("parseSettings", () => {
         expect(problemsOf(text)).toEqual([NOT_AN_EXPORT]);
     });
 
-    it("names the WebUI that is missing a required field", () => {
-        const text = exportWith(raw => { delete raw.webuiSettings[0].host; });
-        expect(problemsOf(text)).toEqual(['WebUI 1 ("Home"): missing host']);
+    it.each([["id"], ["client"]])("names the WebUI that is missing its %s, which cannot be made up", field => {
+        const text = exportWith(raw => { delete raw.webuiSettings[0][field]; });
+        expect(problemsOf(text)).toEqual([`WebUI 1 ("Home"): missing ${field}`]);
+    });
+
+    it("keeps a WebUI that is missing fields with a default, filling them in", () => {
+        const text = exportWith(raw => {
+            delete raw.webuiSettings[0].host;
+            delete raw.webuiSettings[0].addPaused;
+            delete raw.webuiSettings[0].dirs;
+        });
+
+        const result = parseSettings(text);
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.settings.webuiSettings[0]).toMatchObject({ id: "w1", name: "Home", host: "", addPaused: false, dirs: [] });
+    });
+
+    it("orders a filled-in WebUI's fields like a newly created one, so both serialize the same", () => {
+        const created = createWebUiSettings();
+        const { id, ...fields } = created;
+        const text = exportWith(raw => { raw.webuiSettings = [{ ...fields, id }]; });
+
+        const result = parseSettings(text);
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(Object.keys(result.settings.webuiSettings[0]!)).toEqual(Object.keys(created));
     });
 
     it("names a WebUI field with the wrong type", () => {
@@ -70,12 +96,12 @@ describe("parseSettings", () => {
         const text = exportWith(raw => {
             raw.webuiSettings = [
                 makeWebUISettings({ id: "w1", name: "Good" }),
-                { ...makeWebUISettings({ id: "w2", name: "Home" }), host: undefined },
+                { ...makeWebUISettings({ id: "w2", name: "Home" }), client: undefined },
                 { ...makeWebUISettings({ id: "w3", name: "Office" }), labels: "movies" },
             ];
         });
         expect(problemsOf(text)).toEqual([
-            'WebUI 2 ("Home"): missing host',
+            'WebUI 2 ("Home"): missing client',
             'WebUI 3 ("Office"): invalid labels',
         ]);
     });

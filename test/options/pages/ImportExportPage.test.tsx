@@ -127,10 +127,10 @@ describe("ImportExportPage import", () => {
 
         await importText(exportWithWebUis([
             makeWebUISettings({ id: "w1", name: "Good" }),
-            { ...makeWebUISettings({ id: "w2", name: "Home" }), host: undefined },
+            { ...makeWebUISettings({ id: "w2", name: "Home" }), client: undefined },
         ]));
 
-        expect(screen.getByRole("alert")).toHaveTextContent('WebUI 2 ("Home"): missing host');
+        expect(screen.getByRole("alert")).toHaveTextContent('WebUI 2 ("Home"): missing client');
         expect(savedWebUiNames()).toBeUndefined();
     });
 });
