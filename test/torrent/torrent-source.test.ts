@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../src/util/torrent-source";
+import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../src/torrent/torrent-source";
 import { buildBencodedTorrent } from "../helpers/fixtures";
 
 const torrentFile = (content: string, name = "test.torrent") =>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { base64ToBytes, bytesToBase64 } from "../../src/util/torrent-bytes";
+import { base64ToBytes, bytesToBase64 } from "../../src/torrent/torrent-bytes";
 
 describe("torrent bytes over the message channel", () => {
     it("round-trips arbitrary binary content", () => {

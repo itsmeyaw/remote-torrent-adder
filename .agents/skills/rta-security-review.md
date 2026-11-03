@@ -2,7 +2,7 @@
 
 Project-specific security checklist for Remote Torrent Adder. The built-in `/security-review` is generic; this one targets the surfaces this extension actually has. Use alongside `rta-code-review.md`.
 
-Several of these properties are already asserted by the test suite — `test/util/cors-tricks.test.ts` covers rule scoping and cleanup, `test/util/settings.test.ts` covers credential storage round-trips, and `test/util/parsers.test.ts` / `test/util/download.test.ts` cover malformed torrent input. Run `pnpm test` first, and when you find a gap here, close it with a test rather than only a note.
+Several of these properties are already asserted by the test suite — `test/util/cors-tricks.test.ts` covers rule scoping and cleanup, `test/util/settings.test.ts` covers credential storage round-trips, and `test/torrent/parsers.test.ts` / `test/torrent/download.test.ts` cover malformed torrent input. Run `pnpm test` first, and when you find a gap here, close it with a test rather than only a note.
 
 ## Attack surfaces in this extension
 
@@ -10,7 +10,7 @@ Several of these properties are already asserted by the test suite — `test/uti
 - **Service worker** holds decrypted client credentials in memory while processing a request, has `<all_urls>` host permissions, and can issue arbitrary `fetch()` to user-configured hosts.
 - **`declarativeNetRequest`** rules strip `Origin` and set `Referer` per configured WebUI (`src/util/cors-tricks.ts`). Mis-scoped rules turn the extension into a CORS-bypass oracle for arbitrary sites.
 - **Stored credentials** (host/port/username/password per WebUI) live in `ext.storage.local` (`storage.local` on both browsers, reached through the `ext` shim).
-- **Torrent file parsing**: bencode is parsed from URLs the user clicks (`src/util/download.ts`, `src/util/parsers.ts`).
+- **Torrent file parsing**: bencode is parsed from URLs the user clicks (`src/torrent/download.ts`, `src/torrent/parsers.ts`).
 - **Link-catching regexes** are user-editable (`linkCatchingRegexes`) and tested against URLs in the content script.
 
 ## Review checklist
@@ -51,7 +51,7 @@ Several of these properties are already asserted by the test suite — `test/uti
 - [ ] Defaults in `src/util/settings-defaults.ts` are not redos-prone (check current entries).
 - [ ] User-supplied regex is `RegExp`-constructed in a `try`/`catch` so an invalid pattern doesn't break link-catching for all sites.
 
-### Torrent parsing (`src/util/download.ts`, `src/util/parsers.ts`)
+### Torrent parsing (`src/torrent/download.ts`, `src/torrent/parsers.ts`)
 
 - [ ] Bencode decoder errors are caught — a malformed `.torrent` must not crash the service worker (which would also dismiss the popup mid-flow on the user).
 - [ ] No assumption that `info.name`, `info.files[].path[]`, `announce`, etc. are present or are of the expected type — they come from untrusted bytes.
