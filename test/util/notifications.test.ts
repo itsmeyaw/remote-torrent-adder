@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { showNotification, registerNotificationButtonListener, registerNotificationClickListener } from "../../src/util/notifications";
+import { showNotification, registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from "../../src/util/notifications";
 import { BROWSER } from "../../src/util/platform";
+
+function firedAlarm(name: string): void {
+    const [listener] = (chrome.alarms.onAlarm.addListener as any).mock.calls[0];
+    listener({ name });
+}
 
 describe("showNotification", () => {
     it("creates a basic notification with the success icon by default", () => {
@@ -21,17 +26,47 @@ describe("showNotification", () => {
         expect(options.iconUrl).toBe("assets/icons/BitTorrent128-red.png");
     });
 
-    it("clears the notification after the configured duration", async () => {
-        vi.useFakeTimers();
-        try {
-            showNotification("T", "B", false, 1500);
-            await vi.advanceTimersByTimeAsync(0);
-            expect(chrome.notifications.clear).not.toHaveBeenCalled();
-            await vi.advanceTimersByTimeAsync(1500);
-            expect(chrome.notifications.clear).toHaveBeenCalledWith("notif-id");
-        } finally {
-            vi.useRealTimers();
-        }
+    it("schedules a cleanup alarm for the configured duration", async () => {
+        const before = Date.now();
+        showNotification("T", "B", false, 1500);
+        await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
+
+        const [name, info] = (chrome.alarms.create as any).mock.calls[0];
+        expect(name).toBe("notification-cleanup:notif-id");
+        expect(info.when).toBeGreaterThanOrEqual(before + 1500);
+        expect(chrome.notifications.clear).not.toHaveBeenCalled();
+    });
+
+    it("clears the notification when its cleanup alarm fires", async () => {
+        registerNotificationCleanupListeners();
+        showNotification("T", "B", false, 1500);
+        await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
+
+        firedAlarm("notification-cleanup:notif-id");
+
+        await vi.waitFor(() => expect(chrome.notifications.clear).toHaveBeenCalledWith("notif-id"));
+    });
+
+    it("ignores alarms that are not notification cleanups", async () => {
+        registerNotificationCleanupListeners();
+
+        firedAlarm("something-else");
+
+        await Promise.resolve();
+        expect(chrome.notifications.clear).not.toHaveBeenCalled();
+    });
+
+    it("forgets the stored url and label when the user dismisses the notification", async () => {
+        registerNotificationCleanupListeners();
+        showNotification("T", "B", false, 2000, false, "http://h/");
+        await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
+        const onClosed = (chrome.notifications.onClosed.addListener as any).mock.calls[0][0];
+
+        onClosed("notif-id", true);
+
+        await vi.waitFor(() => expect(chrome.storage.session.remove).toHaveBeenCalledWith("notificationUrl:notif-id"));
+        expect(chrome.alarms.clear).toHaveBeenCalledWith("notification-cleanup:notif-id");
+        expect(chrome.notifications.clear).not.toHaveBeenCalled();
     });
 
     it("opens the webui when its notification is clicked", async () => {
@@ -104,20 +139,17 @@ describe("the add-label button", () => {
     });
 
     it("forgets the label action once the notification times out", async () => {
-        vi.useFakeTimers();
-        try {
-            registerNotificationButtonListener();
-            showNotification("T", "B", false, 1500, false, "http://h/", labelAction);
-            await vi.advanceTimersByTimeAsync(1500);
-            const onButtonClicked = (chrome.notifications.onButtonClicked.addListener as any).mock.calls[0][0];
+        registerNotificationButtonListener();
+        registerNotificationCleanupListeners();
+        showNotification("T", "B", false, 1500, false, "http://h/", labelAction);
+        await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
+        const onButtonClicked = (chrome.notifications.onButtonClicked.addListener as any).mock.calls[0][0];
 
-            onButtonClicked("notif-id", 0);
-            await vi.advanceTimersByTimeAsync(0);
+        firedAlarm("notification-cleanup:notif-id");
+        await vi.waitFor(() => expect(chrome.storage.session.remove).toHaveBeenCalledWith("notificationLabelAction:notif-id"));
+        onButtonClicked("notif-id", 0);
+        await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(chrome.storage.session.remove).toHaveBeenCalledWith("notificationLabelAction:notif-id");
-            expect(chrome.windows.create).not.toHaveBeenCalled();
-        } finally {
-            vi.useRealTimers();
-        }
+        expect(chrome.windows.create).not.toHaveBeenCalled();
     });
 });

@@ -6,6 +6,7 @@ import { openSetLabelWindow } from "./action";
 
 const URL_KEY_PREFIX = "notificationUrl:";
 const LABEL_ACTION_KEY_PREFIX = "notificationLabelAction:";
+const CLEANUP_ALARM_PREFIX = "notification-cleanup:";
 
 export interface NotificationLabelAction {
     webUiId: string;
@@ -22,6 +23,17 @@ export function registerNotificationClickListener(): void {
 export function registerNotificationButtonListener(): void {
     ext.notifications.onButtonClicked?.addListener((notificationId) => {
         void openSetLabelWindowFor(notificationId);
+    });
+}
+
+export function registerNotificationCleanupListeners(): void {
+    ext.alarms.onAlarm.addListener((alarm) => {
+        if (alarm.name.startsWith(CLEANUP_ALARM_PREFIX)) {
+            forgetNotification(alarm.name.slice(CLEANUP_ALARM_PREFIX.length));
+        }
+    });
+    ext.notifications.onClosed.addListener((notificationId) => {
+        clearStoredNotification(notificationId);
     });
 }
 
@@ -45,7 +57,7 @@ export function showNotification(title: string, message: string, isFailed: boole
             await ext.storage.session.set({ [LABEL_ACTION_KEY_PREFIX + myId]: offeredLabelAction });
         }
 
-        setTimeout(() => forgetNotification(myId), popupDurationMs);
+        void ext.alarms.create(CLEANUP_ALARM_PREFIX + myId, { when: Date.now() + popupDurationMs });
     });
 
     if (playSound) {
@@ -83,6 +95,11 @@ async function openNotificationWebUi(notificationId: string): Promise<void> {
 
 function forgetNotification(notificationId: string): void {
     ext.notifications.clear(notificationId).then();
+    clearStoredNotification(notificationId);
+}
+
+function clearStoredNotification(notificationId: string): void {
+    void ext.alarms.clear(CLEANUP_ALARM_PREFIX + notificationId);
     void ext.storage.session.remove(URL_KEY_PREFIX + notificationId);
     void ext.storage.session.remove(LABEL_ACTION_KEY_PREFIX + notificationId);
 }

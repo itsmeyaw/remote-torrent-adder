@@ -126,6 +126,17 @@ export function createChromeMock(): any {
             onButtonClicked: {
                 addListener: vi.fn(),
             },
+            onClosed: {
+                addListener: vi.fn(),
+            },
+        },
+
+        alarms: {
+            create: vi.fn(() => Promise.resolve()),
+            clear: vi.fn(() => Promise.resolve(true)),
+            onAlarm: {
+                addListener: vi.fn(),
+            },
         },
 
         permissions: {
