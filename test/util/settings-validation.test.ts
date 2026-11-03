@@ -113,4 +113,24 @@ describe("parseSettingsExport", () => {
         if (!result.ok) return;
         expect(result.settings.webuiSettings).toEqual([draft]);
     });
+
+    it("accepts an older export whose WebUIs predate Auto Label/Dir Rules and Client-Specific Settings", () => {
+        const text = exportWith(raw => {
+            delete raw.webuiSettings[0].autoLabelDirSettings;
+            delete raw.webuiSettings[0].clientSpecificSettings;
+        });
+
+        expect(parseSettingsExport(text).ok).toBe(true);
+    });
+
+    it("still rejects Auto Label/Dir Rules and Client-Specific Settings of the wrong type", () => {
+        const text = exportWith(raw => {
+            raw.webuiSettings[0].autoLabelDirSettings = {};
+            raw.webuiSettings[0].clientSpecificSettings = [];
+        });
+        expect(problemsOf(text)).toEqual([
+            'WebUI 1 ("Home"): invalid autoLabelDirSettings',
+            'WebUI 1 ("Home"): invalid clientSpecificSettings',
+        ]);
+    });
 });

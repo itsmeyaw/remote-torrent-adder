@@ -22,6 +22,8 @@ const isPort = (value: unknown): boolean =>
 const isKnownClient = (value: unknown): boolean => typeof value === "string" && resolveClientIdentifier(value) !== null;
 // A WebUI is stored with an empty client until the user picks one, so an empty client is a draft.
 const isClientOrDraft = (value: unknown): boolean => value === "" || isKnownClient(value);
+// Fields added after older exports were made; every reader already tolerates them being absent.
+const optional = (check: FieldCheck): FieldCheck => value => value === undefined || check(value);
 
 /** Every field a WebUI needs for the client code, the popup and the options page to work with it. */
 const WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldCheck]> = [
@@ -40,8 +42,8 @@ const WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldChec
     ["labels", isStringArray],
     ["dirs", isStringArray],
     ["addPaused", isBoolean],
-    ["autoLabelDirSettings", Array.isArray],
-    ["clientSpecificSettings", isObject],
+    ["autoLabelDirSettings", optional(Array.isArray)],
+    ["clientSpecificSettings", optional(isObject)],
 ];
 
 function webUiProblems(webUi: unknown, position: number): string[] {
