@@ -33,7 +33,7 @@ export default tseslint.config(
                 },
             ],
             '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
-            'no-console': 'off',
+            'no-console': ['error', { allow: ['warn', 'error', 'debug'] }],
             eqeqeq: ['error', 'always', { null: 'ignore' }],
             'no-var': 'error',
             'prefer-const': 'error',
@@ -80,6 +80,7 @@ export default tseslint.config(
             globals: { ...globals.node, ...globals.browser, chrome: 'writable' },
         },
         rules: {
+            'no-console': 'off',
             // Tests deliberately reach into mocks with loose types.
             '@typescript-eslint/no-explicit-any': 'off',
         },
@@ -91,6 +92,7 @@ export default tseslint.config(
             globals: { ...globals.node, ...globals.browser, chrome: 'readonly' },
         },
         rules: {
+            'no-console': 'off',
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-non-null-assertion': 'off',
             // Playwright's fixture signature is `async ({}, use) => {}`.
@@ -122,6 +124,9 @@ export default tseslint.config(
         files: ['*.config.ts', 'scripts/**/*.ts'],
         languageOptions: {
             globals: globals.node,
+        },
+        rules: {
+            'no-console': 'off',
         },
     },
 );
