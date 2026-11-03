@@ -7,22 +7,22 @@ Full skill definitions and project context: [`.agents/README.md`](.agents/README
 ## Key Commands
 
 ```bash
-npm run typecheck      # tsc --noEmit over src/, test/, scripts/, configs
-npm run lint           # eslint (npm run lint:fix to autofix)
-npm test               # vitest suite (npm run test:watch, npm run test:coverage)
-npm run audit          # npm audit --audit-level=high, minus a reviewed allowlist
-npm run build          # Chrome dev build → dist/chrome/
-npm run build:prod     # Chrome prod build → dist-prod/chrome/
-npm run build:firefox  # Firefox dev build → dist/firefox/
-npm run build:all      # every bundle, incl. the self-hosted Firefox one, verified once
-npm run test:it        # real clients in Docker, needs a built dist/chrome/ (CI: master only, non-blocking)
-npm run dev            # watch mode
+pnpm run typecheck      # tsc --noEmit over src/, test/, scripts/, configs
+pnpm run lint           # eslint (pnpm run lint:fix to autofix)
+pnpm test               # vitest suite (pnpm run test:watch, pnpm run test:coverage)
+pnpm run audit          # pnpm audit (high/critical only), minus a reviewed allowlist
+pnpm run build          # Chrome dev build → dist/chrome/
+pnpm run build:prod     # Chrome prod build → dist-prod/chrome/
+pnpm run build:firefox  # Firefox dev build → dist/firefox/
+pnpm run build:all      # every bundle, incl. the self-hosted Firefox one, verified once
+pnpm run test:it        # real clients in Docker, needs a built dist/chrome/ (CI: master only, non-blocking)
+pnpm run dev            # watch mode
 ```
 
-`npm run build` runs `typecheck && lint && test` first via `prebuild` — a "build failure" is often one of those three. Run them directly while iterating.
+`pnpm run build` runs `typecheck && lint && test` first via `prebuild` — a "build failure" is often one of those three. Run them directly while iterating.
 
 Load unpacked extension from `dist/chrome/` in `chrome://extensions/` (Developer mode on).
-For Firefox, `npm run dev:firefox` launches a scratch profile with `dist/firefox/` loaded.
+For Firefox, `pnpm run dev:firefox` launches a scratch profile with `dist/firefox/` loaded.
 
 ## Architecture
 
