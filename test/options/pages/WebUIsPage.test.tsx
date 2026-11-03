@@ -11,7 +11,7 @@ import { makeWebUISettings } from "../../helpers/fixtures";
 
 function respondWithWebUIs(
     webuiSettings = [makeWebUISettings({ id: "a", name: "Alpha" }), makeWebUISettings({ id: "b", name: "Beta" })],
-    connectionTest?: ConnectionTestResult,
+    connectionTest?: ConnectionTestResult | { error: string },
 ) {
     const settings = getDefaultSettings();
     settings.webuiSettings = webuiSettings;
@@ -185,6 +185,16 @@ describe("WebUIsPage", () => {
         await userEvent.click(within(general).getByRole("button", { name: "Test connection" }));
 
         expect(await within(general).findByText(/^⚠ Reachable, but the server answered HTTP 500/)).toBeInTheDocument();
+    });
+
+    it("shows the background's error message when the connection test fails", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })], { error: "Failed updating CORS rules" });
+        renderPage();
+
+        const general = await screen.findByRole("region", { name: "General" });
+        await userEvent.click(within(general).getByRole("button", { name: "Test connection" }));
+
+        expect(await within(general).findByText("❌ Failed updating CORS rules")).toBeInTheDocument();
     });
 
     it("shows a check mark when the connection is authenticated", async () => {
