@@ -64,20 +64,14 @@ export class PorlaWebUI extends TorrentWebUI {
         }
     }
 
-    private authenticateForToken(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", this.createLoginRequest()).then(response =>
-                response.json()
-            ).then(json => {
-                if (json.error) {
-                    reject(new Error(json.error.message ?? "Authentication failed"));
-                } else {
-                    resolve(json.result.token);
-                }
-            }).catch(error => {
-                reject(error);
-            });
-        });
+    private async authenticateForToken(): Promise<string> {
+        const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", this.createLoginRequest());
+        const json = await response.json();
+        const token = json.result?.token;
+        if (json.error || !token) {
+            throw new Error(json.error?.message ?? "Authentication failed");
+        }
+        return token;
     }
 
     private createLoginRequest(): RequestInit {

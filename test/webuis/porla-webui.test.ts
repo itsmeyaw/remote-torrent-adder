@@ -40,6 +40,15 @@ describe("PorlaWebUI", () => {
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({ success: false });
     });
 
+    it("fails with an authentication error and sends no Add when login returns no token", async () => {
+        const fetch = queueFetch(mockResponse({ status: 200, json: { jsonrpc: "2.0", id: 1, result: {} } }));
+        const result = await build().sendTorrent(makeMagnetTorrent(), {});
+
+        expect(result.success).toBe(false);
+        expect(result.httpResponseBody).toContain("Authentication failed");
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
     it("reports failure when the jsonrpc response contains an error", async () => {
         queueFetch(tokenOk(), mockResponse({ status: 200, json: { error: { code: -1 } } }));
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({ success: false });
