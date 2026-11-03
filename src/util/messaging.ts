@@ -250,11 +250,13 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
     const settings = await new Settings().loadSettings();
     if (!webUi) {
         console.error("No WebUI found for addTorrentMessage:", message);
-        showNotification("No WebUI configured",
-                    `Check your settings.`,
-                    true,
-                    settings.notificationsDurationMs,
-                    settings.notificationsSoundEnabled);
+        if (settings.notificationsEnabled) {
+            showNotification("No WebUI configured",
+                `Check your settings.`,
+                true,
+                settings.notificationsDurationMs,
+                settings.notificationsSoundEnabled);
+        }
         throw new Error("No WebUI configured");
     }
 
@@ -275,6 +277,9 @@ async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: str
 }
 
 function notifyDownloadFailure(error: unknown, settings: RTASettings, webUiUrl: string): void {
+    if (!settings.notificationsEnabled) {
+        return;
+    }
     if (error instanceof CloudflareChallengeError) {
         showNotification("Cloudflare is blocking this download",
             error.message,

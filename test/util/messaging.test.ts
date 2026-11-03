@@ -132,6 +132,18 @@ describe("AddTorrent flow", () => {
         expect(callArgs(showNotification, 0)[0]).toBe("Error downloading torrent");
     });
 
+    it("reports a failed download to the caller without a notification when notifications are off", async () => {
+        const settings = { ...getDefaultSettings(), notificationsEnabled: false };
+        settings.webuiSettings = [makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, host: "h", port: 8080 })];
+        (chrome as any).__storage.settings = serializeSettings(settings);
+        downloadTorrent.mockRejectedValue(new Error("network down"));
+
+        const response = await dispatch({ action: AddTorrentMessage.action, webUiId: "w1", url: "magnet:?x", config: {} });
+
+        expect(response.error).toMatch(/network down/);
+        expect(showNotification).not.toHaveBeenCalled();
+    });
+
     it("hands the download over to the tab the link was clicked in", async () => {
         seedWebUi();
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
