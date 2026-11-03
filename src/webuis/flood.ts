@@ -1,6 +1,6 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type AddResult, AuthenticationError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
-import { blobToBase64 } from "../torrent/converter";
+import { bytesToBase64 } from "../torrent/torrent-bytes";
 
 export class FloodWebUI extends TorrentWebUI {
     protected override async login(): Promise<void> {
@@ -72,7 +72,7 @@ export class FloodWebUI extends TorrentWebUI {
     private async createPayloadForTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<Record<string, unknown>> {
         const tags = this.getLabel(config) ? [this.getLabel(config)] : [];
         return {
-            files: [await blobToBase64(torrent.data as Blob)],
+            files: [bytesToBase64(new Uint8Array(await (torrent.data as Blob).arrayBuffer()))],
             start: !this.getAddPaused(config),
             destination: this.getDirectory(config) ?? "",
             tags,

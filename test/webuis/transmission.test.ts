@@ -41,7 +41,7 @@ describe("TransmissionWebUI", () => {
         await build().sendTorrent(makeFileTorrent(), { dir: "/data", addPaused: true });
 
         const payload = JSON.parse(callArgs(fetch, 1)[1].body as string);
-        expect(payload.arguments.metainfo).toBeTypeOf("string");
+        expect(payload.arguments.metainfo).toBe("AQIDBA==");
         expect(payload.arguments["download-dir"]).toBe("/data");
         expect(payload.arguments.paused).toBe(true);
     });

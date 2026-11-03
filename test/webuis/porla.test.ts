@@ -31,7 +31,7 @@ describe("PorlaWebUI", () => {
         await build().sendTorrent(makeFileTorrent(), {});
 
         const payload = JSON.parse(callArgs(fetch, 1)[1].body as string);
-        expect(payload.params.ti).toBeTypeOf("string");
+        expect(payload.params.ti).toBe("AQIDBA==");
         expect(payload.params.save_path).toBe("./");
     });
 
