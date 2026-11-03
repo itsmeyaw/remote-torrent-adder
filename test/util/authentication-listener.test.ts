@@ -150,4 +150,17 @@ describe("resolveAuthCredentials", () => {
         expect(await resolveAuthCredentials(details)).toEqual({});
         expect(await resolveAuthCredentials(details)).toEqual(credentials);
     });
+
+    it("still hands back the second challenge after the worker restarts", async () => {
+        seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
+        const details = authDetails({ requestId: "restart" });
+        expect(await resolveAuthCredentials(details)).toEqual({
+            authCredentials: { username: "u", password: "p" },
+        });
+
+        vi.resetModules();
+        const restarted = await import("../../src/util/authentication-listener");
+
+        expect(await restarted.resolveAuthCredentials(details)).toEqual({});
+    });
 });

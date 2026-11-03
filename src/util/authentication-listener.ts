@@ -3,8 +3,7 @@ import { type TorrentWebUI } from "../models/webui";
 import { loadWebUis } from "./webuis";
 
 
-const MAX_TRACKED_REQUESTS = 256;
-const triedRequestIds: Set<string> = new Set();
+const AUTH_TRIED_KEY_PREFIX = "authTried:";
 const WEBUI_TAB_KEY_PREFIX = "webUiTab:";
 
 export function registerAuthenticationListener(): void {
@@ -35,9 +34,10 @@ export async function rememberWebUiTab(tabId: number, webUiId: string): Promise<
 export async function resolveAuthCredentials(
     details: chrome.webRequest.OnAuthRequiredDetails
 ): Promise<chrome.webRequest.BlockingResponse> {
-    if (triedRequestIds.has(details.requestId)) {
+    const triedKey = AUTH_TRIED_KEY_PREFIX + details.requestId;
+    if ((await ext.storage.session.get(triedKey))[triedKey]) {
         // Second firing for this request, let the browser handle it
-        triedRequestIds.delete(details.requestId);
+        await ext.storage.session.remove(triedKey);
         return {};
     }
 
@@ -46,7 +46,7 @@ export async function resolveAuthCredentials(
         return {};
     }
 
-    rememberRequest(details.requestId);
+    await rememberRequest(details.requestId);
     return {
         authCredentials: {
             username: webUi.settings.username,
@@ -80,13 +80,8 @@ function isRequestForWebUi(url: string, webUi: TorrentWebUI): boolean {
     return url === baseUrl || url.startsWith(baseUrl + "/");
 }
 
-function rememberRequest(requestId: string): void {
-    triedRequestIds.add(requestId);
-    while (triedRequestIds.size > MAX_TRACKED_REQUESTS) {
-        const oldest = triedRequestIds.values().next().value;
-        if (oldest === undefined) {
-            return;
-        }
-        triedRequestIds.delete(oldest);
-    }
+// shortcut: markers for requests that never fire a second challenge are kept until the browser session ends, add a webRequest.onCompleted/onErrorOccurred cleanup if this grows
+async function rememberRequest(requestId: string): Promise<void> {
+    await ext.storage.session.set({ [AUTH_TRIED_KEY_PREFIX + requestId]: true });
 }
+
