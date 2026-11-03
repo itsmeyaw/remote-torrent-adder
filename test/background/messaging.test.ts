@@ -19,7 +19,6 @@ import {
     SaveSettingsMessage,
     TestNotificationMessage,
     PreAddTorrentMessage,
-    AddTorrentMessage,
     AddTorrentMessageWithLabelAndDir,
     SetTorrentLabelMessage,
     OpenWebUiMessage,
@@ -128,7 +127,7 @@ describe("AddTorrent flow", () => {
             Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("Ok.") } as any),
         );
 
-        await dispatch({ action: AddTorrentMessage.action, webUiId: "w1", url: "magnet:?x", config: {} });
+        await dispatch({ action: PreAddTorrentMessage.action, url: "magnet:?x", webUiId: "w1" });
         await new Promise((r) => setTimeout(r, 0));
 
         expect(downloadTorrent).toHaveBeenCalledWith("magnet:?x", { tabId: null, frameId: 0, pageUrl: null });
@@ -137,13 +136,13 @@ describe("AddTorrent flow", () => {
     });
 
     it("shows the success notification with the warning when a follow-up step does not apply", async () => {
-        seedWebUi({ client: Client.RqbitWebUI, host: "h", port: 1337 });
+        seedWebUi({ client: Client.RqbitWebUI, host: "h", port: 1337, addPaused: true });
         downloadTorrent.mockResolvedValue(makeMagnetTorrent());
         (globalThis as any).fetch = vi.fn()
             .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve('{"id":7}') } as any)
             .mockResolvedValueOnce({ ok: false, status: 404, text: () => Promise.resolve("not found") } as any);
 
-        const response = await dispatch({ action: AddTorrentMessage.action, webUiId: "w1", url: "magnet:?x", config: { addPaused: true } });
+        const response = await dispatch({ action: PreAddTorrentMessage.action, url: "magnet:?x", webUiId: "w1" });
         await new Promise((r) => setTimeout(r, 0));
 
         expect(response).toEqual({});
@@ -156,7 +155,7 @@ describe("AddTorrent flow", () => {
         seedWebUi();
         downloadTorrent.mockRejectedValue(new Error("network down"));
 
-        await dispatch({ action: AddTorrentMessage.action, webUiId: "w1", url: "magnet:?x", config: {} });
+        await dispatch({ action: PreAddTorrentMessage.action, url: "magnet:?x", webUiId: "w1" });
         await new Promise((r) => setTimeout(r, 0));
 
         expect(showNotification).toHaveBeenCalled();
@@ -169,7 +168,7 @@ describe("AddTorrent flow", () => {
         (chrome as any).__storage.settings = serializeSettings(settings);
         downloadTorrent.mockRejectedValue(new Error("network down"));
 
-        const response = await dispatch({ action: AddTorrentMessage.action, webUiId: "w1", url: "magnet:?x", config: {} });
+        const response = await dispatch({ action: PreAddTorrentMessage.action, url: "magnet:?x", webUiId: "w1" });
 
         expect(response.error).toMatch(/network down/);
         expect(showNotification).not.toHaveBeenCalled();
@@ -183,7 +182,7 @@ describe("AddTorrent flow", () => {
         );
 
         await dispatch(
-            { action: AddTorrentMessage.action, webUiId: "w1", url: "https://tracker.org/get/1.torrent", config: {} },
+            { action: PreAddTorrentMessage.action, url: "https://tracker.org/get/1.torrent", webUiId: "w1" },
             { tab: { id: 9, windowId: 1, url: "https://tracker.org/browse" }, frameId: 3 },
         );
         await new Promise((r) => setTimeout(r, 0));
@@ -199,7 +198,7 @@ describe("AddTorrent flow", () => {
         seedWebUi();
         downloadTorrent.mockRejectedValue(new CloudflareChallengeError("https://tracker.org/get/1.torrent"));
 
-        await dispatch({ action: AddTorrentMessage.action, webUiId: "w1", url: "https://tracker.org/get/1.torrent", config: {} });
+        await dispatch({ action: PreAddTorrentMessage.action, url: "https://tracker.org/get/1.torrent", webUiId: "w1" });
         await new Promise((r) => setTimeout(r, 0));
 
         expect(callArgs(showNotification, 0)[0]).toBe("Cloudflare is blocking this download");
@@ -675,7 +674,7 @@ describe("labelling after the add", () => {
 
     async function addMagnet() {
         downloadTorrent.mockResolvedValue(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${infoHash}`, name: "Cool Torrent" }));
-        await dispatch({ action: AddTorrentMessage.action, webUiId: "w1", url: "magnet:?x", config: {} });
+        await dispatch({ action: PreAddTorrentMessage.action, url: "magnet:?x", webUiId: "w1" });
         await new Promise((r) => setTimeout(r, 0));
     }
 

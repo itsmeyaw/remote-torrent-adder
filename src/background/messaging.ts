@@ -1,9 +1,7 @@
 import { ext } from "../util/browser-api";
 import {
-    AddTorrentMessage,
     GetSettingsMessage,
     GetLinkCatchingConfig,
-    type IAddTorrentMessage,
     type IAddTorrentMessageWithLabelAndDir,
     type IPreAddTorrentMessage,
     PreAddTorrentMessage,
@@ -128,19 +126,6 @@ export function registerMessageListener(): void {
                     }).catch(respondWithError);
                     break;
                 }
-                case AddTorrentMessage.action: {
-                    willRespondAsync = true;
-                    const addTorrentMessage = message as IAddTorrentMessage;
-                    addTorrentToWebUiById(
-                        addTorrentMessage.webUiId,
-                        addTorrentMessage.url,
-                        addTorrentMessage.config,
-                        resolveDownloadContext(addTorrentMessage, sender)
-                    )
-                        .then(() => finish({}))
-                        .catch(respondWithError);
-                    break;
-                }
                 case AddTorrentMessageWithLabelAndDir.action: {
                     willRespondAsync = true;
                     addBufferedTorrent(message as IAddTorrentMessageWithLabelAndDir, settingsProvider)
@@ -224,14 +209,14 @@ export async function dispatchPreAddTorrent(message: IPreAddTorrentMessage, wind
             }
         }
     } else {
-        await downloadAndAddTorrentToWebUi(webUi, message.url, null, message, context);
+        await downloadAndAddTorrentToWebUi(webUi, message.url, null, context);
     }
 }
 
 
 export async function addTorrentToWebUiById(webUiId: string, url: string, config: TorrentUploadConfig | null, context: TorrentDownloadContext = {}): Promise<void> {
     const webUi = await getWebUiById(webUiId, new Settings());
-    await downloadAndAddTorrentToWebUi(webUi, url, config, { action: AddTorrentMessage.action, url, webUiId } as IPreAddTorrentMessage, context);
+    await downloadAndAddTorrentToWebUi(webUi, url, config, context);
 }
 
 async function testConnectionForWebUiSettings(webUiSettings: WebUISettings): Promise<ConnectionTestResult> {
@@ -255,10 +240,10 @@ async function getWebUiById(webUiId: string, settingsProvider: Settings): Promis
     return allWebUis.find(webUi => webUi.settings.id === webUiId) ?? null;
 }
 
-async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: string, config: TorrentUploadConfig | null, message: IPreAddTorrentMessage, context: TorrentDownloadContext = {}): Promise<void> {
+async function downloadAndAddTorrentToWebUi(webUi: TorrentWebUI | null, url: string, config: TorrentUploadConfig | null, context: TorrentDownloadContext = {}): Promise<void> {
     const settings = await new Settings().loadSettings();
     if (!webUi) {
-        console.error("No WebUI found for addTorrentMessage:", message);
+        console.error("No WebUI found for addTorrent:", url);
         if (settings.notificationsEnabled) {
             showNotification("No WebUI configured",
                 `Check your settings.`,

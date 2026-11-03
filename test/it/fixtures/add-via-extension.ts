@@ -1,6 +1,5 @@
 import { expect, type ExtensionHarness } from "../../../e2e/fixtures/extension";
 import { makeSettings, makeWebUISettings } from "../../../e2e/fixtures/settings";
-import { type TorrentUploadConfig } from "../../../src/models/torrent";
 import { type ConnectionTestResult, type WebUISettings } from "../../../src/models/webui";
 import { type ClientProbe } from "./client-probe";
 
@@ -29,13 +28,12 @@ export async function configureExtension(extension: ExtensionHarness, settings: 
 export async function addViaExtension(
     extension: ExtensionHarness,
     url: string,
-    config?: TorrentUploadConfig,
 ): Promise<{ title?: string; message?: string }> {
     const before = (await extension.notifications()).length;
     const page = await extension.openPage(extension.url("options/options.html"));
     await page.evaluate(
         message => chrome.runtime.sendMessage(message),
-        { action: "addTorrent", url, webUiId: WEBUI_ID, config },
+        { action: "preAddTorrent", url, webUiId: WEBUI_ID },
     );
     await page.close();
     await expect
