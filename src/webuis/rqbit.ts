@@ -16,7 +16,7 @@ export class RqbitWebUI extends TorrentWebUI {
     protected override async pauseAfterAdd(_session: unknown, torrentId: string): Promise<void> {
         await this.fetch(this.createBaseUrl() + `/torrents/${torrentId}/pause`, {
             method: "POST",
-            headers: this.createAuthHeaders(),
+            headers: this.createBasicAuthHeaders(),
         });
     }
 
@@ -44,20 +44,12 @@ export class RqbitWebUI extends TorrentWebUI {
     private createTorrentFetchOptions(torrent: Torrent): RequestInit {
         const fetchOpts: RequestInit = {
             method: "POST",
-            headers: this.createAuthHeaders(),
+            headers: this.createBasicAuthHeaders(),
         };
 
         fetchOpts.body = torrent.isMagnet ? (torrent.data as string) : (torrent.data as Blob);
 
         return fetchOpts;
-    }
-
-    private createAuthHeaders(): Record<string, string> {
-        const headers: Record<string, string> = {};
-        if (this._settings.username || this._settings.password) {
-            headers["Authorization"] = "Basic " + btoa(`${this._settings.username}:${this._settings.password}`);
-        }
-        return headers;
     }
 
     get isLabelSupported(): boolean {
