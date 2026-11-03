@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TorrentWebUI } from "../../src/models/webui";
+import { TorrentWebUI, resolveClientSpecificSetting } from "../../src/models/webui";
 import type { ClientSpecificSettingDescriptor, TorrentAddingResult } from "../../src/models/webui";
 import type { TorrentUploadConfig } from "../../src/models/torrent";
 import { makeWebUISettings } from "../helpers/fixtures";
@@ -49,6 +49,30 @@ class TestWebUI extends TorrentWebUI {
 }
 
 const build = (over = {}) => new TestWebUI(makeWebUISettings(over));
+
+describe("resolveClientSpecificSetting", () => {
+    const descriptors: ReadonlyArray<ClientSpecificSettingDescriptor> = [
+        { key: "flag", label: "Flag", type: "boolean", default: true, perTorrent: true },
+    ];
+
+    it("uses the stored value over the descriptor default", () => {
+        expect(resolveClientSpecificSetting("flag", descriptors, { flag: false })).toBe(false);
+    });
+
+    it("falls back to the descriptor default when nothing is stored", () => {
+        expect(resolveClientSpecificSetting("flag", descriptors, {})).toBe(true);
+        expect(resolveClientSpecificSetting("flag", descriptors, undefined)).toBe(true);
+    });
+
+    it("uses the per-torrent override over the stored value", () => {
+        expect(resolveClientSpecificSetting("flag", descriptors, { flag: false }, { flag: true })).toBe(true);
+        expect(resolveClientSpecificSetting("flag", descriptors, { flag: true }, { flag: false })).toBe(false);
+    });
+
+    it("returns false for a key no descriptor declares", () => {
+        expect(resolveClientSpecificSetting("unknown", descriptors, {})).toBe(false);
+    });
+});
 
 describe("createBaseUrl", () => {
     it("builds a plain http url with explicit port", () => {

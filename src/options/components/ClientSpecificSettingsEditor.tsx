@@ -1,5 +1,5 @@
 import React from "react";
-import { type ClientSpecificSettingDescriptor } from "../../models/webui";
+import { type ClientSpecificSettingDescriptor, resolveClientSpecificSetting } from "../../models/webui";
 import SettingsGroup from "./SettingsGroup";
 import Toggle from "./Toggle";
 
@@ -15,7 +15,7 @@ const ClientSpecificSettingsEditor: React.FC<ClientSpecificSettingsEditorProps> 
       <div key={descriptor.key} style={{ marginBottom: 12 }}>
         <span style={{ display: "inline-flex" }} title={descriptor.description}>
           <Toggle
-            checked={(value[descriptor.key] as boolean | undefined) ?? descriptor.default}
+            checked={resolveClientSpecificSetting(descriptor.key, descriptors, value)}
             onChange={v => onChange({ ...value, [descriptor.key]: v })}
             label={descriptor.label}
           />
