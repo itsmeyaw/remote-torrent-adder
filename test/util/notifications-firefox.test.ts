@@ -35,11 +35,11 @@ describe("showNotification without an offscreen API", () => {
     });
 
     it("leaves the add-label button off, since firefox rejects notifications with buttons", async () => {
-        showNotification("T", "B", false, 2000, false, "http://h/", { webUiId: "w1", infoHash: "0123456789abcdef0123456789abcdef01234567", torrentName: "Cool" });
+        showNotification("T", "B", false, 2000, false, { url: "http://h/" }, { webUiId: "w1", infoHash: "0123456789abcdef0123456789abcdef01234567", torrentName: "Cool" });
         await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
 
         expect((chrome.notifications.create as any).mock.calls[0][1].buttons).toBeUndefined();
-        expect(chrome.storage.session.set).toHaveBeenCalledWith({ "notificationUrl:notif-id": "http://h/" });
+        expect(chrome.storage.session.set).toHaveBeenCalledWith({ "notificationLink:notif-id": { url: "http://h/" } });
         expect(chrome.storage.session.set).toHaveBeenCalledTimes(1);
     });
 });
