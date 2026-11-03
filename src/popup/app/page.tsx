@@ -148,7 +148,7 @@ function AddTorrentForm({ data }: { data: PopupData }) {
             <Toggle
               key={descriptor.key}
               label={descriptor.label}
-              checked={resolveClientSpecificSetting(descriptor.key, data.clientSpecific.descriptors, clientSpecific)}
+              checked={resolveClientSpecificSetting(descriptor.key, data.clientSpecific.descriptors, undefined, clientSpecific)}
               onChange={value => setClientSpecific(previous => ({ ...previous, [descriptor.key]: value }))}
             />
           ))}
