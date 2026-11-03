@@ -16,7 +16,7 @@ export interface WebUISettings {
     password: string;
 
     showPerTorrentConfigSelector: boolean;
-    useAlternativeLabelDirChooser?: boolean;
+    useAlternativeLabelDirChooser: boolean;
     defaultLabel: string | null;
     defaultDir: string | null;
     labels: Array<string>;

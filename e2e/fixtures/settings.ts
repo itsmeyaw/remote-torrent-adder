@@ -22,6 +22,7 @@ export function makeWebUISettings(overrides: Partial<WebUISettings> = {}): WebUI
         addPaused: false,
         autoLabelDirSettings: [],
         clientSpecificSettings: {},
+        useAlternativeLabelDirChooser: false,
         ...overrides,
     };
 }
