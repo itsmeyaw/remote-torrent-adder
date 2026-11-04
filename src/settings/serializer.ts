@@ -1,3 +1,4 @@
+import { z } from "zod/mini";
 import { type RTASettings } from "../models/settings";
 
 export function serializeSettings(settings: RTASettings): string {
@@ -26,20 +27,16 @@ function customReplacer(_key: string, value: unknown): unknown {
     return value;
 }
 
-export interface SerializedRegExp {
-    __type: "RegExp";
-    source: string;
-    flags: string;
-}
+const SerializedRegExpSchema = z.object({
+    __type: z.literal("RegExp"),
+    source: z.string(),
+    flags: z.string(),
+});
+
+export type SerializedRegExp = z.infer<typeof SerializedRegExpSchema>;
 
 export function isSerializedRegExp(value: unknown): value is SerializedRegExp {
-    return (
-        typeof value === "object" &&
-        value !== null &&
-        (value as { __type?: unknown }).__type === "RegExp" &&
-        typeof (value as { source?: unknown }).source === "string" &&
-        typeof (value as { flags?: unknown }).flags === "string"
-    );
+    return SerializedRegExpSchema.safeParse(value).success;
 }
 
 function customReviver(_key: string, value: unknown): unknown {

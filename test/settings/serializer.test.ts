@@ -4,6 +4,7 @@ import {
     deserializeSettings,
     serializeObject,
     deserializeObject,
+    isSerializedRegExp,
 } from "../../src/settings/serializer";
 import { type RTASettings } from "../../src/models/settings";
 import { at } from "../helpers/assert";
@@ -25,6 +26,20 @@ describe("serializeObject / deserializeObject", () => {
     it("round-trips nested plain objects", () => {
         const obj = { a: 1, b: { c: [1, 2, 3] } };
         expect(deserializeObject(serializeObject(obj))).toEqual(obj);
+    });
+});
+
+describe("isSerializedRegExp", () => {
+    it("accepts a serialized RegExp", () => {
+        expect(isSerializedRegExp({ __type: "RegExp", source: "a", flags: "i" })).toBe(true);
+    });
+
+    it.each([
+        ["null", null],
+        ["another __type", { __type: "Date", source: "a", flags: "i" }],
+        ["non-string flags", { __type: "RegExp", source: "a", flags: 1 }],
+    ])("rejects %s", (_name, value) => {
+        expect(isSerializedRegExp(value)).toBe(false);
     });
 });
 
