@@ -3,14 +3,22 @@ import { loadPopupData, submitTorrent } from "../../src/popup/popup-data";
 import { saveBufferedTorrent } from "../../src/background/buffered-torrent";
 import { AddTorrentMessageWithLabelAndDir } from "../../src/models/messages";
 import { Client } from "../../src/models/clients";
+import { type WebUISettings } from "../../src/models/webui";
+import { serializeSettings } from "../../src/settings/serializer";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { makeMagnetTorrent, makeWebUISettings } from "../helpers/fixtures";
 import { callArgs } from "../helpers/assert";
 
-const park = (webUiOverrides = {}, torrentOverrides = {}) =>
-    saveBufferedTorrent({
-        torrent: makeMagnetTorrent(torrentOverrides),
-        webUiSettings: makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, ...webUiOverrides }),
-    });
+const qbit = (overrides: Partial<WebUISettings> = {}) => makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, ...overrides });
+
+function serveSettings(...webuiSettings: WebUISettings[]) {
+    (chrome.runtime.sendMessage as any).mockResolvedValue(serializeSettings({ ...getDefaultSettings(), webuiSettings }));
+}
+
+const park = async (webUiOverrides = {}, torrentOverrides = {}) => {
+    serveSettings(qbit(webUiOverrides));
+    return saveBufferedTorrent({ torrent: makeMagnetTorrent(torrentOverrides), webUiId: "w1" });
+};
 
 describe("loadPopupData", () => {
     it("returns null when no torrent is waiting under that id", async () => {
@@ -19,10 +27,8 @@ describe("loadPopupData", () => {
 
     it("resolves only the torrent parked under the requested id", async () => {
         await park({}, { name: "first" });
-        const second = await saveBufferedTorrent({
-            torrent: makeMagnetTorrent({ name: "second" }),
-            webUiSettings: makeWebUISettings({ id: "w2", client: Client.QBittorrentWebUI }),
-        });
+        serveSettings(qbit(), qbit({ id: "w2" }));
+        const second = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "second" }), webUiId: "w2" });
 
         expect((await loadPopupData(second))!.torrent.name).toBe("second");
     });
@@ -33,6 +39,27 @@ describe("loadPopupData", () => {
         const data = (await loadPopupData(id))!;
         expect(data.torrent.name).toBe("Cool Torrent");
         expect(data.webUiSettings.id).toBe("w1");
+    });
+
+    it("uses the WebUI's current settings, not the ones it had when the torrent was parked", async () => {
+        const id = await park({ defaultLabel: "old" });
+        serveSettings(qbit({ defaultLabel: "new" }));
+
+        expect((await loadPopupData(id))!.initial.label).toBe("new");
+    });
+
+    it("rejects with a clear message when the WebUI no longer exists", async () => {
+        const id = await park();
+        serveSettings(qbit({ id: "other" }));
+
+        await expect(loadPopupData(id)).rejects.toThrow("The WebUI this torrent was meant for no longer exists.");
+    });
+
+    it("rejects when the settings cannot be fetched", async () => {
+        const id = await park();
+        (chrome.runtime.sendMessage as any).mockResolvedValue(undefined);
+
+        await expect(loadPopupData(id)).rejects.toThrow("Could not load Remote Torrent Adder's settings");
     });
 
     it("reports which controls the client supports", async () => {
@@ -160,7 +187,6 @@ describe("loadPopupData", () => {
 describe("submitTorrent", () => {
     const request = {
         bufferedId: "b1",
-        webUiId: "w1",
         label: "movies",
         directory: "/data",
         paused: true,
@@ -175,7 +201,7 @@ describe("submitTorrent", () => {
         const message = callArgs(chrome.runtime.sendMessage as any, 0)[0];
         expect(message.action).toBe(AddTorrentMessageWithLabelAndDir.action);
         expect(message.bufferedId).toBe("b1");
-        expect(message.webUiId).toBe("w1");
+        expect(message).not.toHaveProperty("webUiId");
         expect(message.config).toEqual({ label: "movies", dir: "/data", addPaused: true, clientSpecificSettings: { forceStart: true } });
         expect(message.labels).toEqual(["movies", "tv"]);
         expect(message.directories).toEqual(["/data"]);
@@ -209,7 +235,6 @@ describe("message payload", () => {
         const id = await park();
         await submitTorrent({
             bufferedId: id,
-            webUiId: "w1",
             label: "",
             directory: "",
             paused: false,

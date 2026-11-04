@@ -24,7 +24,6 @@ export interface AddPage extends TorrentDownloadContext {
 /** What the user settled on in the Config Selector for a Buffered Torrent. */
 export interface ConfigSelectorChoice {
     bufferedId: string;
-    webUiId: string;
     config: TorrentUploadConfig;
     labels: string[];
     directories: string[];
@@ -75,15 +74,15 @@ export async function addBufferedTorrent(choice: ConfigSelectorChoice): Promise<
             throw new Error("No buffered torrent to add; it may already have been consumed.");
         }
 
-        const webUi = getWebUi(settings, choice.webUiId);
+        const webUi = getWebUi(settings, buffered.webUiId);
         if (!webUi) {
-            throw new Error(`No WebUI found for id ${choice.webUiId}`);
+            throw new Error(`No WebUI found for id ${buffered.webUiId}`);
         }
 
         await sendTorrentToWebUi(webUi, buffered.torrent, settings, choice.config);
         // The Add already succeeded; failing here would invite a retry that adds the torrent twice.
         await clearBufferedTorrent(choice.bufferedId).catch(e => console.error("Failed clearing the buffered torrent", e));
-        await rememberLabelsAndDirs(settings, choice.webUiId, choice.labels, choice.directories)
+        await rememberLabelsAndDirs(settings, buffered.webUiId, choice.labels, choice.directories)
             .catch(e => console.error("Failed updating labels/dirs", e));
     });
 }
@@ -123,7 +122,7 @@ function resolveTargets(target: AddTarget, settings: RTASettings): TorrentWebUI[
 }
 
 async function openConfigSelector(torrent: Torrent, webUiSettings: WebUISettings, windowId: number | null | undefined): Promise<void> {
-    const bufferedId = await saveBufferedTorrent({ torrent, webUiSettings });
+    const bufferedId = await saveBufferedTorrent({ torrent, webUiId: webUiSettings.id });
     if (webUiSettings.useAlternativeLabelDirChooser) {
         await openPopupWindow(undefined, bufferedId);
         return;

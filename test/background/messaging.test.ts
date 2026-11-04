@@ -141,7 +141,6 @@ describe("Add messages", () => {
         const message = {
             action: AddTorrentMessageWithLabelAndDir.action,
             bufferedId: "b1",
-            webUiId: "w1",
             config: { label: "movies" },
             labels: ["movies"],
             directories: ["/data"],
@@ -159,7 +158,6 @@ describe("Add messages", () => {
         const response = await dispatch({
             action: AddTorrentMessageWithLabelAndDir.action,
             bufferedId: "unknown",
-            webUiId: "w1",
             config: {},
             labels: [],
             directories: [],

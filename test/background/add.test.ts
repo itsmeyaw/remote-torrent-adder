@@ -241,7 +241,8 @@ describe("addLink: Config Selector", () => {
         const [bufferedId] = popupBufferedIds();
         const buffered = await readBufferedTorrent(bufferedId!);
         expect(buffered!.torrent.data).toBe("magnet:?xt=urn:btih:abc123&dn=Cool+Torrent");
-        expect(buffered!.webUiSettings.id).toBe("w1");
+        expect(buffered!.webUiId).toBe("w1");
+        expect(buffered).not.toHaveProperty("webUiSettings");
     });
 
     it("opens a separate Config Selector per torrent, each bound to its own buffered torrent", async () => {
@@ -366,6 +367,7 @@ describe("addLink: Upload Config parity", () => {
         seed([{ ...webUi, showPerTorrentConfigSelector: true }]);
         await addLink("magnet:?x", { webUiId: "w1" }, { windowId: 7 });
         const [bufferedId] = popupBufferedIds();
+        (chrome.runtime.sendMessage as any).mockResolvedValue((chrome as any).__storage.settings);
         const popup = await loadPopupData(bufferedId!);
 
         expect(popup!.initial.label).toBe(config.label ?? "");
@@ -411,9 +413,9 @@ describe("addLink and addBufferedTorrent: settings are loaded once per Add", () 
     it("loads settings once when adding the Config Selector's choice, and remembers the lists", async () => {
         seed([qbit()]);
         respondOk();
-        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: qbit() });
+        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
 
-        await addBufferedTorrent({ bufferedId, webUiId: "w1", config: {}, labels: ["movies", "tv"], directories: ["/data"] });
+        await addBufferedTorrent({ bufferedId, config: {}, labels: ["movies", "tv"], directories: ["/data"] });
 
         expect(loadSettings).toHaveBeenCalledTimes(1);
         const persisted = deserializeSettings((chrome as any).__storage.settings)!;
@@ -428,10 +430,10 @@ describe("addBufferedTorrent", () => {
         const fetchMock = respondOk();
         const bufferedId = await saveBufferedTorrent({
             torrent: makeFileTorrent({ name: "parked.torrent" }),
-            webUiSettings: qbit(),
+            webUiId: "w1",
         });
 
-        await addBufferedTorrent({ bufferedId, webUiId: "w1", config: { label: "movies" }, labels: [], directories: [] });
+        await addBufferedTorrent({ bufferedId, config: { label: "movies" }, labels: [], directories: [] });
 
         const uploadCall = fetchMock.mock.calls.find(call => String(call[0]).includes("/torrents/add"));
         const body = uploadCall![1]!.body as FormData;
@@ -439,13 +441,35 @@ describe("addBufferedTorrent", () => {
         expect(body.get("category")).toBe("movies");
     });
 
+    it("uses the WebUI's current settings, not the ones it had when the torrent was parked", async () => {
+        seed([qbit({ host: "old.test" })]);
+        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
+        seed([qbit({ host: "new.test" })]);
+        const fetchMock = respondOk();
+
+        await addBufferedTorrent({ bufferedId, config: {}, labels: [], directories: [] });
+
+        expect(uploadUrls(fetchMock)).toEqual([expect.stringContaining("new.test")]);
+    });
+
+    it("fails and keeps the buffered torrent when its WebUI was deleted while the Config Selector was open", async () => {
+        seed([qbit({ id: "other" })]);
+        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
+
+        await expect(addBufferedTorrent({ bufferedId, config: {}, labels: [], directories: [] }))
+            .rejects.toThrow("No WebUI found for id w1");
+
+        expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
+        expect(titles()).toEqual(["Adding torrent failed"]);
+    });
+
     it("clears only the buffered torrent its own Config Selector added, leaving the other one", async () => {
         seed([qbit()]);
         respondOk();
-        const first = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "first" }), webUiSettings: qbit() });
-        const second = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "second" }), webUiSettings: qbit() });
+        const first = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "first" }), webUiId: "w1" });
+        const second = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "second" }), webUiId: "w1" });
 
-        await addBufferedTorrent({ bufferedId: first, webUiId: "w1", config: {}, labels: [], directories: [] });
+        await addBufferedTorrent({ bufferedId: first, config: {}, labels: [], directories: [] });
 
         expect(await readBufferedTorrent(first)).toBeNull();
         expect((await readBufferedTorrent(second))!.torrent.name).toBe("second");
@@ -454,9 +478,9 @@ describe("addBufferedTorrent", () => {
     it("clears the buffered torrent once it has been handed to the client", async () => {
         seed([qbit()]);
         respondOk();
-        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: qbit() });
+        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
 
-        await addBufferedTorrent({ bufferedId, webUiId: "w1", config: {}, labels: [], directories: [] });
+        await addBufferedTorrent({ bufferedId, config: {}, labels: [], directories: [] });
 
         expect(await readBufferedTorrent(bufferedId)).toBeNull();
     });
@@ -466,9 +490,9 @@ describe("addBufferedTorrent", () => {
         (globalThis as any).fetch = vi.fn(() =>
             Promise.resolve({ ok: false, status: 500, text: () => Promise.resolve("nope") } as any),
         );
-        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: qbit() });
+        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
 
-        await expect(addBufferedTorrent({ bufferedId, webUiId: "w1", config: {}, labels: [], directories: [] }))
+        await expect(addBufferedTorrent({ bufferedId, config: {}, labels: [], directories: [] }))
             .rejects.toThrow(/failed \(HTTP 500\)/);
 
         expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
@@ -480,9 +504,9 @@ describe("addBufferedTorrent", () => {
         (globalThis as any).fetch = vi.fn(() =>
             Promise.resolve({ ok: false, status: 500, text: () => Promise.resolve("nope") } as any),
         );
-        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: qbit() });
+        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
 
-        await expect(addBufferedTorrent({ bufferedId, webUiId: "w1", config: {}, labels: [], directories: [] }))
+        await expect(addBufferedTorrent({ bufferedId, config: {}, labels: [], directories: [] }))
             .rejects.toThrow(/failed \(HTTP 500\)/);
         expect(showNotification).not.toHaveBeenCalled();
     });
@@ -490,9 +514,9 @@ describe("addBufferedTorrent", () => {
     it("keeps the buffered torrent and reports the thrown message when the WebUI throws", async () => {
         seed([qbit()]);
         vi.spyOn(QBittorrentWebUI.prototype, "sendTorrent").mockRejectedValueOnce(new Error("socket hang up"));
-        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: qbit() });
+        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
 
-        await expect(addBufferedTorrent({ bufferedId, webUiId: "w1", config: {}, labels: [], directories: [] }))
+        await expect(addBufferedTorrent({ bufferedId, config: {}, labels: [], directories: [] }))
             .rejects.toThrow(/socket hang up/);
 
         expect(await readBufferedTorrent(bufferedId)).not.toBeNull();
@@ -505,7 +529,7 @@ describe("failure reporting", () => {
     it("reports a buffered add with nothing buffered as one failure", async () => {
         seed([qbit()]);
 
-        await expect(addBufferedTorrent({ bufferedId: "unknown", webUiId: "w1", config: {}, labels: [], directories: [] }))
+        await expect(addBufferedTorrent({ bufferedId: "unknown", config: {}, labels: [], directories: [] }))
             .rejects.toBeInstanceOf(HandledFailure);
 
         expect(titles()).toEqual(["Adding torrent failed"]);
@@ -514,11 +538,11 @@ describe("failure reporting", () => {
 
     it("reports a settings load failure, using defaults to notify, and keeps the buffered torrent", async () => {
         seed([qbit()]);
-        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiSettings: qbit() });
+        const bufferedId = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
         vi.mocked(loadSettings).mockRejectedValueOnce(new Error("storage unavailable"));
         const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-        await expect(addBufferedTorrent({ bufferedId, webUiId: "w1", config: {}, labels: [], directories: [] }))
+        await expect(addBufferedTorrent({ bufferedId, config: {}, labels: [], directories: [] }))
             .rejects.toThrow(/storage unavailable/);
 
         expect(await readBufferedTorrent(bufferedId)).not.toBeNull();

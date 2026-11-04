@@ -82,7 +82,6 @@ function AddTorrentForm({ data }: { data: PopupData }) {
     try {
       await submitTorrent({
         bufferedId: data.bufferedId,
-        webUiId: data.webUiSettings.id,
         label,
         directory,
         paused,

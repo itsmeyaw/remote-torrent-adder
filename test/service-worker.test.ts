@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SETTINGS_KEY, loadSettings, saveSettings } from "../src/settings/settings";
 import { showNotification } from "../src/background/notifications";
-import { makeWebUISettings, seedWebUISettings } from "./helpers/fixtures";
+import { makeMagnetTorrent, makeWebUISettings, seedWebUISettings } from "./helpers/fixtures";
+import { readBufferedTorrent, saveBufferedTorrent } from "../src/background/buffered-torrent";
 
 vi.mock("../src/background/notifications", async (importOriginal) => ({
     ...(await importOriginal<Record<string, unknown>>()),
@@ -18,12 +19,13 @@ vi.mock("../src/background/notifications", async (importOriginal) => ({
  * module's own top-level startup work is still in flight. Firing it after an
  * await instead would let that work drain first and hide every race against it.
  */
-async function bootServiceWorker(event: "installed" | "startup" | "none" = "installed"): Promise<void> {
+async function bootServiceWorker(event: "installed" | "startup" | "none" = "installed", installReason: chrome.runtime.OnInstalledReason = "install" as chrome.runtime.OnInstalledReason): Promise<void> {
     if (event !== "none") {
         const registration = event === "installed"
             ? chrome.runtime.onInstalled.addListener
             : chrome.runtime.onStartup.addListener;
-        (registration as any).mockImplementation((listener: () => void) => queueMicrotask(listener));
+        (registration as any).mockImplementation((listener: (details: chrome.runtime.InstalledDetails) => void) =>
+            queueMicrotask(() => listener({ reason: installReason } as chrome.runtime.InstalledDetails)));
     }
 
     vi.resetModules();
@@ -209,5 +211,23 @@ describe("service worker startup when dynamic CORS rules cannot be cleared", () 
         await bootServiceWorker("startup");
 
         expect(consoleError).toHaveBeenCalledWith("Failed to clear dynamic CORS rules", expect.any(Error));
+    });
+});
+
+describe("updating the extension", () => {
+    it("drops Buffered Torrents parked by an older version, which held a copy of the WebUI with its password", async () => {
+        const id = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
+
+        await bootServiceWorker("installed", "update" as chrome.runtime.OnInstalledReason);
+
+        await vi.waitFor(async () => expect(await readBufferedTorrent(id)).toBeNull());
+    });
+
+    it("keeps Buffered Torrents on a fresh install", async () => {
+        const id = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
+
+        await bootServiceWorker("installed");
+
+        expect(await readBufferedTorrent(id)).not.toBeNull();
     });
 });
