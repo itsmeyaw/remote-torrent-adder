@@ -8,9 +8,9 @@ Full skill definitions and project context: [`.agents/README.md`](.agents/README
 
 ```bash
 pnpm run typecheck      # tsc --noEmit over src/, test/, scripts/, configs
-pnpm run lint           # oxlint (pnpm run lint:fix to autofix)
-pnpm run format         # oxfmt (pnpm run format:check in CI)
-pnpm test               # vitest suite (pnpm run test:watch, pnpm run test:coverage)
+pnpm run lint           # vp lint (pnpm run lint:fix to autofix)
+pnpm run format         # vp fmt (pnpm run format:check in CI)
+pnpm test               # vp test suite (pnpm run test:watch, pnpm run test:coverage)
 pnpm run audit          # pnpm audit (high/critical only), minus a reviewed allowlist
 pnpm run build          # Chrome dev build → dist/chrome/
 pnpm run build:prod     # Chrome prod build → dist-prod/chrome/

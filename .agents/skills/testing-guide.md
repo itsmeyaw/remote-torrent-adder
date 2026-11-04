@@ -10,10 +10,10 @@ The suite lives in `test/`, mirroring the `src/` layout. Every client in `src/we
 pnpm test              # run once
 pnpm run test:watch    # watch mode
 pnpm run test:coverage # with coverage report → coverage/
-pnpm exec vitest run test/webuis/qbittorrent.test.ts   # a single file
+pnpm exec vp test run test/webuis/qbittorrent.test.ts   # a single file
 ```
 
-Stack: vitest + jsdom, `@testing-library/react` for components, `fake-indexeddb` for `src/util/idb.ts`. Global setup is `test/setup.ts`; config is `vitest.config.ts`.
+Stack: vitest + jsdom, `@testing-library/react` for components, `fake-indexeddb` for `src/util/idb.ts`. Global setup is `test/setup.ts`; config is the `test` block in `vite.config.ts`.
 
 ### Helpers — use these instead of hand-rolling mocks
 
