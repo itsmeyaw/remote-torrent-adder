@@ -16,6 +16,7 @@
 | `pnpm run clean` | — | Remove `dist/` |
 | `pnpm run typecheck` | — | Type-check `src/`, `test/`, configs (`tsc --noEmit`), then `scripts/` against `scripts/tsconfig.json` |
 | `pnpm run lint` | — | oxlint over the repo (`pnpm run lint:fix` to autofix) |
+| `pnpm run format` | — | oxfmt over the repo (`pnpm run format:check` only reports; CI runs it) |
 | `pnpm test` | — | Run the vitest suite |
 
 ## The prebuild gate
