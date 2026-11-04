@@ -197,7 +197,7 @@ export default function WebUIDetail({ webui, onChange, onRemove, onPromote, isPr
                 ) : (
                     <>
                         <SettingsRow>
-                            <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-3">
+                            <div className="grid grid-cols-[minmax(0,2fr)_6.5rem_minmax(0,1fr)] gap-3">
                                 <TextField
                                     label="Host"
                                     value={webui.host}
@@ -213,24 +213,22 @@ export default function WebUIDetail({ webui, onChange, onRemove, onPromote, isPr
                                     value={webui.port ?? ""}
                                     onChange={(e) => onChange({ ...webui, port: parsePortInput(e.target.value) })}
                                 />
+                                <TextField
+                                    label="Relative path"
+                                    placeholder="/"
+                                    value={webui.relativePath || ""}
+                                    onChange={(e) => onChange({ ...webui, relativePath: e.target.value })}
+                                />
                             </div>
+                            <p className="text-sm text-muted-foreground">
+                                Requests go to <span className="font-mono">{webUiInstance.createBaseUrl()}</span>
+                            </p>
                         </SettingsRow>
                         <SwitchRow
                             label="Use HTTPS"
                             checked={webui.secure}
                             onChange={(v) => onChange({ ...webui, secure: v })}
                         />
-                        <SettingsRow>
-                            <TextField
-                                label="Relative path"
-                                placeholder="/"
-                                value={webui.relativePath || ""}
-                                onChange={(e) => onChange({ ...webui, relativePath: e.target.value })}
-                            />
-                            <p className="text-sm text-muted-foreground">
-                                Requests go to <span className="font-mono">{webUiInstance.createBaseUrl()}</span>
-                            </p>
-                        </SettingsRow>
                         <SettingsRow>
                             <div className="grid grid-cols-2 gap-3">
                                 <TextField
@@ -298,40 +296,47 @@ export default function WebUIDetail({ webui, onChange, onRemove, onPromote, isPr
 
             {webUiInstance && (webUiInstance.isLabelSupported || webUiInstance.isDirSupported) && (
                 <SettingsSection title={labelDirSectionTitle}>
-                    {webUiInstance.isLabelSupported && (
-                        <SettingsRow>
-                            <TextField
-                                label="Default Label"
-                                placeholder="Default label"
-                                value={webui.defaultLabel ?? ""}
-                                onChange={(e) => onChange({ ...webui, defaultLabel: e.target.value })}
-                            />
-                            <ChipList
-                                label="Labels for per-torrent selection"
-                                itemName="label"
-                                values={webui.labels}
-                                onChange={(labels) => onChange({ ...webui, labels })}
-                                placeholder="Add label"
-                            />
-                        </SettingsRow>
-                    )}
-                    {webUiInstance.isDirSupported && (
-                        <SettingsRow>
-                            <TextField
-                                label="Default Directory"
-                                placeholder="Default directory"
-                                value={webui.defaultDir ?? ""}
-                                onChange={(e) => onChange({ ...webui, defaultDir: e.target.value })}
-                            />
-                            <ChipList
-                                label="Directories for per-torrent selection"
-                                itemName="directory"
-                                values={webui.dirs}
-                                onChange={(dirs) => onChange({ ...webui, dirs })}
-                                placeholder="Add directory"
-                            />
-                        </SettingsRow>
-                    )}
+                    <div
+                        className={cn(
+                            "grid divide-border",
+                            webUiInstance.isLabelSupported && webUiInstance.isDirSupported && "grid-cols-2 divide-x",
+                        )}
+                    >
+                        {webUiInstance.isLabelSupported && (
+                            <SettingsRow>
+                                <TextField
+                                    label="Default Label"
+                                    placeholder="Default label"
+                                    value={webui.defaultLabel ?? ""}
+                                    onChange={(e) => onChange({ ...webui, defaultLabel: e.target.value })}
+                                />
+                                <ChipList
+                                    label="Labels for per-torrent selection"
+                                    itemName="label"
+                                    values={webui.labels}
+                                    onChange={(labels) => onChange({ ...webui, labels })}
+                                    placeholder="Add label"
+                                />
+                            </SettingsRow>
+                        )}
+                        {webUiInstance.isDirSupported && (
+                            <SettingsRow>
+                                <TextField
+                                    label="Default Directory"
+                                    placeholder="Default directory"
+                                    value={webui.defaultDir ?? ""}
+                                    onChange={(e) => onChange({ ...webui, defaultDir: e.target.value })}
+                                />
+                                <ChipList
+                                    label="Directories for per-torrent selection"
+                                    itemName="directory"
+                                    values={webui.dirs}
+                                    onChange={(dirs) => onChange({ ...webui, dirs })}
+                                    placeholder="Add directory"
+                                />
+                            </SettingsRow>
+                        )}
+                    </div>
                 </SettingsSection>
             )}
 

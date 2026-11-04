@@ -28,7 +28,7 @@ const DEFAULT_TAB = "webuis";
 
 export default function OptionsPage() {
     return (
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 pt-10 pb-16">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 pt-10 pb-16">
             <header className="flex items-center gap-3">
                 <img src="../assets/icons/BitTorrent48.png" alt="" className="size-8" />
                 <h1 className="text-lg font-semibold tracking-tight">Remote Torrent Adder</h1>
