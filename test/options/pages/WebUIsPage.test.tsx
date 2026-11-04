@@ -223,6 +223,26 @@ describe("WebUIsPage", () => {
         expect(within(adding).getByRole("switch", { name: "Show per-torrent config selector" })).toBeInTheDocument();
     });
 
+    it("disables the alternative container switch without the per-torrent selector", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha", showPerTorrentConfigSelector: false })]);
+        renderPage();
+
+        const adding = await screen.findByRole("region", { name: "Adding torrents" });
+        expect(
+            within(adding).getByRole("switch", { name: "Use alternative container (window instead of popup)" }),
+        ).toHaveAttribute("aria-disabled", "true");
+    });
+
+    it("enables the alternative container switch with the per-torrent selector", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha", showPerTorrentConfigSelector: true })]);
+        renderPage();
+
+        const adding = await screen.findByRole("region", { name: "Adding torrents" });
+        expect(
+            within(adding).getByRole("switch", { name: "Use alternative container (window instead of popup)" }),
+        ).not.toHaveAttribute("aria-disabled", "true");
+    });
+
     it("groups the default label and directory with their per-torrent choices", async () => {
         respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })]);
         renderPage();

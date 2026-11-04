@@ -279,6 +279,7 @@ export default function WebUIDetail({ webui, onChange, onRemove, onPromote, isPr
                             <SwitchRow
                                 label="Use alternative container (window instead of popup)"
                                 checked={webui.useAlternativeLabelDirChooser}
+                                disabled={!webui.showPerTorrentConfigSelector}
                                 onChange={(v) => onChange({ ...webui, useAlternativeLabelDirChooser: v })}
                             />
                         </>
