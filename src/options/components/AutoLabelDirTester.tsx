@@ -1,4 +1,13 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import {
+    ChevronRightIcon,
+    CircleCheckIcon,
+    CircleIcon,
+    CircleXIcon,
+    TriangleAlertIcon,
+    UploadIcon,
+    type LucideIcon,
+} from "lucide-react";
 import type { AutoLabelDirSetting } from "../../models/webui";
 import type { Torrent } from "../../models/torrent";
 import {
@@ -8,8 +17,11 @@ import {
 } from "../../torrent/auto-label-dir-matcher";
 import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../torrent/torrent-source";
 import { resolveUploadConfig, type UploadConfigSource } from "../../torrent/upload-config";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SettingsRow } from "@/components/settings/SettingsSection";
 import { fieldLabel } from "./auto-label-dir-fields";
-import { primaryButtonClass } from "../ui-classes";
 
 interface AutoLabelDirTesterProps {
     settings: AutoLabelDirSetting[];
@@ -23,14 +35,23 @@ interface AutoLabelDirTesterProps {
 
 const MAX_TORRENT_BYTES = 10 * 1024 * 1024;
 
-const monospace = "font-[monospace] bg-rta-chip-bg border border-rta-chip-border rounded-md py-px px-1.5";
+const valueChip = "rounded-md bg-muted px-1.5 py-px font-mono text-xs";
+
+function Verdict({ icon: Icon, tone, children }: { icon: LucideIcon; tone: string; children: ReactNode }) {
+    return (
+        <span className={cn("inline-flex items-center gap-1.5", tone)}>
+            <Icon className="size-4 shrink-0" />
+            {children}
+        </span>
+    );
+}
 
 function Outcome({ caption, value, source }: { caption: string; value: string | null; source: string | null }) {
     return (
-        <div className="flex items-baseline gap-2">
-            <span className="font-medium min-w-[74px]">{caption}</span>
-            <span className={value ? `${monospace} text-[15px]` : "text-rta-text-muted"}>{value || "(none)"}</span>
-            {source && <span className="text-rta-text-muted text-[13px]">{source}</span>}
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+            <span className="w-20 font-medium">{caption}</span>
+            {value ? <span className={valueChip}>{value}</span> : <span className="text-muted-foreground">(none)</span>}
+            {source && <span className="text-muted-foreground">{source}</span>}
         </div>
     );
 }
@@ -40,27 +61,39 @@ function CriterionRow({ evaluation }: { evaluation: AutoLabelDirCriterionEvaluat
 
     const verdict = () => {
         if (invalidPattern) {
-            return <span className="text-rta-danger">❌ invalid regular expression</span>;
+            return (
+                <Verdict icon={TriangleAlertIcon} tone="text-destructive">
+                    Invalid regular expression
+                </Verdict>
+            );
         }
         if (!criterion.value) {
-            return <span className="text-rta-text-muted">✅ empty pattern, always matches</span>;
+            return (
+                <Verdict icon={CircleCheckIcon} tone="text-muted-foreground">
+                    Empty pattern, always matches
+                </Verdict>
+            );
         }
         if (!matched) {
-            return <span className="text-rta-danger">❌ no match</span>;
+            return (
+                <Verdict icon={CircleXIcon} tone="text-muted-foreground">
+                    No match
+                </Verdict>
+            );
         }
         const extra = matchedCandidates.length - 1;
         return (
-            <span className="text-rta-success">
-                ✅ {matchedCandidates[0]}
+            <Verdict icon={CircleCheckIcon} tone="text-emerald-600 dark:text-emerald-400">
+                {matchedCandidates[0]}
                 {extra > 0 ? ` (+${extra} more)` : ""}
-            </span>
+            </Verdict>
         );
     };
 
     return (
-        <div className="flex gap-2 items-baseline flex-wrap text-[14px] mt-1">
-            <span className="text-rta-text-muted min-w-[96px]">{fieldLabel(criterion.field)}</span>
-            <span className={monospace}>{criterion.value || "(empty)"}</span>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+            <span className="w-24 text-muted-foreground">{fieldLabel(criterion.field)}</span>
+            <span className={valueChip}>{criterion.value || "(empty)"}</span>
             {verdict()}
         </div>
     );
@@ -82,26 +115,35 @@ function RuleRow({
 
     const outcomeParts: string[] = [];
     if (showLabel) outcomeParts.push(`label ${rule.setting.label ? `"${rule.setting.label}"` : "(none)"}`);
-    if (showDir) outcomeParts.push(`dir ${rule.setting.dir ? `"${rule.setting.dir}"` : "(none)"}`);
+    if (showDir) outcomeParts.push(`directory ${rule.setting.dir ? `"${rule.setting.dir}"` : "(none)"}`);
 
     return (
         <div
-            className={`py-2 px-2.5 mt-2 rounded-lg bg-rta-surface border ${isWinner ? "border-rta-success" : "border-rta-border"}`}
+            className={cn(
+                "flex flex-col gap-2 rounded-xl border p-3 text-sm",
+                isWinner ? "border-emerald-600/40 dark:border-emerald-400/40" : "border-border",
+            )}
         >
-            <div className="flex gap-2 items-baseline flex-wrap">
-                <span className="font-semibold">Rule {rule.index + 1}</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="font-medium">Rule {rule.index + 1}</span>
                 {isWinner && (
-                    <span className="text-rta-success font-medium">✅ applied → {outcomeParts.join(", ")}</span>
+                    <Verdict icon={CircleCheckIcon} tone="text-emerald-600 font-medium dark:text-emerald-400">
+                        Applied: {outcomeParts.join(", ")}
+                    </Verdict>
                 )}
                 {isShadowed && (
-                    <span className="text-rta-text-muted">✅ matches, but rule {(winningRuleIndex ?? 0) + 1} wins</span>
+                    <Verdict icon={CircleIcon} tone="text-muted-foreground">
+                        Matches, but rule {(winningRuleIndex ?? 0) + 1} wins
+                    </Verdict>
                 )}
-                {!rule.matched && <span className="text-rta-text-muted">❌ does not match</span>}
+                {!rule.matched && (
+                    <Verdict icon={CircleXIcon} tone="text-muted-foreground">
+                        Does not match
+                    </Verdict>
+                )}
             </div>
             {rule.criteria.length === 0 ? (
-                <div className="text-rta-text-muted text-[14px] mt-1">
-                    No criteria — a rule without criteria never matches.
-                </div>
+                <p className="text-muted-foreground">No criteria — a rule without criteria never matches.</p>
             ) : (
                 rule.criteria.map((evaluation, idx) => <CriterionRow key={idx} evaluation={evaluation} />)
             )}
@@ -115,32 +157,35 @@ function TorrentContents({ torrent }: { torrent: Torrent }) {
     const files = torrent.files ?? [];
 
     return (
-        <div className="mt-3">
+        <div className="flex flex-col gap-2">
             <button
+                type="button"
+                aria-expanded={open}
                 onClick={() => setOpen(!open)}
-                className="bg-transparent border-none p-0 cursor-pointer text-rta-info text-[14px]"
+                className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
-                {open ? "▾" : "▸"} Torrent contents ({trackers.length} {trackers.length === 1 ? "tracker" : "trackers"},{" "}
-                {files.length} {files.length === 1 ? "file" : "files"})
+                <ChevronRightIcon className={cn("size-4 transition-transform", open && "rotate-90")} />
+                Torrent contents ({trackers.length} {trackers.length === 1 ? "tracker" : "trackers"}, {files.length}{" "}
+                {files.length === 1 ? "file" : "files"})
             </button>
             {open && (
-                <div className="mt-2 max-h-[260px] overflow-y-auto border border-rta-border rounded-lg p-2.5 bg-rta-surface">
-                    <div className="font-medium mb-1">Trackers</div>
+                <div className="max-h-64 overflow-y-auto rounded-xl bg-muted/50 p-3 text-sm">
+                    <div className="mb-1 font-medium">Trackers</div>
                     {trackers.length === 0 ? (
-                        <div className="text-rta-text-muted text-[14px]">None.</div>
+                        <div className="text-muted-foreground">None.</div>
                     ) : (
                         trackers.map((tracker, idx) => (
-                            <div key={idx} className="font-[monospace] text-[13px]">
+                            <div key={idx} className="font-mono text-xs break-all">
                                 {tracker}
                             </div>
                         ))
                     )}
-                    <div className="font-medium mt-2.5 mb-1">Files</div>
+                    <div className="mt-2.5 mb-1 font-medium">Files</div>
                     {files.length === 0 ? (
-                        <div className="text-rta-text-muted text-[14px]">None.</div>
+                        <div className="text-muted-foreground">None.</div>
                     ) : (
                         files.map((file, idx) => (
-                            <div key={idx} className="font-[monospace] text-[13px]">
+                            <div key={idx} className="font-mono text-xs break-all">
                                 {file}
                             </div>
                         ))
@@ -241,14 +286,8 @@ function AutoLabelDirTester({
     );
 
     return (
-        <div className="mt-4 border-t border-rta-border pt-3.5">
-            <div className="font-semibold mb-1">Test these rules</div>
-            <div className="text-rta-text-muted text-[13px] mb-2.5">
-                Drop a .torrent file or paste a magnet link to see which rules would match it. Nothing is uploaded or
-                added to your client.
-            </div>
-
-            <div
+        <>
+            <SettingsRow
                 onDragOver={(e) => {
                     e.preventDefault();
                     setDragging(true);
@@ -259,12 +298,16 @@ function AutoLabelDirTester({
                     setDragging(false);
                     handleFile(e.dataTransfer.files?.[0]);
                 }}
-                className={`border-2 border-dashed ${dragging ? "border-rta-success bg-rta-chip-bg" : "border-rta-border bg-rta-surface"} rounded-[10px] py-4 px-3 text-center`}
+                className={cn(
+                    "flex-row flex-wrap items-center justify-center gap-2 text-center text-sm transition-colors",
+                    dragging ? "bg-muted ring-2 ring-inset ring-primary/30" : "bg-muted/40",
+                )}
             >
-                <span className="mr-2">Drop a .torrent file here</span>
-                <button onClick={() => fileInputRef.current?.click()} className={primaryButtonClass}>
+                <UploadIcon className="size-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Drop a .torrent file here or</span>
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                     Choose file…
-                </button>
+                </Button>
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -272,72 +315,77 @@ function AutoLabelDirTester({
                     onChange={(e) => handleFile(e.target.files?.[0])}
                     className="hidden"
                 />
-            </div>
+            </SettingsRow>
 
-            <div className="flex gap-2 items-center mt-2">
-                <input
-                    type="text"
+            <SettingsRow className="flex-row items-center gap-2">
+                <Input
+                    aria-label="Magnet link"
                     value={magnetLink}
                     onChange={(e) => setMagnetLink(e.target.value)}
                     onKeyDown={(e) => {
                         if (e.key === "Enter") handleMagnet();
                     }}
                     placeholder="…or paste a magnet link"
-                    className="flex-1 min-w-0 font-[monospace] text-[14px] border border-rta-border bg-rta-input-bg text-rta-text rounded-lg py-1 px-2.5"
+                    className="min-w-0 flex-1 font-mono"
                 />
-                <button onClick={handleMagnet} className={primaryButtonClass}>
+                <Button variant="outline" size="sm" onClick={handleMagnet}>
                     Test
-                </button>
-            </div>
+                </Button>
+            </SettingsRow>
 
-            {error && <div className="text-rta-danger mt-2.5">{error}</div>}
+            {error && (
+                <SettingsRow>
+                    <p role="alert" className="text-sm text-destructive">
+                        {error}
+                    </p>
+                </SettingsRow>
+            )}
 
             {torrent && explanation && (
-                <div className="mt-3.5 border border-rta-border rounded-[10px] p-3 bg-rta-surface-alt">
-                    <div className="flex gap-3 items-baseline justify-between">
-                        <span className="font-semibold break-all">{torrent.name}</span>
-                        <button
-                            onClick={clear}
-                            className="bg-transparent border-none cursor-pointer text-rta-text-muted text-[13px]"
-                        >
+                <SettingsRow className="gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                        <span className="min-w-0 font-medium break-all">{torrent.name}</span>
+                        <Button variant="ghost" size="sm" onClick={clear}>
                             Clear
-                        </button>
+                        </Button>
                     </div>
 
-                    <div className="mt-2 mb-1">
+                    <div className="flex flex-col gap-1.5">
                         {showLabel && <Outcome caption="Label" value={effectiveLabel} source={labelSource} />}
                         {showDir && <Outcome caption="Directory" value={effectiveDir} source={dirSource} />}
                     </div>
 
                     {torrent.isMagnet && hasFileCriteria && (
-                        <div className="text-rta-text-muted text-[13px] mt-2">
+                        <p className="text-sm text-muted-foreground">
                             This is a magnet link, so it carries trackers but no file list — file criteria can never
                             match it.
                             {torrent.declaredName ? " Torrent name and tracker criteria still work." : ""}
-                        </div>
+                        </p>
                     )}
 
                     {!torrent.declaredName && hasNameCriteria && (
-                        <div className="text-rta-text-muted text-[13px] mt-2">
+                        <p className="text-sm text-muted-foreground">
                             This torrent declares no name of its own, so torrent name criteria can never match it — “
                             {torrent.name}” is only a stand-in for display.
-                        </div>
+                        </p>
                     )}
 
-                    {explanation.rules.map((rule) => (
-                        <RuleRow
-                            key={rule.index}
-                            rule={rule}
-                            winningRuleIndex={explanation.winningRuleIndex}
-                            showLabel={showLabel}
-                            showDir={showDir}
-                        />
-                    ))}
+                    <div className="flex flex-col gap-2">
+                        {explanation.rules.map((rule) => (
+                            <RuleRow
+                                key={rule.index}
+                                rule={rule}
+                                winningRuleIndex={explanation.winningRuleIndex}
+                                showLabel={showLabel}
+                                showDir={showDir}
+                            />
+                        ))}
+                    </div>
 
                     <TorrentContents torrent={torrent} />
-                </div>
+                </SettingsRow>
             )}
-        </div>
+        </>
     );
 }
 

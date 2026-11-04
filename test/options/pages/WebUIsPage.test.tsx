@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vite-plus/test";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import WebUIsPage, { moveItem, parsePortInput } from "../../../src/options/pages/WebUIsPage";
@@ -45,9 +45,21 @@ describe("WebUIsPage", () => {
         renderPage();
 
         await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
-        await userEvent.click(screen.getByRole("button", { name: "For real?" }));
+        const dialog = await screen.findByRole("alertdialog");
+        expect(within(dialog).getByText("Remove Alpha?")).toBeInTheDocument();
+        await userEvent.click(within(dialog).getByRole("button", { name: "Remove WebUI" }));
 
         expect(savedWebUIs()!.map((w) => w.id)).toEqual(["b"]);
+    });
+
+    it("saves nothing until the removal is confirmed", async () => {
+        respondWithWebUIs();
+        renderPage();
+
+        await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
+
+        expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
+        expect(savedWebUIs()).toBeNull();
     });
 
     it("keeps the selected WebUI when the removal is cancelled", async () => {
@@ -55,35 +67,73 @@ describe("WebUIsPage", () => {
         renderPage();
 
         await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
-        await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+        await userEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Cancel" }));
 
+        await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
         expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
         expect(savedWebUIs()).toBeNull();
     });
 
-    it("disarms a pending removal confirmation when another WebUI is selected", async () => {
+    it("edits the name from the Name field in the detail header", async () => {
         respondWithWebUIs();
         renderPage();
 
-        await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
-        expect(screen.getByRole("button", { name: "For real?" })).toBeInTheDocument();
+        const name = await screen.findByRole("textbox", { name: "Name" });
+        await userEvent.clear(name);
+        await userEvent.type(name, "Gamma");
 
-        await userEvent.click(screen.getByText("Beta"));
-
-        expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
-        expect(screen.queryByRole("button", { name: "For real?" })).not.toBeInTheDocument();
+        expect(savedWebUIs()![0]!.name).toBe("Gamma");
     });
 
-    it("re-arms the confirmation independently after switching back", async () => {
+    it("moves a WebUI down with the arrow keys on its reorder handle", async () => {
         respondWithWebUIs();
         renderPage();
 
-        await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
-        await userEvent.click(screen.getByText("Beta"));
-        await userEvent.click(screen.getByText("Alpha"));
+        const handle = await screen.findByRole("button", { name: "Reorder Alpha" });
+        handle.focus();
+        await userEvent.keyboard("{ArrowDown}");
 
-        expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
-        expect(savedWebUIs()).toBeNull();
+        expect(savedWebUIs()!.map((w) => w.id)).toEqual(["b", "a"]);
+        expect(screen.getByRole("button", { name: "Reorder Alpha" })).toHaveFocus();
+    });
+
+    it("makes the selected WebUI primary and shows the badge on the first one only", async () => {
+        respondWithWebUIs();
+        renderPage();
+
+        await userEvent.click(await screen.findByText("Beta"));
+        await userEvent.click(screen.getByRole("button", { name: "Make primary" }));
+
+        expect(savedWebUIs()!.map((w) => w.id)).toEqual(["b", "a"]);
+    });
+
+    it("shows the Primary badge on the first WebUI only", async () => {
+        respondWithWebUIs();
+        renderPage();
+
+        await screen.findByText("Alpha");
+        expect(screen.getAllByText("Primary")).toHaveLength(1);
+    });
+
+    it("shows only the client choice and a hint while no client is chosen", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha", client: "" as never })]);
+        renderPage();
+
+        expect(await screen.findByText("Choose a client to configure this WebUI.")).toBeInTheDocument();
+        expect(screen.getByRole("combobox", { name: "Client" })).toBeInTheDocument();
+        expect(screen.queryByRole("textbox", { name: "Host" })).not.toBeInTheDocument();
+    });
+
+    it("saves the chosen client and locks the client selector", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha", client: "" as never })]);
+        renderPage();
+
+        await userEvent.click(await screen.findByRole("combobox", { name: "Client" }));
+        await userEvent.click(await screen.findByRole("option", { name: "Deluge" }));
+
+        expect(savedWebUIs()![0]!.client).toBe("deluge");
+        expect(screen.queryByRole("combobox", { name: "Client" })).not.toBeInTheDocument();
+        expect(screen.getByText(/can't be changed once chosen/)).toBeInTheDocument();
     });
 
     it("stores no port at all when the port field is cleared", async () => {
@@ -155,15 +205,22 @@ describe("WebUIsPage", () => {
         expect(screen.getByText("2160p")).toBeInTheDocument();
     });
 
-    it("groups the connection settings and toggles under General", async () => {
+    it("groups the connection settings under Connection", async () => {
         respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })]);
         renderPage();
 
-        const general = await screen.findByRole("region", { name: "General" });
-        expect(within(general).getByLabelText("Port")).toBeInTheDocument();
-        expect(within(general).getByRole("button", { name: "Test connection" })).toBeInTheDocument();
-        expect(within(general).getByText("Add torrents paused")).toBeInTheDocument();
-        expect(within(general).getByText("Show per-torrent config selector")).toBeInTheDocument();
+        const connection = await screen.findByRole("region", { name: "Connection" });
+        expect(within(connection).getByLabelText("Port")).toBeInTheDocument();
+        expect(within(connection).getByRole("button", { name: "Test connection" })).toBeInTheDocument();
+    });
+
+    it("groups the torrent adding toggles under Adding torrents", async () => {
+        respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })]);
+        renderPage();
+
+        const adding = await screen.findByRole("region", { name: "Adding torrents" });
+        expect(within(adding).getByRole("switch", { name: "Add torrents paused" })).toBeInTheDocument();
+        expect(within(adding).getByRole("switch", { name: "Show per-torrent config selector" })).toBeInTheDocument();
     });
 
     it("groups the default label and directory with their per-torrent choices", async () => {
@@ -186,23 +243,29 @@ describe("WebUIsPage", () => {
         });
         renderPage();
 
-        const general = await screen.findByRole("region", { name: "General" });
-        await userEvent.click(within(general).getByRole("button", { name: "Test connection" }));
+        const connection = await screen.findByRole("region", { name: "Connection" });
+        await userEvent.click(within(connection).getByRole("button", { name: "Test connection" }));
 
-        expect(await within(general).findByText(/^⚠ Reachable, but the server answered HTTP 500/)).toBeInTheDocument();
+        await waitFor(() =>
+            expect(within(connection).getByRole("status")).toHaveTextContent(
+                "Reachable, but the server answered HTTP 500; credentials could not be verified",
+            ),
+        );
     });
 
     it("shows the background's error message when the connection test fails", async () => {
         respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })], { error: "Failed updating CORS rules" });
         renderPage();
 
-        const general = await screen.findByRole("region", { name: "General" });
-        await userEvent.click(within(general).getByRole("button", { name: "Test connection" }));
+        const connection = await screen.findByRole("region", { name: "Connection" });
+        await userEvent.click(within(connection).getByRole("button", { name: "Test connection" }));
 
-        expect(await within(general).findByText("❌ Failed updating CORS rules")).toBeInTheDocument();
+        await waitFor(() =>
+            expect(within(connection).getByRole("status")).toHaveTextContent("Failed updating CORS rules"),
+        );
     });
 
-    it("shows a check mark when the connection is authenticated", async () => {
+    it("shows the success message when the connection is authenticated", async () => {
         respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })], {
             reachable: true,
             authenticated: true,
@@ -211,10 +274,12 @@ describe("WebUIsPage", () => {
         });
         renderPage();
 
-        const general = await screen.findByRole("region", { name: "General" });
-        await userEvent.click(within(general).getByRole("button", { name: "Test connection" }));
+        const connection = await screen.findByRole("region", { name: "Connection" });
+        await userEvent.click(within(connection).getByRole("button", { name: "Test connection" }));
 
-        expect(await within(general).findByText("✅ Reachable & authenticated")).toBeInTheDocument();
+        await waitFor(() =>
+            expect(within(connection).getByRole("status")).toHaveTextContent("Reachable & authenticated"),
+        );
     });
 });
 

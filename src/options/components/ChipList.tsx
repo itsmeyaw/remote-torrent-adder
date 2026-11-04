@@ -1,65 +1,80 @@
-import React, { useState } from "react";
-import { chipClass, chipInputClass, monoInputClass, primaryButtonClass } from "../ui-classes";
+import { useState } from "react";
+import { XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface ChipListProps {
     label: string;
+    /** What each chip is, for its remove button's name: "Remove label tv". */
+    itemName: "label" | "directory";
     values: string[];
     onChange: (values: string[]) => void;
     placeholder?: string;
 }
 
-const ChipList: React.FC<ChipListProps> = ({ label, values, onChange, placeholder }) => {
+export default function ChipList({ label, itemName, values, onChange, placeholder }: ChipListProps) {
     const [input, setInput] = useState("");
+    const addLabel = placeholder ?? "Add new entry";
+
     const handleAdd = () => {
-        if (input.trim() && !values.includes(input.trim())) {
-            onChange([...values, input.trim()]);
+        const next = input.trim();
+        if (next && !values.includes(next)) {
+            onChange([...values, next]);
             setInput("");
         }
     };
-    const handleRemove = (idx: number) => {
-        const arr = [...values];
-        arr.splice(idx, 1);
-        onChange(arr);
-    };
-    const handleEdit = (idx: number, newValue: string) => {
-        const arr = [...values];
-        arr[idx] = newValue;
-        onChange(arr);
-    };
+    const handleRemove = (idx: number) => onChange(values.filter((_, i) => i !== idx));
+    const handleEdit = (idx: number, newValue: string) => onChange(values.map((v, i) => (i === idx ? newValue : v)));
+
     return (
-        <div className="mb-4">
-            <label className="block mb-2 font-medium">{label}</label>
+        <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{label}</span>
             {values.length > 0 && (
-                <div className="flex flex-wrap gap-2 min-h-10">
-                    {values.map((v, idx) => (
-                        <span key={idx} className={chipClass}>
+                <div className="flex flex-wrap gap-2">
+                    {values.map((value, idx) => (
+                        <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 rounded-full bg-muted py-0.5 pr-1 pl-3"
+                        >
                             <input
                                 type="text"
-                                value={v}
+                                aria-label={label}
+                                value={value}
                                 onChange={(e) => handleEdit(idx, e.target.value)}
-                                className={chipInputClass}
+                                // `size` sizes the field where field-sizing is unsupported (Firefox).
+                                size={Math.max(value.length, 1)}
+                                className="field-sizing-content bg-transparent text-sm outline-none"
                             />
-                            <button onClick={() => handleRemove(idx)} className="text-[13px] ml-0.5">
-                                🗑
-                            </button>
+                            <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                aria-label={`Remove ${itemName} ${value}`}
+                                onClick={() => handleRemove(idx)}
+                            >
+                                <XIcon />
+                            </Button>
                         </span>
                     ))}
                 </div>
             )}
-            <div className={`flex items-center gap-2 ${values.length > 0 ? "mt-2" : "mt-0"}`}>
-                <input
+            <div className="flex items-center gap-2">
+                <Input
                     type="text"
+                    aria-label={addLabel}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={placeholder || "Add new entry"}
-                    className={monoInputClass}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAdd();
+                        }
+                    }}
+                    placeholder={addLabel}
                 />
-                <button onClick={handleAdd} className={primaryButtonClass}>
+                <Button variant="outline" size="sm" onClick={handleAdd}>
                     Add
-                </button>
+                </Button>
             </div>
         </div>
     );
-};
-
-export default ChipList;
+}
