@@ -10,6 +10,8 @@ interface SettingsSectionProps {
     label?: string;
     description?: ReactNode;
     actions?: ReactNode;
+    /** Dims the header only; children dim their own controls. */
+    disabled?: boolean;
     children?: ReactNode;
 }
 
@@ -18,7 +20,14 @@ interface SettingsSectionProps {
  * separated by hairlines, so each child should be a {@link SettingsRow} or bring
  * its own padding.
  */
-export default function SettingsSection({ title, label, description, actions, children }: SettingsSectionProps) {
+export default function SettingsSection({
+    title,
+    label,
+    description,
+    actions,
+    disabled,
+    children,
+}: SettingsSectionProps) {
     const titleId = useId();
     const hasHeader = title || description || actions;
     return (
@@ -29,7 +38,7 @@ export default function SettingsSection({ title, label, description, actions, ch
         >
             {hasHeader && (
                 <div className="flex items-end justify-between gap-4">
-                    <div className="flex min-w-0 flex-col gap-0.5">
+                    <div className={cn("flex min-w-0 flex-col gap-0.5", disabled && "opacity-50")}>
                         {title && (
                             <h2 id={titleId} className="text-sm font-semibold">
                                 {title}

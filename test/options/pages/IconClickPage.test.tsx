@@ -81,4 +81,28 @@ describe("IconClickPage", () => {
             .find((message: any) => message?.action === "saveSettings");
         expect(deserializeSettings(save.settings)!.iconClickAction).toBe("showPageLinks");
     });
+
+    it("disables the page links option while link catching is off", async () => {
+        const settings = getDefaultSettings();
+        settings.linkCatchingEnabled = false;
+        respondWithSettings(settings);
+        renderPage();
+
+        expect(await screen.findByRole("radio", { name: /Show links found on this page/ })).toHaveAttribute(
+            "aria-disabled",
+            "true",
+        );
+        expect(screen.getByText("Turn on link catching to enable this option.")).toBeInTheDocument();
+    });
+
+    it("enables the page links option while link catching is on", async () => {
+        respondWithSettings(getDefaultSettings());
+        renderPage();
+
+        expect(await screen.findByRole("radio", { name: /Show links found on this page/ })).not.toHaveAttribute(
+            "aria-disabled",
+            "true",
+        );
+        expect(screen.queryByText("Turn on link catching to enable this option.")).toBeNull();
+    });
 });

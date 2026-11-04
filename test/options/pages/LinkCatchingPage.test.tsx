@@ -155,3 +155,25 @@ describe("LinkCatchingPage", () => {
         expect(savedRegexSources()).toEqual(["beta2", "gamma"]);
     });
 });
+
+describe("LinkCatchingPage dependent controls", () => {
+    it("disables the pattern and test inputs while link catching is off", async () => {
+        const settings = getDefaultSettings();
+        settings.linkCatchingEnabled = false;
+        respondWithSettings(settings);
+        renderPage();
+
+        expect(await screen.findByRole("textbox", { name: "New pattern" })).toBeDisabled();
+        expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+        expect(screen.getByRole("textbox", { name: "Link to test" })).toBeDisabled();
+    });
+
+    it("enables the pattern and test inputs while link catching is on", async () => {
+        respondWithSettings(getDefaultSettings());
+        renderPage();
+
+        expect(await screen.findByRole("textbox", { name: "New pattern" })).toBeEnabled();
+        expect(screen.getByRole("button", { name: "Add" })).toBeEnabled();
+        expect(screen.getByRole("textbox", { name: "Link to test" })).toBeEnabled();
+    });
+});

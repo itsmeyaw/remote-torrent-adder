@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { PlayIcon, RotateCcwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NumberField } from "@/components/ui/number-field";
+import { cn } from "@/lib/utils";
 import { useSettings } from "../SettingsContext";
 import { deleteCustomSound, getCustomSound, saveCustomSound, type SoundKind } from "../../notifications/sound-storage";
 import SettingsSection, { SettingsRow } from "@/components/settings/SettingsSection";
@@ -19,6 +20,9 @@ export default function NotificationsPage() {
     const durationId = useId();
 
     if (loading || !settings) return <Loading />;
+
+    const notificationsOff = !settings.notificationsEnabled;
+    const soundsOff = notificationsOff || !settings.notificationsSoundEnabled;
 
     const sendTest = (isFailed: boolean) => {
         sendMessage("testNotification", { isFailed }).catch((error) =>
@@ -38,6 +42,7 @@ export default function NotificationsPage() {
                 <SwitchRow
                     label="Play a sound"
                     checked={settings.notificationsSoundEnabled}
+                    disabled={notificationsOff}
                     onChange={(v) => updateSetting("notificationsSoundEnabled", v)}
                 />
                 {!isFirefox() && (
@@ -45,11 +50,12 @@ export default function NotificationsPage() {
                         label='Offer an "Add label" button after adding'
                         description="Label a torrent right from its notification."
                         checked={settings.notificationsLabelButtonEnabled}
+                        disabled={notificationsOff}
                         onChange={(v) => updateSetting("notificationsLabelButtonEnabled", v)}
                     />
                 )}
                 <SettingsRow className="flex-row items-center justify-between gap-6">
-                    <label htmlFor={durationId} className="text-sm font-medium">
+                    <label htmlFor={durationId} className={cn("text-sm font-medium", notificationsOff && "opacity-50")}>
                         Display duration
                     </label>
                     <NumberField
@@ -61,6 +67,7 @@ export default function NotificationsPage() {
                         step={0.5}
                         format={{ maximumFractionDigits: 1 }}
                         value={settings.notificationsDurationMs / 1000}
+                        disabled={notificationsOff}
                         onValueChange={(seconds) =>
                             updateSetting("notificationsDurationMs", Math.round((seconds ?? 0) * 1000))
                         }
@@ -79,20 +86,19 @@ export default function NotificationsPage() {
                 </SettingsRow>
             </SettingsSection>
 
-            {settings.notificationsSoundEnabled && (
-                <SettingsSection
-                    title="Custom sounds"
-                    description="Use your own audio files. A slot without one plays the built-in sound."
-                >
-                    <SoundPicker kind="success" label="Success sound" />
-                    <SoundPicker kind="failure" label="Failure sound" />
-                </SettingsSection>
-            )}
+            <SettingsSection
+                title="Custom sounds"
+                description="Use your own audio files. A slot without one plays the built-in sound."
+                disabled={soundsOff}
+            >
+                <SoundPicker kind="success" label="Success sound" disabled={soundsOff} />
+                <SoundPicker kind="failure" label="Failure sound" disabled={soundsOff} />
+            </SettingsSection>
         </div>
     );
 }
 
-function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
+function SoundPicker({ kind, label, disabled }: { kind: SoundKind; label: string; disabled: boolean }) {
     const [fileName, setFileName] = useState<string | null>(null);
     const [busy, setBusy] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -168,8 +174,11 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
         <SettingsRow className="gap-2">
             <div className="flex items-center gap-3">
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-sm font-medium">{label}</span>
-                    <span className="truncate text-sm text-muted-foreground" title={fileName ?? "Built-in sound"}>
+                    <span className={cn("text-sm font-medium", disabled && "opacity-50")}>{label}</span>
+                    <span
+                        className={cn("truncate text-sm text-muted-foreground", disabled && "opacity-50")}
+                        title={fileName ?? "Built-in sound"}
+                    >
                         {busy ? "…" : (fileName ?? "Built-in sound")}
                     </span>
                 </div>
@@ -177,7 +186,7 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
                     variant="ghost"
                     size="icon-sm"
                     onClick={preview}
-                    disabled={busy}
+                    disabled={busy || disabled}
                     aria-label={`Preview ${label.toLowerCase()}`}
                 >
                     <PlayIcon />
@@ -187,13 +196,18 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
                         variant="ghost"
                         size="icon-sm"
                         onClick={reset}
-                        disabled={busy}
+                        disabled={busy || disabled}
                         aria-label={`Reset ${label.toLowerCase()} to the built-in sound`}
                     >
                         <RotateCcwIcon />
                     </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={busy || disabled}
+                >
                     Choose…
                 </Button>
                 <input

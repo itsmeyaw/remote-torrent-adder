@@ -2,6 +2,7 @@ import { useState, type JSX } from "react";
 import { CheckIcon, CircleCheckIcon, CircleXIcon, PencilIcon, Trash2Icon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import SettingsSection, { SettingsRow } from "@/components/settings/SettingsSection";
 import SwitchRow from "@/components/settings/SwitchRow";
 import Loading from "../components/Loading";
@@ -45,6 +46,7 @@ export default function LinkCatchingPage(): JSX.Element {
 
     if (loading || !settings) return <Loading />;
 
+    const linkCatchingOff = !settings.linkCatchingEnabled;
     const regexStrings: string[] = settings.linkCatchingRegexes.map(regexToString);
 
     const handleAdd = (): void => {
@@ -96,10 +98,13 @@ export default function LinkCatchingPage(): JSX.Element {
             <SettingsSection
                 title="Link patterns"
                 description="A link is caught when it matches any of these regular expressions. Magnet links are always caught."
+                disabled={linkCatchingOff}
             >
                 {regexStrings.length === 0 && (
                     <SettingsRow>
-                        <p className="text-sm text-muted-foreground">No patterns. Only magnet links are caught.</p>
+                        <p className={cn("text-sm text-muted-foreground", linkCatchingOff && "opacity-50")}>
+                            No patterns. Only magnet links are caught.
+                        </p>
                     </SettingsRow>
                 )}
                 {regexStrings.map((r, idx) =>
@@ -110,6 +115,7 @@ export default function LinkCatchingPage(): JSX.Element {
                                     aria-label="Regex pattern"
                                     aria-invalid={editError ? true : undefined}
                                     value={editValue}
+                                    disabled={linkCatchingOff}
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter") handleEditSave(idx);
@@ -121,6 +127,7 @@ export default function LinkCatchingPage(): JSX.Element {
                                     variant="ghost"
                                     size="icon-sm"
                                     aria-label="Save pattern"
+                                    disabled={linkCatchingOff}
                                     onClick={() => handleEditSave(idx)}
                                 >
                                     <CheckIcon />
@@ -142,11 +149,19 @@ export default function LinkCatchingPage(): JSX.Element {
                         </SettingsRow>
                     ) : (
                         <SettingsRow key={idx} className="flex-row items-center gap-2 py-2.5">
-                            <span className="min-w-0 flex-1 font-mono text-sm break-all">{r}</span>
+                            <span
+                                className={cn(
+                                    "min-w-0 flex-1 font-mono text-sm break-all",
+                                    linkCatchingOff && "opacity-50",
+                                )}
+                            >
+                                {r}
+                            </span>
                             <Button
                                 variant="ghost"
                                 size="icon-sm"
                                 aria-label={`Edit pattern ${r}`}
+                                disabled={linkCatchingOff}
                                 onClick={() => handleEdit(idx)}
                             >
                                 <PencilIcon />
@@ -155,6 +170,7 @@ export default function LinkCatchingPage(): JSX.Element {
                                 variant="ghost"
                                 size="icon-sm"
                                 aria-label={`Remove pattern ${r}`}
+                                disabled={linkCatchingOff}
                                 onClick={() => handleRemove(idx)}
                             >
                                 <Trash2Icon />
@@ -168,6 +184,7 @@ export default function LinkCatchingPage(): JSX.Element {
                             aria-label="New pattern"
                             aria-invalid={addError ? true : undefined}
                             value={newRegex}
+                            disabled={linkCatchingOff}
                             onChange={(e) => setNewRegex(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") handleAdd();
@@ -175,7 +192,7 @@ export default function LinkCatchingPage(): JSX.Element {
                             placeholder="Add new regex"
                             className="font-mono"
                         />
-                        <Button variant="outline" size="sm" onClick={handleAdd}>
+                        <Button variant="outline" size="sm" disabled={linkCatchingOff} onClick={handleAdd}>
                             Add
                         </Button>
                     </div>
@@ -187,12 +204,13 @@ export default function LinkCatchingPage(): JSX.Element {
                 </SettingsRow>
             </SettingsSection>
 
-            <SettingsSection title="Test a link">
+            <SettingsSection title="Test a link" disabled={linkCatchingOff}>
                 <SettingsRow>
                     <Input
                         aria-label="Link to test"
                         placeholder="Paste a link to test..."
                         value={testerValue}
+                        disabled={linkCatchingOff}
                         onChange={(e) => setTesterValue(e.target.value)}
                     />
                     {testerValue && (
