@@ -51,6 +51,7 @@ export function defineClientSuite(probe: ClientProbe): ClientSuite {
                   defaultLabel: config.label ?? null,
                   defaultDir: config.dir ?? null,
                   addPaused: config.addPaused ?? false,
+                  clientSpecificSettings: config.clientSpecificSettings ?? {},
               }
             : {};
         await configureExtension(extension, webUiSettingsFor(probe, { ...defaults, ...options.settings }));
