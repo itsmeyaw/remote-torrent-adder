@@ -77,7 +77,7 @@ describe("popup states", () => {
         expect(screen.getByText("Loading…")).toBeInTheDocument();
 
         resolve(popupData());
-        expect(await screen.findByRole("button", { name: "Add Torrent" })).toBeInTheDocument();
+        expect(await screen.findByRole("button", { name: "Add torrent" })).toBeInTheDocument();
     });
 
     it("says so when nothing is waiting to be added", async () => {
@@ -86,7 +86,17 @@ describe("popup states", () => {
         render(<Home />);
 
         expect(await screen.findByText("Nothing to add")).toBeInTheDocument();
-        expect(screen.queryByRole("button", { name: "Add Torrent" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Add torrent" })).not.toBeInTheDocument();
+    });
+
+    it("offers the options page when nothing is waiting", async () => {
+        loadPopupData.mockResolvedValue(null);
+        render(<Home />);
+
+        await userEvent.click(await screen.findByRole("button", { name: "Open options" }));
+
+        expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
+        await waitFor(() => expect(window.close).toHaveBeenCalled());
     });
 
     it("reports a load failure instead of rendering an empty form", async () => {
@@ -107,6 +117,14 @@ describe("popup states", () => {
         expect(await screen.findByText("Ubuntu 24.04")).toBeInTheDocument();
     });
 
+    it("titles the form Add torrent", async () => {
+        loadPopupData.mockResolvedValue(popupData());
+
+        render(<Home />);
+
+        expect(await screen.findByRole("heading", { name: "Add torrent" })).toBeInTheDocument();
+    });
+
     it("does not show placeholder label options before the real ones arrive", async () => {
         let resolve: (data: PopupData) => void = () => undefined;
         loadPopupData.mockReturnValue(
@@ -120,7 +138,7 @@ describe("popup states", () => {
         expect(screen.queryByText("TV Shows")).not.toBeInTheDocument();
 
         resolve(popupData());
-        await screen.findByRole("button", { name: "Add Torrent" });
+        await screen.findByRole("button", { name: "Add torrent" });
     });
 });
 
@@ -133,11 +151,11 @@ describe("control visibility", () => {
         );
 
         render(<Home />);
-        await screen.findByRole("button", { name: "Add Torrent" });
+        await screen.findByRole("button", { name: "Add torrent" });
 
         expect(screen.queryByText("Label")).not.toBeInTheDocument();
         expect(screen.getByText("Directory")).toBeInTheDocument();
-        expect(screen.queryByText("Start Paused")).not.toBeInTheDocument();
+        expect(screen.queryByText("Start paused")).not.toBeInTheDocument();
     });
 
     it("renders a toggle for each per-torrent client-specific setting", async () => {
@@ -153,7 +171,7 @@ describe("control visibility", () => {
         );
 
         render(<Home />);
-        await screen.findByRole("button", { name: "Add Torrent" });
+        await screen.findByRole("button", { name: "Add torrent" });
 
         expect(screen.getByText("Force start")).toBeInTheDocument();
     });
@@ -162,7 +180,7 @@ describe("control visibility", () => {
         loadPopupData.mockResolvedValue(popupData());
 
         render(<Home />);
-        await screen.findByRole("button", { name: "Add Torrent" });
+        await screen.findByRole("button", { name: "Add torrent" });
 
         expect(screen.queryByText("Force start")).not.toBeInTheDocument();
     });
@@ -173,7 +191,7 @@ describe("submitting", () => {
         loadPopupData.mockResolvedValue(popupData());
         render(<Home />);
 
-        await userEvent.click(await screen.findByRole("button", { name: "Add Torrent" }));
+        await userEvent.click(await screen.findByRole("button", { name: "Add torrent" }));
 
         await waitFor(() => expect(submitTorrent).toHaveBeenCalled());
         const request = callArgs(submitTorrent, 0)[0];
@@ -197,7 +215,7 @@ describe("submitting", () => {
         render(<Home />);
 
         await userEvent.click(await screen.findByText("Force start"));
-        await userEvent.click(screen.getByRole("button", { name: "Add Torrent" }));
+        await userEvent.click(screen.getByRole("button", { name: "Add torrent" }));
 
         await waitFor(() => expect(submitTorrent).toHaveBeenCalled());
         expect(callArgs(submitTorrent, 0)[0].clientSpecific).toEqual({ forceStart: true });
@@ -211,7 +229,7 @@ describe("submitting", () => {
         );
         render(<Home />);
 
-        await userEvent.click(await screen.findByRole("button", { name: "Add Torrent" }));
+        await userEvent.click(await screen.findByRole("button", { name: "Add torrent" }));
 
         await waitFor(() => expect(submitTorrent).toHaveBeenCalled());
         const request = callArgs(submitTorrent, 0)[0];
@@ -225,11 +243,11 @@ describe("submitting", () => {
         submitTorrent.mockRejectedValue(new Error("client refused the torrent"));
         render(<Home />);
 
-        await userEvent.click(await screen.findByRole("button", { name: "Add Torrent" }));
+        await userEvent.click(await screen.findByRole("button", { name: "Add torrent" }));
 
         expect(await screen.findByRole("alert")).toHaveTextContent("client refused the torrent");
         expect(window.close).not.toHaveBeenCalled();
-        expect(screen.getByRole("button", { name: "Add Torrent" })).toBeEnabled();
+        expect(screen.getByRole("button", { name: "Add torrent" })).toBeEnabled();
     });
 
     it("disables the button while the add is in flight", async () => {
@@ -242,7 +260,7 @@ describe("submitting", () => {
         );
         render(<Home />);
 
-        await userEvent.click(await screen.findByRole("button", { name: "Add Torrent" }));
+        await userEvent.click(await screen.findByRole("button", { name: "Add torrent" }));
 
         expect(await screen.findByRole("button", { name: "Adding…" })).toBeDisabled();
         finish();
@@ -253,7 +271,7 @@ describe("submitting", () => {
         submitTorrent.mockReturnValue(new Promise<void>(() => undefined));
         render(<Home />);
 
-        const button = await screen.findByRole("button", { name: "Add Torrent" });
+        const button = await screen.findByRole("button", { name: "Add torrent" });
         await userEvent.click(button);
         await userEvent.click(screen.getByRole("button", { name: "Adding…" }));
 

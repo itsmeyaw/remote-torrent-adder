@@ -41,16 +41,17 @@ describe("SetLabelView", () => {
         render(<SetLabelView />);
 
         expect(await screen.findByText("Cool Torrent in Seedbox")).toBeInTheDocument();
-        expect(screen.getByDisplayValue("movies")).toBeInTheDocument();
+        expect(screen.getByLabelText("Label")).toHaveValue("movies");
     });
 
     it("sends the chosen label with the reordered label list, then closes", async () => {
         respond();
         render(<SetLabelView />);
-        const input = await screen.findByDisplayValue("movies");
+        const input = await screen.findByLabelText("Label");
 
         await userEvent.clear(input);
         await userEvent.type(input, "tv");
+        await userEvent.tab();
         await userEvent.click(screen.getByRole("button", { name: "Set label" }));
 
         expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
@@ -67,7 +68,7 @@ describe("SetLabelView", () => {
     it("submits with enter", async () => {
         respond();
         render(<SetLabelView />);
-        const input = await screen.findByDisplayValue("movies");
+        const input = await screen.findByLabelText("Label");
 
         await userEvent.type(input, "{Enter}");
 
@@ -79,7 +80,7 @@ describe("SetLabelView", () => {
     it("stays open and shows the error when the client refuses", async () => {
         respond({ error: "Setting the label failed (HTTP 409): nope" });
         render(<SetLabelView />);
-        await screen.findByDisplayValue("movies");
+        await screen.findByLabelText("Label");
 
         await userEvent.click(screen.getByRole("button", { name: "Set label" }));
 

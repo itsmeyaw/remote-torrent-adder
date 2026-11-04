@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
-import { ComboBox } from "../components/ui/combobox";
-import { Button } from "../components/ui/button";
-import { Toggle } from "../components/ui/toggle";
+import { Button } from "@/components/ui/button";
 import Notice from "./Notice";
+import OpenOptionsButton from "./OpenOptionsButton";
+import PopupFrame from "./PopupFrame";
 import WebUiPickerView from "./WebUiPickerView";
 import PageLinksView from "./PageLinksView";
 import SetLabelView from "./SetLabelView";
+import OptionCombobox from "../components/OptionCombobox";
+import SwitchRow from "@/components/settings/SwitchRow";
+import { surfaceClass } from "@/components/settings/SettingsSection";
+import { cn } from "@/lib/utils";
 import { errorMessage, moveToFront } from "../lib/utils";
 import { loadPopupData, submitTorrent, type PopupData } from "../popup-data";
 import { resolveClientSpecificSetting } from "../../models/webui";
@@ -53,10 +57,18 @@ function BufferedTorrentForm() {
     }, []);
 
     if (state.status === "loading") {
-        return <Notice title="Remote Torrent Adder">Loading…</Notice>;
+        return (
+            <Notice title="Remote Torrent Adder" loading>
+                Loading…
+            </Notice>
+        );
     }
     if (state.status === "empty") {
-        return <Notice title="Nothing to add">No torrent is waiting to be added.</Notice>;
+        return (
+            <Notice title="Nothing to add" action={<OpenOptionsButton />}>
+                No torrent is waiting to be added.
+            </Notice>
+        );
     }
     if (state.status === "failed") {
         return (
@@ -112,74 +124,73 @@ function AddTorrentForm({ data }: { data: PopupData }) {
         if (directory === option) setDirectory("");
     };
 
+    const toggles = [
+        ...(data.supports.paused
+            ? [{ key: "paused", label: "Start paused", checked: paused, onChange: setPaused }]
+            : []),
+        ...data.clientSpecific.descriptors.map((descriptor) => ({
+            key: descriptor.key,
+            label: descriptor.label,
+            checked: resolveClientSpecificSetting(
+                descriptor.key,
+                data.clientSpecific.descriptors,
+                undefined,
+                clientSpecific,
+            ),
+            onChange: (value: boolean) => setClientSpecific((previous) => ({ ...previous, [descriptor.key]: value })),
+        })),
+    ];
+
     return (
-        <div className="h-full bg-background p-6">
-            <div className="max-w-sm mx-auto space-y-4">
-                <div className="text-center">
-                    <h1 className="text-xl font-bold text-foreground">Remote Torrent Adder</h1>
-                    <p className="text-xs text-muted-foreground mt-1">{data.torrent.name}</p>
-                </div>
+        <PopupFrame title="Add torrent" subtitle={data.torrent.name}>
+            <div className="flex flex-col gap-4">
+                {data.supports.label && (
+                    <OptionCombobox
+                        label="Label"
+                        placeholder="Select or type label..."
+                        value={label}
+                        onChange={setLabel}
+                        options={labelOptions}
+                        onRemoveOption={removeLabel}
+                        autoPicked={data.auto.label}
+                    />
+                )}
 
-                <div className="space-y-3 bg-card p-4 rounded-lg border border-border shadow-sm">
-                    {data.supports.label && (
-                        <ComboBox
-                            label="Label"
-                            value={label}
-                            onChange={setLabel}
-                            onRemoveOption={removeLabel}
-                            options={labelOptions}
-                            rainbowOutline={data.auto.label}
-                            placeholder="Select or type label..."
-                        />
-                    )}
+                {data.supports.directory && (
+                    <OptionCombobox
+                        label="Directory"
+                        placeholder="Select or type directory..."
+                        value={directory}
+                        onChange={setDirectory}
+                        options={directoryOptions}
+                        onRemoveOption={removeDirectory}
+                        autoPicked={data.auto.directory}
+                    />
+                )}
+            </div>
 
-                    {data.supports.directory && (
-                        <ComboBox
-                            label="Directory"
-                            value={directory}
-                            onChange={setDirectory}
-                            onRemoveOption={removeDirectory}
-                            options={directoryOptions}
-                            rainbowOutline={data.auto.directory}
-                            placeholder="Select or type directory..."
-                        />
-                    )}
-
-                    {data.supports.paused && <Toggle label="Start Paused" checked={paused} onChange={setPaused} />}
-
-                    {data.clientSpecific.descriptors.map((descriptor) => (
-                        <Toggle
-                            key={descriptor.key}
-                            label={descriptor.label}
-                            checked={resolveClientSpecificSetting(
-                                descriptor.key,
-                                data.clientSpecific.descriptors,
-                                undefined,
-                                clientSpecific,
-                            )}
-                            onChange={(value) =>
-                                setClientSpecific((previous) => ({ ...previous, [descriptor.key]: value }))
-                            }
+            {toggles.length > 0 && (
+                <div className={cn(surfaceClass, "divide-y divide-border overflow-hidden")}>
+                    {toggles.map((toggle) => (
+                        <SwitchRow
+                            key={toggle.key}
+                            label={toggle.label}
+                            checked={toggle.checked}
+                            onChange={toggle.onChange}
                         />
                     ))}
-
-                    {submitError && (
-                        <p role="alert" className="text-xs text-destructive">
-                            {submitError}
-                        </p>
-                    )}
-
-                    <Button
-                        onClick={() => void handleSubmit()}
-                        disabled={submitting}
-                        className="w-full"
-                        variant="default"
-                        size="default"
-                    >
-                        {submitting ? "Adding…" : "Add Torrent"}
-                    </Button>
                 </div>
-            </div>
-        </div>
+            )}
+
+            {submitError && (
+                <p role="alert" className="text-sm text-destructive">
+                    {submitError}
+                </p>
+            )}
+
+            <Button onClick={() => void handleSubmit()} disabled={submitting} className="w-full">
+                {submitting ? "Adding…" : "Add torrent"}
+            </Button>
+        </PopupFrame>
     );
 }

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { sendMessage } from "../../util/messaging";
-import { ComboBox } from "../components/ui/combobox";
-import { Button } from "../components/ui/button";
+import { Button } from "@/components/ui/button";
 import Notice from "./Notice";
+import PopupFrame from "./PopupFrame";
+import OptionCombobox from "../components/OptionCombobox";
 import { requestSettings } from "../../settings/request-settings";
 import { findWebUiSettings } from "../../settings/webuis";
 import { errorMessage, moveToFront } from "../lib/utils";
@@ -46,7 +47,11 @@ function SetLabelLoader({ target }: { target: LabelTarget }) {
     }, [target]);
 
     if (state.status === "loading") {
-        return <Notice title="Remote Torrent Adder">Loading…</Notice>;
+        return (
+            <Notice title="Remote Torrent Adder" loading>
+                Loading…
+            </Notice>
+        );
     }
     if (state.status === "invalid") {
         return <InvalidTargetNotice />;
@@ -99,45 +104,34 @@ function SetLabelForm({
     };
 
     return (
-        <div className="h-full bg-background p-6">
-            <div className="max-w-sm mx-auto space-y-4">
-                <div className="text-center">
-                    <h1 className="text-xl font-bold text-foreground">Add label</h1>
-                    <p className="text-xs text-muted-foreground mt-1">
-                        {target.torrentName} in {webUiName}
-                    </p>
-                </div>
+        <PopupFrame title="Add label" subtitle={`${target.torrentName} in ${webUiName}`}>
+            <form
+                className="flex items-end gap-2"
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    if (label && !submitting) void handleSubmit();
+                }}
+            >
+                <OptionCombobox
+                    className="flex-1"
+                    label="Label"
+                    placeholder="Select or type label..."
+                    value={label}
+                    onChange={setLabel}
+                    options={labelOptions}
+                    onRemoveOption={removeLabel}
+                />
+                <Button type="submit" disabled={submitting || !label}>
+                    {submitting ? "Setting…" : "Set label"}
+                </Button>
+            </form>
 
-                <div className="space-y-3 bg-card p-4 rounded-lg border border-border shadow-sm">
-                    <form
-                        className="flex items-end gap-2"
-                        onSubmit={(event) => {
-                            event.preventDefault();
-                            if (label && !submitting) void handleSubmit();
-                        }}
-                    >
-                        <ComboBox
-                            className="flex-1"
-                            label="Label"
-                            value={label}
-                            onChange={setLabel}
-                            onRemoveOption={removeLabel}
-                            options={labelOptions}
-                            placeholder="Select or type label..."
-                        />
-                        <Button type="submit" disabled={submitting || !label} variant="default" size="default">
-                            {submitting ? "Setting…" : "Set label"}
-                        </Button>
-                    </form>
-
-                    {submitError && (
-                        <p role="alert" className="text-xs text-destructive">
-                            {submitError}
-                        </p>
-                    )}
-                </div>
-            </div>
-        </div>
+            {submitError && (
+                <p role="alert" className="text-sm text-destructive">
+                    {submitError}
+                </p>
+            )}
+        </PopupFrame>
     );
 }
 

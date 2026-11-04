@@ -213,7 +213,7 @@ protected getMyField(config: TorrentUploadConfig): boolean | null {
 
 ### C. `src/popup/app/page.tsx`
 
-Add the UI control in the popup and include the chosen value in the `TorrentUploadConfig` sent when the user clicks "Add". `src/popup/popup-data.ts` builds what the popup renders and maps the result back onto the config; popup controls live in `src/popup/components/ui/`.
+Add the UI control in the popup and include the chosen value in the `TorrentUploadConfig` sent when the user clicks "Add". `src/popup/popup-data.ts` builds what the popup renders and maps the result back onto the config; popup controls live in `src/components/ui/`. Settings rows shared by options and popup (`SettingsSection`, `SettingsRow`, `SwitchRow`) live in `src/components/settings/`.
 
 ### D. Messages
 

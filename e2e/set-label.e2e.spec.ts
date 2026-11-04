@@ -41,6 +41,7 @@ test.describe("labelling a torrent after it was added", () => {
 
         const input = page.getByPlaceholder("Select or type label...");
         await input.fill("tv");
+        await input.press("Tab");
         await page.getByRole("button", { name: "Set label" }).click();
 
         await expect.poll(() => client.pathsHit()).toContain("/api/v2/torrents/setCategory");
