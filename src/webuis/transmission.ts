@@ -68,7 +68,7 @@ export class TransmissionWebUI extends TorrentWebUI<string> {
     private async fetchTransmissionSessionId(): Promise<string> {
         const response = await this.fetchAllowing(
             this.createBaseUrl() + "/transmission/rpc",
-            { method: "POST", body: "" },
+            { method: "POST", body: "", headers: this.createBasicAuthHeaders() },
             [409],
         );
         return response.headers.get("X-Transmission-Session-Id") ?? "";
