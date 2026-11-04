@@ -71,7 +71,7 @@ export default function WebUIsPage() {
     const selected = webuis.find((w) => w.id === selectedId) ?? null;
 
     return (
-        <div className="grid grid-cols-[10.5rem_minmax(0,1fr)] items-start gap-6">
+        <div className="grid grid-cols-[13rem_minmax(0,1fr)] items-start gap-8">
             <WebUIList
                 webuis={webuis}
                 selectedId={selectedId}
