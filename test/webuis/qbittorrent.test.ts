@@ -117,6 +117,25 @@ describe("QBittorrentWebUI", () => {
         expect(callArgs(fetch, 0)[0]).toBe("http://h:8080/api/v2/auth/login");
     });
 
+    it("accepts a login answered with 204 No Content as authenticated", async () => {
+        const fetch = queueFetch(
+            mockResponse({ status: 204, headers: { "Set-Cookie": "QBT_SID_8080=abc; HttpOnly" } }),
+            mockResponse({ status: 200, body: "Ok." }),
+        );
+        await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({ success: true });
+        expect(fetch).toHaveBeenCalledTimes(2);
+        expect(callArgs(fetch, 1)[0]).toBe("http://h:8080/api/v2/torrents/add");
+    });
+
+    it("rejects an add when the login is answered with 401", async () => {
+        const fetch = queueFetch(mockResponse({ status: 401, body: "Unauthorized" }));
+        await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({
+            success: false,
+            httpResponseCode: 401,
+        });
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
     it("reports failure when the add endpoint returns the literal Fails. body", async () => {
         queueFetch(mockResponse({ status: 200, body: "Ok." }), mockResponse({ status: 200, body: "Fails." }));
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({

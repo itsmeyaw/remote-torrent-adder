@@ -77,7 +77,8 @@ export class QBittorrentWebUI extends TorrentWebUI {
             },
             body: authenticationBody,
         });
-        if ((await response.text()).trim() !== "Ok.") {
+        // qBittorrent 5.2+ answers 204 No Content on success; older versions answer 200 "Ok."
+        if (response.status !== 204 && (await response.text()).trim() !== "Ok.") {
             throw new AuthenticationError(response.status, "qBittorrent rejected the username or password");
         }
     }
