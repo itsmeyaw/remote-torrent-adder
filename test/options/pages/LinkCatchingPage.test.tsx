@@ -48,6 +48,15 @@ describe("LinkCatchingPage", () => {
         expect(screen.queryByRole("alert")).toBeNull();
     });
 
+    it("adds a pattern when Enter is pressed in the add field", async () => {
+        respondWithSettings(settingsWith([]));
+        renderPage();
+
+        await userEvent.type(await screen.findByPlaceholderText("Add new regex"), "\\.zip${Enter}");
+
+        expect(savedRegexSources()).toEqual(["\\.zip$"]);
+    });
+
     it("rejects an empty pattern on add with an inline error", async () => {
         respondWithSettings(settingsWith([]));
         renderPage();
@@ -84,10 +93,10 @@ describe("LinkCatchingPage", () => {
         respondWithSettings(settingsWith([new RegExp("\\.torrent$")]));
         renderPage();
 
-        await userEvent.click(await screen.findByRole("button", { name: "✎" }));
+        await userEvent.click(await screen.findByRole("button", { name: "Edit pattern \\.torrent$" }));
         const input = screen.getByDisplayValue("\\.torrent$");
         await userEvent.clear(input);
-        await userEvent.click(screen.getByRole("button", { name: "✔" }));
+        await userEvent.click(screen.getByRole("button", { name: "Save pattern" }));
 
         expect(screen.getByRole("alert")).toHaveTextContent(/cannot be empty/);
         expect(input).toHaveValue("");
@@ -98,13 +107,51 @@ describe("LinkCatchingPage", () => {
         respondWithSettings(settingsWith([new RegExp("\\.torrent$")]));
         renderPage();
 
-        await userEvent.click(await screen.findByRole("button", { name: "✎" }));
+        await userEvent.click(await screen.findByRole("button", { name: "Edit pattern \\.torrent$" }));
         const input = screen.getByDisplayValue("\\.torrent$");
         await userEvent.clear(input);
         await userEvent.type(input, "\\.zip$");
-        await userEvent.click(screen.getByRole("button", { name: "✔" }));
+        await userEvent.click(screen.getByRole("button", { name: "Save pattern" }));
 
         expect(savedRegexSources()).toEqual(["\\.zip$"]);
         expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("saves an edit when Enter is pressed", async () => {
+        respondWithSettings(settingsWith([new RegExp("\\.torrent$")]));
+        renderPage();
+
+        await userEvent.click(await screen.findByRole("button", { name: "Edit pattern \\.torrent$" }));
+        const input = screen.getByDisplayValue("\\.torrent$");
+        await userEvent.clear(input);
+        await userEvent.type(input, "\\.zip${Enter}");
+
+        expect(savedRegexSources()).toEqual(["\\.zip$"]);
+    });
+
+    it("cancels an edit when Escape is pressed and keeps the pattern", async () => {
+        respondWithSettings(settingsWith([new RegExp("\\.torrent$")]));
+        renderPage();
+
+        await userEvent.click(await screen.findByRole("button", { name: "Edit pattern \\.torrent$" }));
+        await userEvent.type(screen.getByDisplayValue("\\.torrent$"), "x{Escape}");
+
+        expect(screen.queryByDisplayValue(/\\\.torrent/)).toBeNull();
+        expect(screen.getByText("\\.torrent$")).toBeInTheDocument();
+        expect(savedRegexSources()).toBeUndefined();
+    });
+
+    it("keeps editing the same pattern when an earlier pattern is removed", async () => {
+        respondWithSettings(settingsWith([new RegExp("alpha"), new RegExp("beta"), new RegExp("gamma")]));
+        renderPage();
+
+        await userEvent.click(await screen.findByRole("button", { name: "Edit pattern beta" }));
+        await userEvent.click(screen.getByRole("button", { name: "Remove pattern alpha" }));
+        const input = screen.getByDisplayValue("beta");
+        await userEvent.clear(input);
+        await userEvent.type(input, "beta2");
+        await userEvent.click(screen.getByRole("button", { name: "Save pattern" }));
+
+        expect(savedRegexSources()).toEqual(["beta2", "gamma"]);
     });
 });

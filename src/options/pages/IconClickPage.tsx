@@ -1,62 +1,74 @@
 import { type JSX } from "react";
 import { useSettings } from "../SettingsContext";
-import RadioCard from "../components/RadioCard";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
+import Loading from "../components/Loading";
+import { surfaceClass } from "@/components/settings/SettingsSection";
 import { type IconClickAction } from "../../models/settings";
-
-const sectionClass = "inline-flex flex-col gap-2.5 bg-rta-surface-alt border border-rta-border rounded-xl p-4.5";
-
-const sectionTitleClass = "mt-0 mb-1 mx-0 text-[13px] font-bold tracking-[0.6px] uppercase text-rta-green-dark";
 
 const OPTIONS: { value: IconClickAction; label: string; description: string; disabledNote?: string }[] = [
     {
         value: "openPrimaryWebUi",
         label: "Open the primary WebUI",
-        description: "Clicking the extension icon opens your primary configured WebUI in a new tab.",
+        description: "Opens your primary WebUI in a new tab.",
     },
     {
         value: "showWebUiPicker",
         label: "Let me choose which WebUI to open",
-        description: "Clicking the icon shows a list of your configured WebUIs to pick from.",
+        description: "Shows a list of your WebUIs to pick from.",
         disabledNote: "Configure at least one more WebUI to enable this option.",
     },
     {
         value: "showPageLinks",
         label: "Show links found on this page",
-        description:
-            "Clicking the icon shows a popup listing torrent/magnet links detected on the current page. Clicking one adds it, just like clicking it on the page.",
+        description: "Lists the torrent and magnet links on the current page. Clicking one adds it.",
     },
 ];
 
 export default function IconClickPage(): JSX.Element {
     const { settings, updateSetting, loading } = useSettings();
 
-    if (loading || !settings) return <div>Loading...</div>;
+    if (loading || !settings) return <Loading />;
 
     const current: IconClickAction = settings.iconClickAction;
     const multipleWebUisConfigured = settings.webuiSettings.length > 1;
 
     return (
-        <div>
-            <p className="mb-4">Choose what happens when you click the extension&apos;s icon in the toolbar.</p>
-            <section className={sectionClass}>
-                <h3 className={sectionTitleClass}>Icon Click Behavior</h3>
+        <div className="flex flex-col gap-3">
+            <p className="text-sm text-pretty text-muted-foreground">
+                What happens when you click the extension&apos;s icon in the toolbar.
+            </p>
+            <RadioGroup
+                aria-label="Icon click"
+                value={current}
+                onValueChange={(value) => updateSetting("iconClickAction", value as IconClickAction)}
+                className="gap-2"
+            >
                 {OPTIONS.map((option) => {
                     const disabled = option.value === "showWebUiPicker" && !multipleWebUisConfigured;
+                    const selected = current === option.value;
                     return (
-                        <RadioCard
+                        <label
                             key={option.value}
-                            name="iconClickAction"
-                            value={option.value}
-                            checked={current === option.value}
-                            disabled={disabled}
-                            label={option.label}
-                            description={option.description}
-                            note={disabled ? option.disabledNote : undefined}
-                            onChange={(value) => updateSetting("iconClickAction", value as IconClickAction)}
-                        />
+                            className={cn(
+                                "flex items-start gap-3 p-4 transition-[box-shadow] duration-150",
+                                surfaceClass,
+                                selected ? "ring-2 ring-primary" : "",
+                                disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+                            )}
+                        >
+                            <RadioGroupItem value={option.value} disabled={disabled} className="mt-0.5" />
+                            <span className="flex min-w-0 flex-col gap-0.5">
+                                <span className="text-sm font-medium">{option.label}</span>
+                                <span className="text-sm text-pretty text-muted-foreground">{option.description}</span>
+                                {disabled && option.disabledNote && (
+                                    <span className="mt-1 text-xs text-muted-foreground">{option.disabledNote}</span>
+                                )}
+                            </span>
+                        </label>
                     );
                 })}
-            </section>
+            </RadioGroup>
         </div>
     );
 }

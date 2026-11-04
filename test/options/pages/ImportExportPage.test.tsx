@@ -38,7 +38,7 @@ const renderPage = () =>
     );
 
 async function importText(text: string) {
-    fireEvent.change(await screen.findByLabelText(/Paste a previously exported/i, { selector: "textarea" }), {
+    fireEvent.change(await screen.findByLabelText("Settings to import", { selector: "textarea" }), {
         target: { value: text },
     });
     fireEvent.click(screen.getByRole("button", { name: "Import settings" }));
@@ -63,15 +63,12 @@ describe("ImportExportPage export", () => {
         expect(await screen.findByText(/passwords in plain text/i)).toBeInTheDocument();
     });
 
-    it("styles the password warning as a warning and links it to the export text", async () => {
+    it("announces the password warning as a note and links it to the export text", async () => {
         respondWithSettings();
         renderPage();
 
-        const warning = await screen.findByText(/passwords in plain text/i);
-        expect(warning).toHaveClass("rta-notice--warning");
-        expect(screen.getByLabelText(/keep it somewhere safe/i)).toHaveAccessibleDescription(
-            /passwords in plain text/i,
-        );
+        expect(await screen.findByRole("note")).toHaveTextContent(/passwords in plain text/i);
+        expect(screen.getByLabelText("Exported settings")).toHaveAccessibleDescription(/passwords in plain text/i);
     });
 
     it("confirms a successful copy", async () => {

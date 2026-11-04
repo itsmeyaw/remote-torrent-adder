@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { ShieldAlertIcon } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { ext } from "../../util/browser-api";
 
 const ALL_URLS = { origins: ["<all_urls>"] };
@@ -28,20 +31,25 @@ export default function HostPermissionNotice() {
     }
 
     return (
-        <div className="rta-notice rta-notice--warning" role="alert">
-            <span>
-                Remote Torrent Adder cannot access websites, so torrent links will not be caught and your clients cannot
-                be reached.
-            </span>
-            <button
-                type="button"
-                className="rta-notice__action"
-                onClick={() => {
-                    void ext.permissions.request(ALL_URLS).then(setGranted);
-                }}
-            >
-                Grant access
-            </button>
-        </div>
+        <Alert variant="destructive">
+            <ShieldAlertIcon />
+            <AlertTitle>Websites are blocked</AlertTitle>
+            <AlertDescription>
+                <p>
+                    Remote Torrent Adder cannot access websites, so torrent links will not be caught and your clients
+                    cannot be reached.
+                </p>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 text-foreground"
+                    onClick={() => {
+                        void ext.permissions.request(ALL_URLS).then(setGranted);
+                    }}
+                >
+                    Grant access
+                </Button>
+            </AlertDescription>
+        </Alert>
     );
 }
