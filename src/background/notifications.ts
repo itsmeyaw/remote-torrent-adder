@@ -5,6 +5,10 @@ import { playNotificationSound } from "../notifications/play-sound";
 import { openSetLabelWindow, openWebUi } from "./action";
 import { loadSettings } from "../settings/settings";
 import { getWebUi } from "../settings/webuis";
+import { type RTASettings } from "../models/settings";
+import { type Torrent } from "../models/torrent";
+import { type TorrentWebUI } from "../models/webui";
+import { computeInfoHash } from "../torrent/info-hash";
 
 const LINK_KEY_PREFIX = "notificationLink:";
 const LABEL_ACTION_KEY_PREFIX = "notificationLabelAction:";
@@ -18,6 +22,23 @@ export interface NotificationLabelAction {
 
 /** A WebUI is opened with its credentials; any other link is a plain tab. */
 export type NotificationLink = { webUiId: string } | { url: string };
+
+export type NotificationEvent =
+    | { type: "added"; webUi: TorrentWebUI; torrent: Torrent; warning?: string }
+    | { type: "addFailed"; reason: string; webUiId?: string }
+    | { type: "downloadFailed"; error: unknown; webUiId: string }
+    | { type: "cloudflareChallenge"; message: string; challengeUrl: string }
+    | { type: "labelSet"; webUi: TorrentWebUI; torrentName: string; label: string }
+    | { type: "settingsReset" }
+    | { type: "test"; isFailed: boolean };
+
+interface Presentation {
+    title: string;
+    message: string;
+    isFailed: boolean;
+    link?: NotificationLink;
+    labelAction?: NotificationLabelAction;
+}
 
 export function registerNotificationClickListener(): void {
     ext.notifications.onClicked.addListener((notificationId) => {
@@ -42,15 +63,78 @@ export function registerNotificationCleanupListeners(): void {
     });
 }
 
-export function showNotification(title: string, message: string, isFailed: boolean = true, popupDurationMs: number = 2000, playSound: boolean = false, link?: NotificationLink, labelAction?: NotificationLabelAction): void {
+export async function notify(event: NotificationEvent, settings: RTASettings): Promise<void> {
+    if (event.type !== "test" && !settings.notificationsEnabled) {
+        return;
+    }
+    try {
+        show(await present(event, settings), settings);
+    } catch (error) {
+        console.error("Showing a notification failed", error);
+    }
+}
+
+async function present(event: NotificationEvent, settings: RTASettings): Promise<Presentation> {
+    switch (event.type) {
+        case "added":
+            return {
+                title: "Torrent added successfully",
+                message: `${event.torrent.name} successfully added to ${event.webUi.name}${event.warning ? `\n${event.warning}` : ""}`,
+                isFailed: false,
+                link: { webUiId: event.webUi.settings.id },
+                labelAction: await labelActionFor(event.webUi, event.torrent, settings),
+            };
+        case "addFailed":
+            return {
+                title: "Adding torrent failed",
+                message: event.reason,
+                isFailed: true,
+                link: event.webUiId ? { webUiId: event.webUiId } : undefined,
+            };
+        case "downloadFailed":
+            return { title: "Error downloading torrent", message: `Error: ${event.error}`, isFailed: true, link: { webUiId: event.webUiId } };
+        case "cloudflareChallenge":
+            return { title: "Cloudflare is blocking this download", message: event.message, isFailed: true, link: { url: event.challengeUrl } };
+        case "labelSet":
+            return {
+                title: "Label set",
+                message: `${event.torrentName} labelled "${event.label}" in ${event.webUi.name}`,
+                isFailed: false,
+                link: { webUiId: event.webUi.settings.id },
+            };
+        case "settingsReset":
+            return {
+                title: "Settings were reset",
+                message: "Your stored settings could not be read and were reset to defaults. Re-import an export or set up your WebUIs again.",
+                isFailed: true,
+            };
+        case "test":
+            return {
+                title: "Test Notification",
+                message: event.isFailed ? "This is a failed notification." : "This is a successful notification.",
+                isFailed: event.isFailed,
+            };
+    }
+}
+
+async function labelActionFor(webUi: TorrentWebUI, torrent: Torrent, settings: RTASettings): Promise<NotificationLabelAction | undefined> {
+    // Firefox rejects notifications that carry buttons.
+    if (isFirefox() || !settings.notificationsLabelButtonEnabled || !webUi.isLabelSupported) {
+        return undefined;
+    }
+    const infoHash = await computeInfoHash(torrent);
+    return infoHash ? { webUiId: webUi.settings.id, infoHash, torrentName: torrent.name } : undefined;
+}
+
+function show(presentation: Presentation, settings: RTASettings): void {
+    const { title, message, isFailed, link, labelAction } = presentation;
     const notificationCreateOptions: chrome.notifications.NotificationCreateOptions = {
         type: "basic",
         iconUrl: isFailed ? "assets/icons/BitTorrent128-red.png" : "assets/icons/BitTorrent128.png",
         title: title,
         message: message
     };
-    const offeredLabelAction = isFirefox() ? undefined : labelAction;
-    if (offeredLabelAction) {
+    if (labelAction) {
         notificationCreateOptions.buttons = [{ title: "Add label" }];
     }
 
@@ -58,14 +142,14 @@ export function showNotification(title: string, message: string, isFailed: boole
         if (link) {
             await ext.storage.session.set({ [LINK_KEY_PREFIX + myId]: link });
         }
-        if (offeredLabelAction) {
-            await ext.storage.session.set({ [LABEL_ACTION_KEY_PREFIX + myId]: offeredLabelAction });
+        if (labelAction) {
+            await ext.storage.session.set({ [LABEL_ACTION_KEY_PREFIX + myId]: labelAction });
         }
 
-        void ext.alarms.create(CLEANUP_ALARM_PREFIX + myId, { when: Date.now() + popupDurationMs });
+        void ext.alarms.create(CLEANUP_ALARM_PREFIX + myId, { when: Date.now() + settings.notificationsDurationMs });
     });
 
-    if (playSound) {
+    if (settings.notificationsSoundEnabled) {
         if (canUseOffscreen()) {
             void ensureOffscreenDocument().then(() => {
                 const playSoundMessage = {

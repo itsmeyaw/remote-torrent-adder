@@ -25,7 +25,7 @@ import { WebUIFactory } from "../models/clients";
 import { openWebUi, updateBadgeText } from "./action";
 import { executeMethodWrappedWithOriginStripped } from "./cors-tricks";
 import { type TorrentDownloadContext } from "../torrent/download";
-import { showNotification } from "./notifications";
+import { notify } from "./notifications";
 import { serializeSettings, serializeObject } from "../settings/serializer";
 import { loadSettings, saveSettings } from "../settings/settings";
 import { parseSettings } from "../settings/settings-validation";
@@ -84,15 +84,11 @@ export function registerMessageListener(): void {
                     break;
                 }
                 case TestNotificationMessage.action: {
-                    const testNotificationMessage = message as ITestNotificationMessage;
-                    showNotification(
-                        testNotificationMessage.title,
-                        testNotificationMessage.message,
-                        testNotificationMessage.isFailed,
-                        testNotificationMessage.popupDurationMs,
-                        testNotificationMessage.playSound
-                    );
-                    finish({});
+                    willRespondAsync = true;
+                    loadSettings()
+                        .then(settings => notify({ type: "test", isFailed: (message as ITestNotificationMessage).isFailed }, settings))
+                        .then(() => finish({}))
+                        .catch(respondWithError);
                     break;
                 }
                 case TestConnectionMessage.action: {
@@ -196,12 +192,5 @@ async function setTorrentLabel(message: ISetTorrentLabelMessage): Promise<void> 
         await saveSettings(settings);
     }
 
-    if (settings.notificationsEnabled) {
-        showNotification("Label set",
-            `${message.torrentName} labelled "${message.label}" in ${webUi.name}`,
-            false,
-            settings.notificationsDurationMs,
-            settings.notificationsSoundEnabled,
-            { webUiId: webUi.settings.id });
-    }
+    void notify({ type: "labelSet", webUi, torrentName: message.torrentName, label: message.label }, settings);
 }

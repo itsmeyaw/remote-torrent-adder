@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { at } from "../helpers/assert";
 
 // The Add flow lives in add.ts and has its own tests; here we only check the router hands messages over.
-const { showNotification, addLink, addBufferedTorrent } = vi.hoisted(() => ({
-    showNotification: vi.fn(),
+const { notify, addLink, addBufferedTorrent } = vi.hoisted(() => ({
+    notify: vi.fn((_event: unknown, _settings: unknown) => Promise.resolve()),
     addLink: vi.fn((_url: string, _target: unknown, _page?: unknown) => Promise.resolve()),
     addBufferedTorrent: vi.fn((_choice: unknown) => Promise.resolve()),
 }));
-vi.mock("../../src/background/notifications", () => ({ showNotification }));
+vi.mock("../../src/background/notifications", () => ({ notify }));
 vi.mock("../../src/background/add", () => ({ addLink, addBufferedTorrent }));
 
 import { registerMessageListener } from "../../src/background/messaging";
@@ -42,7 +42,7 @@ function dispatch(message: any, sender: any = {}): Promise<any> {
 }
 
 beforeEach(() => {
-    showNotification.mockClear();
+    notify.mockClear();
     addLink.mockClear();
     addBufferedTorrent.mockClear();
 });
@@ -95,16 +95,12 @@ describe("registerMessageListener routing", () => {
         expect((chrome as any).__storage.settings).toBe(before);
     });
 
-    it("shows a notification for TestNotification", async () => {
+    it("raises a test notification with the outcome the page asked for", async () => {
         await dispatch({
             action: TestNotificationMessage.action,
-            title: "T",
-            message: "M",
-            isFailed: false,
-            popupDurationMs: 1000,
-            playSound: false,
+            isFailed: true,
         });
-        expect(showNotification).toHaveBeenCalledWith("T", "M", false, 1000, false);
+        expect(notify).toHaveBeenCalledWith({ type: "test", isFailed: true }, expect.objectContaining({ notificationsEnabled: true }));
     });
 });
 
@@ -199,7 +195,12 @@ describe("setTorrentLabel", () => {
         const setCategoryCall = (globalThis as any).fetch.mock.calls.find((call: any[]) => String(call[0]).endsWith("/setCategory"));
         expect(setCategoryCall[1].body.get("hashes")).toBe(infoHash);
         expect(at(deserializeSettings((chrome as any).__storage.settings)!.webuiSettings, 0).labels).toEqual(["movies", "old"]);
-        expect(at(showNotification.mock.calls, 0)[0]).toBe("Label set");
+        expect(notify).toHaveBeenCalledWith({
+            type: "labelSet",
+            webUi: expect.objectContaining({ settings: expect.objectContaining({ id: "w1" }) }),
+            torrentName: "Cool Torrent",
+            label: "movies",
+        }, expect.anything());
     });
 
     it("reports the failure to the popup and keeps the label list when the client refuses", async () => {
@@ -217,7 +218,7 @@ describe("setTorrentLabel", () => {
 
         expect(response.error).toMatch(/Setting the label failed \(HTTP 500\)/);
         expect(at(deserializeSettings((chrome as any).__storage.settings)!.webuiSettings, 0).labels).toEqual(["old"]);
-        expect(showNotification).not.toHaveBeenCalled();
+        expect(notify).not.toHaveBeenCalled();
     });
 
     it("reports an unknown webui", async () => {

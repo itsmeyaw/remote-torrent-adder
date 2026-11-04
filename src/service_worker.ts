@@ -7,7 +7,7 @@ import { registerActionClickListener } from './background/action';
 import { clearAllBufferedTorrents } from './background/buffered-torrent';
 import { getWebUis } from './settings/webuis';
 import { clearDynamicRules, registerCorsCircumventionForWebUis } from './background/cors-tricks';
-import { registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners, showNotification } from './background/notifications';
+import { notify, registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from './background/notifications';
 
 
 registerMessageListener();
@@ -26,7 +26,9 @@ ext.storage.local.onChanged.addListener(
         }
         for (const [key, change] of Object.entries(changes)) {
             if (key.startsWith(SETTINGS_BACKUP_KEY_PREFIX) && change.newValue !== undefined && change.oldValue === undefined) {
-                showNotification("Settings were reset", "Your stored settings could not be read and were reset to defaults. Re-import an export or set up your WebUIs again.");
+                void loadSettings()
+                    .then(settings => notify({ type: "settingsReset" }, settings))
+                    .catch(error => console.error("Failed to show the settings reset notification", error));
             }
         }
     }) as Parameters<typeof ext.storage.local.onChanged.addListener>[0]

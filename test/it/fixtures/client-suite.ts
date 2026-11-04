@@ -124,7 +124,7 @@ export function defineClientSuite(probe: ClientProbe): ClientSuite {
     test("reports a failure for wrong credentials", async ({ extension }) => {
         await configureExtension(extension, webUiSettingsFor(probe, { password: "definitely-wrong" }));
         const notification = await addViaExtension(extension, torrentServer.createTorrent().url);
-        expect(notification.title).toBe("Torrent adding failed");
+        expect(notification.title).toBe("Adding torrent failed");
     });
 
     test("the connection test reaches and authenticates", async ({ extension }) => {
