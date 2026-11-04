@@ -5,6 +5,8 @@ import type { RTASettings } from "../models/settings";
 import { deserializeSettings, serializeSettings } from "../settings/serializer";
 import { requestSettings } from "../settings/request-settings";
 import { SETTINGS_KEY } from "../settings/settings";
+import { CircleAlertIcon } from "lucide-react";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 
 interface SettingsContextType {
     settings: RTASettings | null;
@@ -88,14 +90,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return (
         <SettingsContext.Provider value={{ settings, setSettings: saveSettings, updateSetting, loading }}>
             {saveError && (
-                <div role="alert" className="rta-error">
-                    Could not save settings: {saveError}
-                </div>
+                <Alert variant="destructive">
+                    <CircleAlertIcon />
+                    <AlertTitle>Could not save settings: {saveError}</AlertTitle>
+                </Alert>
             )}
             {loadFailed ? (
-                <div role="alert" className="rta-error">
-                    Could not load settings. Reload this page to try again.
-                </div>
+                <Alert variant="destructive">
+                    <CircleAlertIcon />
+                    <AlertTitle>Could not load settings. Reload this page to try again.</AlertTitle>
+                </Alert>
             ) : (
                 children
             )}

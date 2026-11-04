@@ -74,7 +74,7 @@ For changes in `src/webuis/`:
 - [ ] `SettingsContext` (`src/options/SettingsContext.tsx`) is used for state management in options — not local component state for shared settings
 - [ ] New options fields have corresponding UI in the right page under `src/options/pages/`
 - [ ] Tailwind classes used — no inline styles (except where dynamic values require it)
-- [ ] Dark mode works (uses `dark:` variant or CSS custom properties via `tailwind.config.ts`)
+- [ ] Dark mode works (uses the `dark:` variant, which follows the system, or the theme tokens in `src/styles/globals.css`)
 
 ### TypeScript
 

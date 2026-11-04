@@ -37,7 +37,11 @@ describe("IconClickPage", () => {
         respondWithSettings(settings);
         renderPage();
 
-        expect(await screen.findByRole("radio", { name: /Let me choose which WebUI to open/ })).toBeDisabled();
+        expect(await screen.findByRole("radio", { name: /Let me choose which WebUI to open/ })).toHaveAttribute(
+            "aria-disabled",
+            "true",
+        );
+        expect(screen.getByText("Configure at least one more WebUI to enable this option.")).toBeInTheDocument();
     });
 
     it("enables the WebUI picker option when two or more WebUIs are configured", async () => {
@@ -46,7 +50,22 @@ describe("IconClickPage", () => {
         respondWithSettings(settings);
         renderPage();
 
-        expect(await screen.findByRole("radio", { name: /Let me choose which WebUI to open/ })).toBeEnabled();
+        expect(await screen.findByRole("radio", { name: /Let me choose which WebUI to open/ })).not.toHaveAttribute(
+            "aria-disabled",
+            "true",
+        );
+        expect(screen.queryByText("Configure at least one more WebUI to enable this option.")).toBeNull();
+    });
+
+    it("selects an option when its card text is clicked", async () => {
+        const settings = getDefaultSettings();
+        settings.webuiSettings = [makeWebUISettings({ id: "a" }), makeWebUISettings({ id: "b" })];
+        respondWithSettings(settings);
+        renderPage();
+
+        await userEvent.click(await screen.findByText("Show links found on this page"));
+
+        expect(screen.getByRole("radio", { name: /Show links found on this page/ })).toBeChecked();
     });
 
     it("persists the chosen behavior", async () => {

@@ -80,7 +80,7 @@ Add the control in the appropriate tab page under `src/options/pages/`:
 - `ImportExportPage.tsx` / `AboutPage.tsx` are unlikely targets
 - A new tab page if the setting warrants its own section
 
-Follow existing patterns: use `SettingsContext` (`src/options/SettingsContext.tsx`) to read/write, Tailwind for styling, Radix UI primitives for interactive controls.
+Follow existing patterns: use `SettingsContext` (`src/options/SettingsContext.tsx`) to read/write, Tailwind for styling, Base UI primitives (shadcn `base-maia` components in `src/components/ui/`) for interactive controls.
 
 ### 4. Usage
 

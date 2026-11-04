@@ -1,5 +1,10 @@
-import { useState, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
+import { CheckIcon, CopyIcon, TriangleAlertIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "../SettingsContext";
+import SettingsSection, { SettingsRow } from "@/components/settings/SettingsSection";
+import Loading from "../components/Loading";
 import { serializeSettings } from "../../settings/serializer";
 import { parseSettings } from "../../settings/settings-validation";
 
@@ -9,8 +14,11 @@ export default function ImportExportPage(): JSX.Element {
     const [importErrors, setImportErrors] = useState<string[]>([]);
     const [copied, setCopied] = useState<boolean>(false);
     const [copyError, setCopyError] = useState<string>("");
+    const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-    if (loading || !settings) return <div>Loading...</div>;
+    useEffect(() => () => clearTimeout(copiedTimer.current), []);
+
+    if (loading || !settings) return <Loading />;
 
     const handleCopy = async (): Promise<void> => {
         setCopyError("");
@@ -21,7 +29,8 @@ export default function ImportExportPage(): JSX.Element {
             return;
         }
         setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
+        clearTimeout(copiedTimer.current);
+        copiedTimer.current = setTimeout(() => setCopied(false), 1500);
     };
 
     const handleImport = (): void => {
@@ -36,62 +45,68 @@ export default function ImportExportPage(): JSX.Element {
     };
 
     return (
-        <div className="rta-page">
-            <section className="rta-card">
-                <h3 className="rta-card__heading">Export</h3>
-                <label className="rta-muted" htmlFor="rta-export">
-                    Copy this and keep it somewhere safe.
-                </label>
-                <div id="rta-export-warning" role="note" className="rta-notice rta-notice--warning">
-                    Warning: this export contains your WebUI passwords in plain text. Anyone who gets this text can log
-                    in to your clients, so only store it somewhere you trust.
-                </div>
-                <textarea
-                    id="rta-export"
-                    className="rta-textarea"
-                    readOnly
-                    value={serializeSettings(settings)}
-                    aria-describedby="rta-export-warning"
-                />
-                <button
-                    type="button"
-                    onClick={handleCopy}
-                    className={copied ? "rta-button rta-button--success" : "rta-button rta-button--accent"}
-                >
-                    {copied ? "Copied!" : "Copy to clipboard"}
-                </button>
-                {copyError && (
-                    <div role="alert" className="rta-error">
-                        {copyError}
+        <div className="flex flex-col gap-8">
+            <SettingsSection
+                title="Export"
+                description={
+                    <span id="rta-export-warning" role="note" className="flex gap-2">
+                        <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        This export contains your WebUI passwords in plain text. Anyone who gets this text can log in to
+                        your clients, so only store it somewhere you trust.
+                    </span>
+                }
+            >
+                <SettingsRow>
+                    <Textarea
+                        id="rta-export"
+                        aria-label="Exported settings"
+                        readOnly
+                        value={serializeSettings(settings)}
+                        aria-describedby="rta-export-warning"
+                        className="h-40 font-mono text-xs"
+                    />
+                    <div className="flex flex-col items-start gap-2">
+                        <Button variant="outline" size="sm" onClick={handleCopy}>
+                            {copied ? <CheckIcon /> : <CopyIcon />}
+                            {copied ? "Copied!" : "Copy to clipboard"}
+                        </Button>
+                        {copyError && (
+                            <p role="alert" className="text-sm text-destructive">
+                                {copyError}
+                            </p>
+                        )}
                     </div>
-                )}
-            </section>
+                </SettingsRow>
+            </SettingsSection>
 
-            <section className="rta-card">
-                <h3 className="rta-card__heading">Import</h3>
-                <label className="rta-muted" htmlFor="rta-import">
-                    Paste a previously exported configuration.
-                </label>
-                <textarea
-                    id="rta-import"
-                    className="rta-textarea"
-                    value={importValue}
-                    onChange={(e) => setImportValue(e.target.value)}
-                    placeholder="Paste exported settings JSON here..."
-                    aria-describedby={importErrors.length > 0 ? "rta-import-error" : undefined}
-                    aria-invalid={importErrors.length > 0 ? true : undefined}
-                />
-                <button type="button" onClick={handleImport} className="rta-button">
-                    Import settings
-                </button>
-                {importErrors.length > 0 && (
-                    <div id="rta-import-error" role="alert" className="rta-error">
-                        {importErrors.map((problem) => (
-                            <div key={problem}>{problem}</div>
-                        ))}
+            <SettingsSection title="Import">
+                <SettingsRow>
+                    <Textarea
+                        id="rta-import"
+                        aria-label="Settings to import"
+                        value={importValue}
+                        onChange={(e) => setImportValue(e.target.value)}
+                        placeholder="Paste a previous export here…"
+                        aria-describedby={importErrors.length > 0 ? "rta-import-error" : undefined}
+                        aria-invalid={importErrors.length > 0 ? true : undefined}
+                        className="h-40 font-mono text-xs"
+                    />
+                    <div className="flex flex-col items-start gap-2">
+                        <Button onClick={handleImport}>Import settings</Button>
+                        {importErrors.length > 0 && (
+                            <div
+                                id="rta-import-error"
+                                role="alert"
+                                className="flex flex-col gap-1 text-sm text-destructive"
+                            >
+                                {importErrors.map((problem) => (
+                                    <p key={problem}>{problem}</p>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )}
-            </section>
+                </SettingsRow>
+            </SettingsSection>
         </div>
     );
 }

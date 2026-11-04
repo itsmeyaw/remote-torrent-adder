@@ -1,27 +1,24 @@
 import { sendMessage } from "../../util/messaging";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { PlayIcon, RotateCcwIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { NumberField } from "@/components/ui/number-field";
 import { useSettings } from "../SettingsContext";
 import { deleteCustomSound, getCustomSound, saveCustomSound, type SoundKind } from "../../notifications/sound-storage";
-import Toggle from "../components/Toggle";
+import SettingsSection, { SettingsRow } from "@/components/settings/SettingsSection";
+import SwitchRow from "@/components/settings/SwitchRow";
+import Loading from "../components/Loading";
 import { isFirefox } from "../../util/platform";
 
 // Custom sounds are kept small; they live in IndexedDB but are still loaded
 // into memory to play, so cap the size to keep things snappy.
 const MAX_SOUND_BYTES = 1024 * 1024; // 1 MB
 
-const sectionClass = "bg-rta-surface-alt border border-rta-border rounded-xl p-4.5 mb-4.5";
-
-const sectionTitleClass = "mt-0 mb-3.5 mx-0 text-[13px] font-bold tracking-[0.6px] uppercase text-rta-green-dark";
-
-const rowClass = "flex items-center gap-3";
-
-const buttonClass =
-    "border border-rta-border rounded-lg py-1.5 px-3.5 bg-rta-surface text-rta-text font-medium cursor-pointer";
-
 export default function NotificationsPage() {
     const { settings, updateSetting, loading } = useSettings();
+    const durationId = useId();
 
-    if (loading || !settings) return <div>Loading...</div>;
+    if (loading || !settings) return <Loading />;
 
     const sendTest = (isFailed: boolean) => {
         sendMessage("testNotification", { isFailed }).catch((error) =>
@@ -30,72 +27,67 @@ export default function NotificationsPage() {
     };
 
     return (
-        <div className="max-w-[640px]">
-            <section className={sectionClass}>
-                <h3 className={sectionTitleClass}>Notifications</h3>
-                <div className={`${rowClass} mb-3.5`}>
-                    <Toggle
-                        checked={settings.notificationsEnabled}
-                        onChange={(v) => updateSetting("notificationsEnabled", v)}
-                        label="Show notifications"
-                    />
-                </div>
-                <div className={`${rowClass} mb-3.5`}>
-                    <Toggle
-                        checked={settings.notificationsSoundEnabled}
-                        onChange={(v) => updateSetting("notificationsSoundEnabled", v)}
-                        label="Play a sound"
-                    />
-                </div>
+        <div className="flex flex-col gap-8">
+            <SettingsSection label="Notifications">
+                <SwitchRow
+                    label="Show notifications"
+                    description="Tell me when a torrent was added, or why it could not be."
+                    checked={settings.notificationsEnabled}
+                    onChange={(v) => updateSetting("notificationsEnabled", v)}
+                />
+                <SwitchRow
+                    label="Play a sound"
+                    checked={settings.notificationsSoundEnabled}
+                    onChange={(v) => updateSetting("notificationsSoundEnabled", v)}
+                />
                 {!isFirefox() && (
-                    <div className={`${rowClass} mb-3.5`}>
-                        <Toggle
-                            checked={settings.notificationsLabelButtonEnabled}
-                            onChange={(v) => updateSetting("notificationsLabelButtonEnabled", v)}
-                            label='Offer an "Add label" button after adding'
-                        />
-                    </div>
-                )}
-                <div className={rowClass}>
-                    <label htmlFor="notif-duration">Display duration</label>
-                    <input
-                        id="notif-duration"
-                        type="number"
-                        min={0}
-                        value={settings.notificationsDurationMs}
-                        onChange={(e) => updateSetting("notificationsDurationMs", Number(e.target.value))}
-                        className="w-[110px] bg-rta-input-bg text-rta-text border border-rta-border rounded-lg py-1.5 px-2.5"
+                    <SwitchRow
+                        label='Offer an "Add label" button after adding'
+                        description="Label a torrent right from its notification."
+                        checked={settings.notificationsLabelButtonEnabled}
+                        onChange={(v) => updateSetting("notificationsLabelButtonEnabled", v)}
                     />
-                    <span className="text-rta-text-muted">ms</span>
-                </div>
-            </section>
+                )}
+                <SettingsRow className="flex-row items-center justify-between gap-6">
+                    <label htmlFor={durationId} className="text-sm font-medium">
+                        Display duration
+                    </label>
+                    <NumberField
+                        id={durationId}
+                        unit="s"
+                        decrementLabel="Decrease display duration"
+                        incrementLabel="Increase display duration"
+                        min={0}
+                        step={0.5}
+                        format={{ maximumFractionDigits: 1 }}
+                        value={settings.notificationsDurationMs / 1000}
+                        onValueChange={(seconds) =>
+                            updateSetting("notificationsDurationMs", Math.round((seconds ?? 0) * 1000))
+                        }
+                    />
+                </SettingsRow>
+                <SettingsRow className="flex-row flex-wrap items-center justify-between gap-3">
+                    <span className="text-sm font-medium">Send a test notification</span>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => sendTest(false)}>
+                            Test success
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => sendTest(true)}>
+                            Test failure
+                        </Button>
+                    </div>
+                </SettingsRow>
+            </SettingsSection>
 
             {settings.notificationsSoundEnabled && (
-                <section className={sectionClass}>
-                    <h3 className={sectionTitleClass}>Custom sounds</h3>
-                    <p className="mt-0 mb-4 text-rta-text-muted text-[13px]">
-                        Pick your own audio files to play when a torrent is added or fails. Leave a slot empty to use
-                        the built-in default.
-                    </p>
+                <SettingsSection
+                    title="Custom sounds"
+                    description="Use your own audio files. A slot without one plays the built-in sound."
+                >
                     <SoundPicker kind="success" label="Success sound" />
                     <SoundPicker kind="failure" label="Failure sound" />
-                </section>
+                </SettingsSection>
             )}
-
-            <div className="flex gap-3">
-                <button
-                    onClick={() => sendTest(false)}
-                    className="bg-rta-success text-white border-none rounded-lg py-[9px] px-[18px] font-medium cursor-pointer"
-                >
-                    Test Success Notification
-                </button>
-                <button
-                    onClick={() => sendTest(true)}
-                    className="bg-rta-danger text-white border-none rounded-lg py-[9px] px-[18px] font-medium cursor-pointer"
-                >
-                    Test Failed Notification
-                </button>
-            </div>
         </div>
     );
 }
@@ -103,6 +95,7 @@ export default function NotificationsPage() {
 function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
     const [fileName, setFileName] = useState<string | null>(null);
     const [busy, setBusy] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -125,16 +118,17 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
     const handleFile = async (file: File | undefined) => {
         if (!file) return;
         if (file.size > MAX_SOUND_BYTES) {
-            alert(`That sound file is too large (max ${Math.round(MAX_SOUND_BYTES / 1024)} KB).`);
+            setError(`That sound file is too large (max ${Math.round(MAX_SOUND_BYTES / 1024)} KB).`);
             return;
         }
         setBusy(true);
         try {
             await saveCustomSound(kind, file, file.name);
             setFileName(file.name);
+            setError(null);
         } catch (e) {
             console.error(e);
-            alert("Could not save that sound file.");
+            setError("Could not save that sound file.");
         } finally {
             setBusy(false);
         }
@@ -145,6 +139,7 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
         try {
             await deleteCustomSound(kind);
             setFileName(null);
+            setError(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
         } finally {
             setBusy(false);
@@ -170,43 +165,50 @@ function SoundPicker({ kind, label }: { kind: SoundKind; label: string }) {
     };
 
     return (
-        <div className={`${rowClass} mb-3`}>
-            <span className="w-[110px] font-medium">{label}</span>
-
-            <span
-                className={`flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${fileName ? "text-rta-text not-italic" : "text-rta-text-muted italic"}`}
-                title={fileName ?? "Default sound"}
-            >
-                {busy ? "…" : (fileName ?? "Default sound")}
-            </span>
-
-            <button type="button" className={buttonClass} onClick={preview} disabled={busy} title="Preview">
-                ▶
-            </button>
-
-            <button type="button" className={buttonClass} onClick={() => fileInputRef.current?.click()} disabled={busy}>
-                Choose…
-            </button>
-
-            {fileName && (
-                <button
-                    type="button"
-                    className="border border-rta-border rounded-lg py-1.5 px-3.5 bg-rta-surface text-rta-danger font-medium cursor-pointer"
-                    onClick={reset}
+        <SettingsRow className="gap-2">
+            <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="truncate text-sm text-muted-foreground" title={fileName ?? "Built-in sound"}>
+                        {busy ? "…" : (fileName ?? "Built-in sound")}
+                    </span>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={preview}
                     disabled={busy}
-                    title="Reset to default"
+                    aria-label={`Preview ${label.toLowerCase()}`}
                 >
-                    Reset
-                </button>
+                    <PlayIcon />
+                </Button>
+                {fileName && (
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={reset}
+                        disabled={busy}
+                        aria-label={`Reset ${label.toLowerCase()} to the built-in sound`}
+                    >
+                        <RotateCcwIcon />
+                    </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+                    Choose…
+                </Button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={(e) => handleFile(e.target.files?.[0])}
+                    className="hidden"
+                />
+            </div>
+            {error && (
+                <p role="alert" className="text-sm text-destructive">
+                    {error}
+                </p>
             )}
-
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                onChange={(e) => handleFile(e.target.files?.[0])}
-                className="hidden"
-            />
-        </div>
+        </SettingsRow>
     );
 }

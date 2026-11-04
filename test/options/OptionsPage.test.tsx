@@ -16,7 +16,7 @@ vi.mock("../../src/options/SettingsContext", () => ({
 
 import OptionsPage from "../../src/options/OptionsPage";
 
-const tabNames = ["WebUIs", "Icon Click", "Notifications", "Link Catching", "Import/Export Settings", "About"];
+const tabNames = ["WebUIs", "Icon Click", "Notifications", "Link Catching", "Import/Export", "About"];
 
 describe("options tablist semantics", () => {
     it("exposes a labelled tablist with one tab per section", () => {

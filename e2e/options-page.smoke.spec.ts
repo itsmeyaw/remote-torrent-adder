@@ -1,19 +1,20 @@
 import { test, expect } from "./fixtures/extension";
 import { makeSettings, makeWebUISettings } from "./fixtures/settings";
 
-const TAB_TITLES = ["WebUIs", "Icon Click", "Notifications", "Link Catching", "Import/Export Settings", "About"];
+const TAB_TITLES = ["WebUIs", "Icon Click", "Notifications", "Link Catching", "Import/Export", "About"];
 
 test.describe("options page", () => {
     test("renders every tab on a profile with no WebUIs", async ({ extension, logs }) => {
         const page = await extension.openPage(extension.url("options/options.html"));
 
-        await expect(page.getByRole("heading", { name: "Remote Torrent Adder Options" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Remote Torrent Adder" })).toBeVisible();
         await expect(page.getByText("No WebUIs yet. Click + to add one.")).toBeVisible();
 
         for (const title of TAB_TITLES) {
             await page.getByRole("tab", { name: title, exact: true }).click();
-            await expect(page.getByRole("tabpanel")).toBeVisible();
-            await expect(page.getByRole("tabpanel")).not.toHaveText("Loading...");
+            const panel = page.getByRole("tabpanel", { name: title, exact: true });
+            await expect(panel).toBeVisible();
+            await expect(panel).not.toHaveText("Loading...");
         }
 
         await logs.waitForQuiet();
