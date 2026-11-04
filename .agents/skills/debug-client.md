@@ -13,7 +13,7 @@ Use when a user reports that adding a torrent to a specific client is failing �
 Client implementations are in `src/webuis/<clientname>.ts`. Read the relevant file first, then run its existing test file — it encodes what the request is _supposed_ to look like, and is the fastest way to see whether the bug is in our request construction or in the client's behaviour:
 
 ```bash
-pnpm exec vitest run test/webuis/<clientname>.test.ts
+pnpm exec vp test run test/webuis/<clientname>.test.ts
 ```
 
 If the tests pass but the real client rejects the request, the bug is a mismatch between our model of the API and the real one — the test is asserting the wrong thing, and it needs updating alongside the fix.
