@@ -1,9 +1,9 @@
-import { ext, sendMessageAndForget } from "../util/browser-api";
+import { ext } from "../util/browser-api";
+import { sendMessage } from "../util/messaging";
 import React, { createContext, useContext, useRef, useState, useEffect } from "react";
 import type { RTASettings } from "../models/settings";
-import { SaveSettingsMessage } from "../models/messages";
 import { deserializeSettings, serializeSettings } from "../settings/serializer";
-import { requestSerializedSettings } from "../settings/request-settings";
+import { requestSettings } from "../settings/request-settings";
 import { SETTINGS_KEY } from "../settings/settings";
 
 interface SettingsContextType {
@@ -21,15 +21,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [settings, setSettings] = useState<RTASettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   // Serialized settings this page sent and has not seen echoed back by storage yet.
   const pendingSaves = useRef<string[]>([]);
 
   // Fetch settings from service worker on mount
   useEffect(() => {
     let cancelled = false;
-    void requestSerializedSettings()
-      .then((serializedSettings) => {
-        const settings = serializedSettings ? deserializeSettings(serializedSettings) : null;
+    void requestSettings()
+      .then((settings) => {
         if (!settings) throw new Error("The service worker returned no settings.");
         if (!cancelled) setSettings(settings);
       })
@@ -68,7 +68,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSettings(newSettings);
     const serialized = serializeSettings(newSettings);
     pendingSaves.current.push(serialized);
-    sendMessageAndForget({ action: SaveSettingsMessage.action, settings: serialized });
+    sendMessage("saveSettings", { settings: serialized }).then(
+      () => setSaveError(null),
+      (error: unknown) => {
+        console.error("Failed saving settings", error);
+        const failedIndex = pendingSaves.current.indexOf(serialized);
+        if (failedIndex >= 0) pendingSaves.current.splice(failedIndex, 1);
+        setSaveError(error instanceof Error ? error.message : String(error));
+      },
+    );
   };
 
   const updateSetting = <K extends keyof RTASettings>(key: K, value: RTASettings[K]) => {
@@ -79,6 +87,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <SettingsContext.Provider value={{ settings, setSettings: saveSettings, updateSetting, loading }}>
+      {saveError && (
+        <div role="alert" className="rta-error">
+          Could not save settings: {saveError}
+        </div>
+      )}
       {loadFailed ? (
         <div role="alert" className="rta-error">
           Could not load settings. Reload this page to try again.

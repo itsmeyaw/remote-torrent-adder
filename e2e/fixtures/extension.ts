@@ -90,12 +90,12 @@ export class ExtensionHarness {
             if (!tab?.id) {
                 throw new Error(`No tab matched ${pattern}`);
             }
-            const response = (await chrome.tabs.sendMessage(
+            const reply = (await chrome.tabs.sendMessage(
                 tab.id,
                 { action: "getPageLinks" },
                 { frameId: 0 },
-            )) as { links?: { url: string; label: string }[] } | undefined;
-            return response?.links ?? [];
+            )) as { value?: { links?: { url: string; label: string }[] } } | undefined;
+            return reply?.value?.links ?? [];
         }, tabUrlPattern);
     }
 

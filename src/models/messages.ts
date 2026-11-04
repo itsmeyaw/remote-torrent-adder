@@ -1,124 +1,5 @@
-import { type RTASettings } from "./settings";
 import { type TorrentUploadConfig } from "./torrent";
-import { type WebUISettings } from "./webui";
-
-export const GetSettingsMessage: IMessagable = {
-    action: "getSettings"
-}
-
-export const GetLinkCatchingConfig: IMessagable = {
-    action: "getLinkCatchingConfig"
-}
-
-export const GetPageLinksMessage: IMessagable = {
-    action: "getPageLinks"
-}
-
-export const SaveSettingsMessage: IMessagable = {
-    action: "saveSettings"
-}
-
-export const TestNotificationMessage: IMessagable = {
-    action: "testNotification"
-}
-
-export const PreAddTorrentMessage: IMessagable = {
-    action: "preAddTorrent"
-}
-
-export const AddTorrentMessageWithLabelAndDir: IMessagable = {
-    action: "addTorrentMessageWithLabelAndDir"
-}
-
-export const UpdateActionBadgeText: IMessagable = {
-    action: "updateActionBadgeText"
-}
-
-export const PlaySoundMessage: IMessagable = {
-    action: "playSound"
-}
-
-export const TestConnectionMessage: IMessagable = {
-    action: "testConnection"
-}
-
-export const SetTorrentLabelMessage: IMessagable = {
-    action: "setTorrentLabel"
-}
-
-export const OpenWebUiMessage: IMessagable = {
-    action: "openWebUi"
-}
-
-export const FetchTorrentInPageMessage: IMessagable = {
-    action: "fetchTorrentInPage"
-}
-
-export interface IAddTorrentMessageWithLabelAndDir extends IMessagable {
-    bufferedId: string;
-    config: TorrentUploadConfig;
-    labels: string[];
-    directories: string[];
-}
-
-export interface ISetTorrentLabelMessage extends IMessagable {
-    webUiId: string;
-    infoHash: string;
-    torrentName: string;
-    label: string;
-    labels: string[];
-}
-
-export interface IOpenWebUiMessage extends IMessagable {
-    webUiId: string;
-}
-
-export interface IPreAddTorrentMessage extends IMessagable {
-    url: string;
-    webUiId?: string | null;
-    tabId?: number | null;
-    frameId?: number | null;
-    pageUrl?: string | null;
-}
-
-export interface IFetchTorrentInPageMessage extends IMessagable {
-    url: string;
-}
-
-export interface IFetchedTorrentFile {
-    ok: boolean;
-    status: number;
-    statusText: string;
-    contentType: string | null;
-    cfMitigated: string | null;
-    finalUrl: string;
-    base64: string;
-}
-
-export interface IFetchTorrentInPageResponse {
-    fetched?: IFetchedTorrentFile;
-    error?: string;
-}
-
-export interface IUpdateActionBadgeTextMessage extends IMessagable {
-    text: string;
-}
-
-export interface ISaveSettingsMessage extends IMessagable {
-    settings: RTASettings;
-}
-
-export interface ITestNotificationMessage extends IMessagable {
-    isFailed: boolean;
-}
-
-export interface IPlaySoundMessage extends IMessagable {
-    isFailed: boolean;
-}
-
-export interface ITestConnectionMessage extends IMessagable {
-    webUiSettings: WebUISettings;
-}
+import { type ConnectionTestResult, type WebUISettings } from "./webui";
 
 export interface ILinkCatchingConfig {
     linkCatchingEnabled: boolean;
@@ -134,6 +15,61 @@ export interface IPageLinksResponse {
     links: IPageLinkInfo[];
 }
 
-export interface IMessagable {
-    action: string;
+export interface IFetchedTorrentFile {
+    ok: boolean;
+    status: number;
+    statusText: string;
+    contentType: string | null;
+    cfMitigated: string | null;
+    finalUrl: string;
+    base64: string;
 }
+
+/** What the user settled on in the Config Selector for a Buffered Torrent. */
+export interface ConfigSelectorChoice {
+    bufferedId: string;
+    config: TorrentUploadConfig;
+    labels: string[];
+    directories: string[];
+}
+
+export interface PreAddTorrentRequest {
+    url: string;
+    webUiId?: string | null;
+    tabId?: number | null;
+    frameId?: number | null;
+    pageUrl?: string | null;
+}
+
+export interface SetTorrentLabelRequest {
+    webUiId: string;
+    infoHash: string;
+    torrentName: string;
+    label: string;
+    labels: string[];
+}
+
+type NoRequest = Record<string, never>;
+
+/** One entry per action: what the sender passes in, and what the handler answers with. */
+export interface MessageContracts {
+    getSettings: { request: NoRequest; reply: string };
+    getLinkCatchingConfig: { request: NoRequest; reply: string };
+    saveSettings: { request: { settings: string }; reply: void };
+    testNotification: { request: { isFailed: boolean }; reply: void };
+    testConnection: { request: { webUiSettings: WebUISettings }; reply: ConnectionTestResult };
+    preAddTorrent: { request: PreAddTorrentRequest; reply: void };
+    addTorrentMessageWithLabelAndDir: { request: ConfigSelectorChoice; reply: void };
+    setTorrentLabel: { request: SetTorrentLabelRequest; reply: void };
+    updateActionBadgeText: { request: { text: string }; reply: void };
+    openWebUi: { request: { webUiId: string }; reply: void };
+    // Handled by the content script, sent with tabs.sendMessage.
+    getPageLinks: { request: NoRequest; reply: IPageLinksResponse };
+    fetchTorrentInPage: { request: { url: string }; reply: IFetchedTorrentFile };
+    // Handled by the offscreen document.
+    playSound: { request: { isFailed: boolean }; reply: void };
+}
+
+export type MessageAction = keyof MessageContracts;
+export type Message<A extends MessageAction> = { action: A } & MessageContracts[A]["request"];
+export type Reply<A extends MessageAction> = MessageContracts[A]["reply"];

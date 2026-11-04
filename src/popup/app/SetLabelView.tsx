@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ext } from '../../util/browser-api';
+import { sendMessage } from '../../util/messaging';
 import { ComboBox } from '../components/ui/combobox';
 import { Button } from '../components/ui/button';
 import Notice from './Notice';
-import { SetTorrentLabelMessage, type ISetTorrentLabelMessage } from '../../models/messages';
-import { deserializeSettings } from '../../settings/serializer';
-import { requestSerializedSettings } from '../../settings/request-settings';
+import { requestSettings } from '../../settings/request-settings';
 import { findWebUiSettings } from '../../settings/webuis';
 import { errorMessage, moveToFront } from '../lib/utils';
 
@@ -33,9 +31,8 @@ function SetLabelLoader({ target }: { target: LabelTarget }) {
 
   useEffect(() => {
     let cancelled = false;
-    void requestSerializedSettings().then((serialized) => {
+    void requestSettings().then((settings) => {
       if (cancelled) return;
-      const settings = serialized ? deserializeSettings(serialized) : null;
       const webUiSettings = settings ? findWebUiSettings(settings, target.webUiId) : undefined;
       setState(webUiSettings
         ? { status: 'ready', webUiName: webUiSettings.name, labelOptions: webUiSettings.labels }
@@ -69,16 +66,11 @@ function SetLabelForm({ target, webUiName, initialLabelOptions }: { target: Labe
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const message: ISetTorrentLabelMessage = {
-        action: SetTorrentLabelMessage.action,
+      await sendMessage('setTorrentLabel', {
         ...target,
         label,
         labels: moveToFront(label, labelOptions),
-      };
-      const response = await ext.runtime.sendMessage(message);
-      if (response && typeof response === 'object' && 'error' in response) {
-        throw new Error(String(response.error));
-      }
+      });
       window.close();
     } catch (error: unknown) {
       console.error('Failed setting the label', error);

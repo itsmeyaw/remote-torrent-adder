@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { loadPopupData, submitTorrent } from "../../src/popup/popup-data";
 import { saveBufferedTorrent } from "../../src/background/buffered-torrent";
-import { AddTorrentMessageWithLabelAndDir } from "../../src/models/messages";
 import { Client } from "../../src/models/clients";
 import { type WebUISettings } from "../../src/models/webui";
 import { serializeSettings } from "../../src/settings/serializer";
@@ -12,7 +11,7 @@ import { callArgs } from "../helpers/assert";
 const qbit = (overrides: Partial<WebUISettings> = {}) => makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, ...overrides });
 
 function serveSettings(...webuiSettings: WebUISettings[]) {
-    (chrome.runtime.sendMessage as any).mockResolvedValue(serializeSettings({ ...getDefaultSettings(), webuiSettings }));
+    (chrome.runtime.sendMessage as any).mockResolvedValue({ value: serializeSettings({ ...getDefaultSettings(), webuiSettings }) });
 }
 
 const park = async (webUiOverrides = {}, torrentOverrides = {}) => {
@@ -196,10 +195,11 @@ describe("submitTorrent", () => {
     };
 
     it("sends the choices without the torrent, which stays in IndexedDB", async () => {
+        (chrome.runtime.sendMessage as any).mockResolvedValue({ value: undefined });
         await submitTorrent(request);
 
         const message = callArgs(chrome.runtime.sendMessage as any, 0)[0];
-        expect(message.action).toBe(AddTorrentMessageWithLabelAndDir.action);
+        expect(message.action).toBe("addTorrentMessageWithLabelAndDir");
         expect(message.bufferedId).toBe("b1");
         expect(message).not.toHaveProperty("webUiId");
         expect(message.config).toEqual({ label: "movies", dir: "/data", addPaused: true, clientSpecificSettings: { forceStart: true } });
@@ -215,7 +215,7 @@ describe("submitTorrent", () => {
     });
 
     it("resolves when the service worker acknowledges", async () => {
-        (chrome.runtime.sendMessage as any).mockResolvedValue({});
+        (chrome.runtime.sendMessage as any).mockResolvedValue({ value: undefined });
 
         await expect(submitTorrent(request)).resolves.toBeUndefined();
     });

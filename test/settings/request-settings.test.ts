@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { requestSerializedSettings } from "../../src/settings/request-settings";
-import { GetSettingsMessage } from "../../src/models/messages";
+import { requestSettings } from "../../src/settings/request-settings";
+import { serializeSettings } from "../../src/settings/serializer";
+import { getDefaultSettings } from "../../src/settings/settings-defaults";
 
-describe("requestSerializedSettings", () => {
+describe("requestSettings", () => {
+    const serialized = serializeSettings({ ...getDefaultSettings(), notificationsDurationMs: 4321 });
+
     beforeEach(() => {
         vi.useFakeTimers();
     });
@@ -11,11 +14,11 @@ describe("requestSerializedSettings", () => {
         vi.useRealTimers();
     });
 
-    it("resolves with the serialized settings on the first attempt", async () => {
-        (chrome.runtime.sendMessage as any).mockResolvedValue("{\"ok\":true}");
+    it("resolves with the deserialized settings on the first attempt", async () => {
+        (chrome.runtime.sendMessage as any).mockResolvedValue({ value: serialized });
 
-        await expect(requestSerializedSettings()).resolves.toBe("{\"ok\":true}");
-        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(GetSettingsMessage);
+        expect((await requestSettings())?.notificationsDurationMs).toBe(4321);
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: "getSettings" });
         expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
     });
 
@@ -25,34 +28,41 @@ describe("requestSerializedSettings", () => {
             attempts += 1;
             return attempts < 3
                 ? Promise.reject(new Error("Could not establish connection."))
-                : Promise.resolve("late");
+                : Promise.resolve({ value: serialized });
         });
 
-        const pending = requestSerializedSettings();
+        const pending = requestSettings();
         await vi.runAllTimersAsync();
 
-        await expect(pending).resolves.toBe("late");
+        expect((await pending)?.notificationsDurationMs).toBe(4321);
         expect(attempts).toBe(3);
     });
 
-    it("retries a sleeping service worker with a backoff and resolves once it answers", async () => {
+    it("retries a reply that is not an envelope", async () => {
         let attempts = 0;
         (chrome.runtime.sendMessage as any).mockImplementation(() => {
             attempts += 1;
-            return Promise.resolve(attempts < 3 ? undefined : "late");
+            return Promise.resolve(attempts < 3 ? undefined : { value: serialized });
         });
 
-        const pending = requestSerializedSettings();
+        const pending = requestSettings();
         await vi.runAllTimersAsync();
 
-        await expect(pending).resolves.toBe("late");
+        expect((await pending)?.notificationsDurationMs).toBe(4321);
         expect(attempts).toBe(3);
     });
 
-    it("gives up after three attempts and resolves null", async () => {
-        (chrome.runtime.sendMessage as any).mockResolvedValue(undefined);
+    it("fails without retrying when the stored settings cannot be read", async () => {
+        (chrome.runtime.sendMessage as any).mockResolvedValue({ value: "{not json" });
 
-        const pending = requestSerializedSettings();
+        await expect(requestSettings()).rejects.toThrow();
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it("gives up after three attempts and resolves null", async () => {
+        (chrome.runtime.sendMessage as any).mockRejectedValue(new Error("Could not establish connection."));
+
+        const pending = requestSettings();
         await vi.runAllTimersAsync();
 
         await expect(pending).resolves.toBeNull();

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { CloudflareChallengeError, downloadTorrent, getBaseUrl } from "../../src/torrent/download";
-import { FetchTorrentInPageMessage } from "../../src/models/messages";
 import { bytesToBase64 } from "../../src/torrent/torrent-bytes";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 import { buildBencodedTorrent } from "../helpers/fixtures";
@@ -14,7 +13,7 @@ function bencodedTorrent(name = "ubuntu.iso"): string {
 
 function pageResponse(body: string, over: Record<string, unknown> = {}) {
     return {
-        fetched: {
+        value: {
             ok: true,
             status: 200,
             statusText: "OK",
@@ -119,7 +118,7 @@ describe("downloadTorrent (through the page)", () => {
 
         expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
             9,
-            { action: FetchTorrentInPageMessage.action, url: "https://tracker.org/get/1.torrent" },
+            { action: "fetchTorrentInPage", url: "https://tracker.org/get/1.torrent" },
             { frameId: 3 },
         );
         expect(fetch).not.toHaveBeenCalled();

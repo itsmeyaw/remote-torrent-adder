@@ -1,9 +1,6 @@
-import { ext } from "../util/browser-api";
-import { type IPlaySoundMessage, PlaySoundMessage } from "../models/messages";
+import { listenForMessages } from "../util/messaging";
 import { playNotificationSound } from "./play-sound";
 
-ext.runtime.onMessage.addListener(message => {
-    if (message.action === PlaySoundMessage.action) {
-        void playNotificationSound((message as IPlaySoundMessage).isFailed);
-    }
+listenForMessages({
+    playSound: ({ isFailed }) => playNotificationSound(isFailed),
 });

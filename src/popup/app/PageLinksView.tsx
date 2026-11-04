@@ -1,13 +1,8 @@
-import { ext, sendMessageAndForget } from '../../util/browser-api';
+import { ext } from '../../util/browser-api';
+import { sendMessageAndForget, sendMessageToTab } from '../../util/messaging';
 import { useEffect, useState } from 'react';
 import Notice from './Notice';
-import {
-  GetPageLinksMessage,
-  PreAddTorrentMessage,
-  type IPageLinkInfo,
-  type IPageLinksResponse,
-  type IPreAddTorrentMessage,
-} from '../../models/messages';
+import { type IPageLinkInfo } from '../../models/messages';
 
 type LoadState =
   | { status: 'loading' }
@@ -29,11 +24,9 @@ export default function PageLinksView() {
           return;
         }
         if (!cancelled) setSourceTab({ tabId: tab.id, pageUrl: tab.url ?? null });
-        const response = (await ext.tabs.sendMessage(tab.id, GetPageLinksMessage, { frameId: 0 })) as
-          | IPageLinksResponse
-          | undefined;
+        const response = await sendMessageToTab(tab.id, 'getPageLinks', {}, { frameId: 0 });
         if (cancelled) return;
-        const links = response?.links ?? [];
+        const links = response.links;
         setState(links.length ? { status: 'ready', links } : { status: 'empty' });
       } catch (error: unknown) {
         if (cancelled) return;
@@ -47,13 +40,12 @@ export default function PageLinksView() {
   }, []);
 
   const addLink = (url: string) => {
-    sendMessageAndForget({
-      action: PreAddTorrentMessage.action,
+    sendMessageAndForget('preAddTorrent', {
       url,
       tabId: sourceTab?.tabId ?? null,
       frameId: 0,
       pageUrl: sourceTab?.pageUrl ?? null,
-    } as IPreAddTorrentMessage);
+    });
     window.close();
   };
 

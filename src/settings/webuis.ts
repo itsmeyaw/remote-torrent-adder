@@ -2,7 +2,7 @@ import { WebUIFactory } from "../models/clients";
 import { type RTASettings } from "../models/settings";
 import { type TorrentWebUI, type WebUISettings } from "../models/webui";
 
-/** The only place a WebUI is looked up by id. */
+/** The one lookup of a WebUI's settings by id; everything else that needs a WebUI by id goes through it. */
 export function findWebUiSettings(settings: RTASettings, id: string | null | undefined): WebUISettings | undefined {
     if (!id) {
         return undefined;

@@ -3,23 +3,22 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import LinkCatchingPage from "../../../src/options/pages/LinkCatchingPage";
-import { GetSettingsMessage, SaveSettingsMessage } from "../../../src/models/messages";
 import { serializeSettings, deserializeSettings } from "../../../src/settings/serializer";
 import { getDefaultSettings } from "../../../src/settings/settings-defaults";
 
 function respondWithSettings(settings = getDefaultSettings()) {
     (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-        if (message.action === GetSettingsMessage.action) {
-            return Promise.resolve(serializeSettings(settings));
+        if (message.action === "getSettings") {
+            return Promise.resolve({ value: serializeSettings(settings) });
         }
-        return Promise.resolve();
+        return Promise.resolve({ value: undefined });
     });
 }
 
 function savedRegexSources(): string[] | undefined {
     const save = (chrome.runtime.sendMessage as any).mock.calls
         .map((call: any[]) => call[0])
-        .filter((message: any) => message?.action === SaveSettingsMessage.action)
+        .filter((message: any) => message?.action === "saveSettings")
         .at(-1);
     return save && deserializeSettings(save.settings)!.linkCatchingRegexes.map((r: RegExp) => r.source);
 }

@@ -1,12 +1,10 @@
-import { ext } from "../util/browser-api";
 import { WebUIFactory } from "../models/clients";
-import { AddTorrentMessageWithLabelAndDir, type IAddTorrentMessageWithLabelAndDir } from "../models/messages";
+import { sendMessage } from "../util/messaging";
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type ClientSpecificSettingDescriptor, resolveClientSpecificSetting, type WebUISettings } from "../models/webui";
 import { readBufferedTorrent } from "../background/buffered-torrent";
 import { resolveUploadConfig } from "../torrent/upload-config";
-import { requestSerializedSettings } from "../settings/request-settings";
-import { deserializeSettings } from "../settings/serializer";
+import { requestSettings } from "../settings/request-settings";
 import { findWebUiSettings } from "../settings/webuis";
 
 /**
@@ -92,8 +90,7 @@ export async function loadPopupData(bufferedId: string): Promise<PopupData | nul
 }
 
 async function loadCurrentWebUiSettings(webUiId: string): Promise<WebUISettings> {
-    const serialized = await requestSerializedSettings();
-    const settings = serialized ? deserializeSettings(serialized) : null;
+    const settings = await requestSettings();
     if (!settings) {
         throw new Error("Could not load Remote Torrent Adder's settings. Close this window and try again.");
     }
@@ -120,8 +117,7 @@ export interface AddTorrentRequest {
  * popup can surface it instead of closing on a failure.
  */
 export async function submitTorrent(request: AddTorrentRequest): Promise<void> {
-    const message: IAddTorrentMessageWithLabelAndDir = {
-        action: AddTorrentMessageWithLabelAndDir.action,
+    await sendMessage("addTorrentMessageWithLabelAndDir", {
         bufferedId: request.bufferedId,
         config: {
             label: request.label,
@@ -131,11 +127,6 @@ export async function submitTorrent(request: AddTorrentRequest): Promise<void> {
         } satisfies TorrentUploadConfig,
         labels: request.labelOptions,
         directories: request.directoryOptions,
-    };
-
-    const response = await ext.runtime.sendMessage(message);
-    if (response && typeof response === "object" && "error" in response) {
-        throw new Error(String(response.error));
-    }
+    });
 }
 
