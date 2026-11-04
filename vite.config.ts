@@ -12,6 +12,9 @@ const distDir = isProd ? prodDistDir(browser) : devDistDir(browser);
 
 const shared = {
     define: { __RTA_BROWSER__: JSON.stringify(browser) },
+    resolve: {
+        alias: { "@": path.resolve(rootDir, "src") },
+    },
 } satisfies UserConfig;
 
 // Chrome serves extension pages from chrome-extension://, where the crossorigin
@@ -30,9 +33,6 @@ function pageTarget(name: string, entryHtml: string): UserConfig {
         root: path.resolve(rootDir, "src", name),
         base: "./",
         plugins: [react(), removeCrossOrigin],
-        resolve: {
-            alias: { "@": path.resolve(rootDir, "src", name) },
-        },
         build: {
             outDir: path.resolve(rootDir, distDir, name),
             emptyOutDir: true,
