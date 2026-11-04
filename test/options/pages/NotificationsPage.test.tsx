@@ -39,15 +39,6 @@ describe("NotificationsPage add-label button toggle", () => {
         expect(await screen.findByRole("checkbox", { name: BUTTON_TOGGLE })).toBeChecked();
     });
 
-    it("treats settings saved before the toggle existed as on", async () => {
-        const settings = getDefaultSettings() as Partial<ReturnType<typeof getDefaultSettings>>;
-        delete settings.notificationsLabelButtonEnabled;
-        respondWithSettings(settings as ReturnType<typeof getDefaultSettings>);
-        renderPage();
-
-        expect(await screen.findByRole("checkbox", { name: BUTTON_TOGGLE })).toBeChecked();
-    });
-
     it("persists turning it off", async () => {
         respondWithSettings();
         renderPage();

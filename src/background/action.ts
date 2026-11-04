@@ -17,7 +17,7 @@ export function registerActionClickListener(): void {
 
 async function handleActionClick(tab: chrome.tabs.Tab): Promise<void> {
     const settings = await loadSettings();
-    const iconClickAction = settings.iconClickAction ?? "openPrimaryWebUi";
+    const iconClickAction = settings.iconClickAction;
 
     if (tab.windowId !== undefined) {
         if (iconClickAction === "showPageLinks") {

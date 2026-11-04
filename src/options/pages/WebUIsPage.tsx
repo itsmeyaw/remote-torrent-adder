@@ -11,6 +11,7 @@ import type { ConnectionTestResult, WebUISettings } from "../../models/webui";
 import { TestConnectionMessage, type ITestConnectionMessage } from "../../models/messages";
 import Toggle from "../components/Toggle";
 import { inputClass } from "../ui-classes";
+import { createWebUiSettings } from "../../settings/settings-defaults";
 
 const clientOptions = Object.values(Client).map(c => ({ value: c, label: ClientDisplayName[c] }));
 
@@ -46,32 +47,6 @@ const dropIndicatorClass: Record<"above" | "below", string> = {
   above: "shadow-[inset_0_3px_0_0_var(--rta-green-dark)]",
   below: "shadow-[inset_0_-3px_0_0_var(--rta-green-dark)]",
 };
-
-function getDefaultWebUISettings(): WebUISettings {
-  return {
-    id: crypto.randomUUID(),
-    // No client is chosen yet: the user picks one in the detail panel, which is
-    // what reveals the rest of the configuration. Until then this entry is a
-    // draft and is filtered out by consumers that resolve a concrete client.
-    client: "" as Client,
-    name: "",
-    host: "",
-    port: null,
-    secure: false,
-    relativePath: "",
-    username: "",
-    password: "",
-    showPerTorrentConfigSelector: false,
-    defaultLabel: null,
-    defaultDir: null,
-    labels: [],
-    dirs: [],
-    addPaused: false,
-    autoLabelDirSettings: [],
-    clientSpecificSettings: {},
-    useAlternativeLabelDirChooser: false,
-  };
-}
 
 type DropIndicator = "above" | "below" | null;
 
@@ -368,7 +343,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
                   {webUiInstance?.isLabelDirChooserSupported && (
                     <>
                       <Toggle checked={webui.showPerTorrentConfigSelector} onChange={v => onChange({ ...webui, showPerTorrentConfigSelector: v })} label="Show per-torrent config selector" />
-                      <Toggle checked={webui.useAlternativeLabelDirChooser ?? false} onChange={v => onChange({ ...webui, useAlternativeLabelDirChooser: v })} label="Use alternative container (window instead of popup)" />
+                      <Toggle checked={webui.useAlternativeLabelDirChooser} onChange={v => onChange({ ...webui, useAlternativeLabelDirChooser: v })} label="Use alternative container (window instead of popup)" />
                     </>
                   )}
                 </div>
@@ -378,7 +353,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
           {webUiInstance && webUiInstance.clientSpecificSettingDescriptors.length > 0 && (
             <ClientSpecificSettingsEditor
               descriptors={webUiInstance.clientSpecificSettingDescriptors}
-              value={webui.clientSpecificSettings ?? {}}
+              value={webui.clientSpecificSettings}
               onChange={clientSpecificSettings => onChange({ ...webui, clientSpecificSettings })}
             />
           )}
@@ -420,7 +395,7 @@ function WebUIDetail({ webui, onChange, onRemove, onPromote, isPrimary }: WebUID
           )}
           {webUiInstance?.isLabelDirChooserSupported && (
             <AutoLabelDirSettingsEditor
-              value={webui.autoLabelDirSettings ?? []}
+              value={webui.autoLabelDirSettings}
               onChange={autoLabelDirSettings => onChange({ ...webui, autoLabelDirSettings })}
               showLabel={!!webUiInstance?.isLabelSupported}
               showDir={!!webUiInstance?.isDirSupported}
@@ -453,7 +428,7 @@ export default function WebUIsPage() {
   if (loading || !settings) return <div>Loading...</div>;
 
   const handleAdd = () => {
-    const newWebUI = getDefaultWebUISettings();
+    const newWebUI = createWebUiSettings();
     updateSetting("webuiSettings", [...webuis, newWebUI]);
     setSelectedId(newWebUI.id);
   };

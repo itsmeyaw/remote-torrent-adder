@@ -55,7 +55,7 @@ export default function NotificationsPage() {
         {!isFirefox() && (
           <div className={`${rowClass} mb-3.5`}>
             <Toggle
-              checked={settings.notificationsLabelButtonEnabled ?? true}
+              checked={settings.notificationsLabelButtonEnabled}
               onChange={v => updateSetting("notificationsLabelButtonEnabled", v)}
               label='Offer an "Add label" button after adding'
             />

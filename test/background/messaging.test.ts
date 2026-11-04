@@ -76,10 +76,22 @@ describe("registerMessageListener routing", () => {
         expect(deserializeSettings((chrome as any).__storage.settings)!.notificationsSoundEnabled).toBe(true);
     });
 
-    it.each([[""], ["null"], ["5"], ["[]"]])("rejects a SaveSettings payload that is not a settings object (%j) and keeps the stored settings", async (settings) => {
+    it.each([
+        ["", "That is not valid JSON."],
+        ["null", "That JSON is not a Remote Torrent Adder settings export."],
+        ["[]", "That JSON is not a Remote Torrent Adder settings export."],
+    ])("rejects a SaveSettings payload that is not a settings export (%j) and keeps the stored settings", async (settings, problem) => {
         const before = (chrome as any).__storage.settings;
         const response = await dispatch({ action: SaveSettingsMessage.action, settings });
-        expect(response).toEqual({ error: "SaveSettings payload is not a settings object" });
+        expect(response).toEqual({ error: problem });
+        expect((chrome as any).__storage.settings).toBe(before);
+    });
+
+    it("rejects a SaveSettings payload with an invalid setting and reports the problem", async () => {
+        const before = (chrome as any).__storage.settings;
+        const invalid = { ...getDefaultSettings(), notificationsDurationMs: -1 };
+        const response = await dispatch({ action: SaveSettingsMessage.action, settings: serializeSettings(invalid) });
+        expect(response).toEqual({ error: "Invalid notificationsDurationMs" });
         expect((chrome as any).__storage.settings).toBe(before);
     });
 

@@ -15,6 +15,22 @@ beforeEach(() => {
     (globalThis as any).IDBKeyRange = IDBKeyRange;
 });
 
+// jsdom has no Web Locks API; this one grants each lock name to one holder at a time, in request order.
+function createLocksMock(): Pick<LockManager, "request"> {
+    const tails = new Map<string, Promise<unknown>>();
+    return {
+        request: ((name: string, callback: () => unknown) => {
+            const run = (tails.get(name) ?? Promise.resolve()).then(() => callback());
+            tails.set(name, run.catch(() => undefined));
+            return run;
+        }) as LockManager["request"],
+    };
+}
+
+beforeEach(() => {
+    Object.defineProperty(navigator, "locks", { value: createLocksMock(), configurable: true });
+});
+
 // Unmount anything a component test rendered, so the next test starts on an
 // empty document and queries cannot match a leftover tree.
 afterEach(() => {

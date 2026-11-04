@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getDefaultSettings } from "../../src/settings/settings-defaults";
+import { createWebUiSettings, getDefaultSettings } from "../../src/settings/settings-defaults";
 
 describe("getDefaultSettings", () => {
     it("enables notifications and link-catching by default", () => {
@@ -25,5 +25,32 @@ describe("getDefaultSettings", () => {
 
     it("returns a fresh object on each call", () => {
         expect(getDefaultSettings()).not.toBe(getDefaultSettings());
+    });
+});
+
+describe("createWebUiSettings", () => {
+    it("gives every new WebUI a fresh id", () => {
+        expect(createWebUiSettings().id).not.toBe(createWebUiSettings().id);
+        expect(createWebUiSettings().id).not.toBe("");
+    });
+
+    it("starts as a draft with no client chosen and every field filled", () => {
+        const { id: _id, ...fields } = createWebUiSettings();
+        expect(fields.client).toBe("");
+        expect(fields).toMatchObject({
+            name: "",
+            host: "",
+            port: null,
+            relativePath: "",
+            showPerTorrentConfigSelector: false,
+            defaultLabel: null,
+            defaultDir: null,
+            labels: [],
+            dirs: [],
+            addPaused: false,
+            autoLabelDirSettings: [],
+            clientSpecificSettings: {},
+            useAlternativeLabelDirChooser: false,
+        });
     });
 });

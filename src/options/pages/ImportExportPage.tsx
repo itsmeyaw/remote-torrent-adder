@@ -1,7 +1,7 @@
 import { useState, type JSX } from "react";
 import { useSettings } from "../SettingsContext";
 import { serializeSettings } from "../../settings/serializer";
-import { parseSettingsExport } from "../../settings/settings-validation";
+import { parseSettings } from "../../settings/settings-validation";
 
 export default function ImportExportPage(): JSX.Element {
   const { settings, setSettings, loading } = useSettings();
@@ -25,7 +25,7 @@ export default function ImportExportPage(): JSX.Element {
   };
 
   const handleImport = (): void => {
-    const result = parseSettingsExport(importValue);
+    const result = parseSettings(importValue);
     if (!result.ok) {
       setImportErrors(result.problems);
       return;

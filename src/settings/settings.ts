@@ -1,8 +1,8 @@
 import { ext } from "../util/browser-api";
 import { type RTASettings } from "../models/settings";
-import { migrateSettingsClientIdentifiers } from "./legacy-client-identifiers";
-import { serializeSettings, deserializeSettings } from "./serializer";
+import { serializeSettings } from "./serializer";
 import { getDefaultSettings } from "./settings-defaults";
+import { parseSettings } from "./settings-validation";
 
 
 export const SETTINGS_KEY: string = "settings";
@@ -17,33 +17,33 @@ export async function loadSettings(): Promise<RTASettings> {
         await saveSettings(defaults);
         return defaults;
     }
-    let merged: RTASettings;
-    let migrated: RTASettings;
-    try {
-        merged = { ...getDefaultSettings(), ...parseStoredSettings(stored) };
-        migrated = migrateSettingsClientIdentifiers(merged);
-    } catch (e) {
-        console.error("Failed to deserialize settings, backing up the stored value and resetting to defaults", e instanceof Error ? e.name : "unknown error");
+    const result = parseSettings(stored);
+    if (!result.ok) {
+        console.error("Stored settings are invalid, backing up the stored value and resetting to defaults", result.problems);
         await backupCorruptSettings(stored);
         const defaults = getDefaultSettings();
         await saveSettings(defaults);
         return defaults;
     }
-    if (migrated !== merged) {
-        await persistMigration(migrated);
+    if (serializeSettings(result.settings) !== stored) {
+        await persistNormalized(result.settings);
     }
-    return migrated;
+    return result.settings;
 }
 
 export async function saveSettings(settings: RTASettings): Promise<void> {
-    await ext.storage.local.set({ [SETTINGS_KEY]: serializeSettings(settings) });
+    const result = parseSettings(serializeSettings(settings));
+    if (!result.ok) {
+        throw new Error(`Settings were not saved: ${result.problems.join(" ")}`);
+    }
+    await ext.storage.local.set({ [SETTINGS_KEY]: serializeSettings(result.settings) });
 }
 
-async function persistMigration(migrated: RTASettings): Promise<void> {
+async function persistNormalized(settings: RTASettings): Promise<void> {
     try {
-        await saveSettings(migrated);
+        await saveSettings(settings);
     } catch (e) {
-        console.warn("Could not persist migrated settings; they will be migrated again on the next load", e instanceof Error ? e.name : "unknown error");
+        console.warn("Could not persist normalized settings; they will be normalized again on the next load", e instanceof Error ? e.name : "unknown error");
     }
 }
 
@@ -54,12 +54,4 @@ async function backupCorruptSettings(stored: string): Promise<void> {
         return;
     }
     await ext.storage.local.set({ [SETTINGS_BACKUP_KEY_PREFIX + crypto.randomUUID()]: stored });
-}
-
-function parseStoredSettings(stored: string): RTASettings {
-    const parsed = deserializeSettings(stored);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-        throw new Error("Stored settings are not a plain object");
-    }
-    return parsed;
 }

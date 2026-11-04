@@ -26,8 +26,9 @@ import { openWebUi, updateBadgeText } from "./action";
 import { executeMethodWrappedWithOriginStripped } from "./cors-tricks";
 import { type TorrentDownloadContext } from "../torrent/download";
 import { showNotification } from "./notifications";
-import { serializeSettings, serializeObject, deserializeSettings } from "../settings/serializer";
+import { serializeSettings, serializeObject } from "../settings/serializer";
 import { loadSettings, saveSettings } from "../settings/settings";
+import { parseSettings } from "../settings/settings-validation";
 import { findWebUiSettings, getWebUi } from "../settings/webuis";
 import { addBufferedTorrent, addLink } from "./add";
 
@@ -71,13 +72,13 @@ export function registerMessageListener(): void {
                 }
                 case SaveSettingsMessage.action: {
                     const saveSettingsMessage = message as ISaveSettingsMessage & { settings: string };
-                    const settings = deserializeSettings(saveSettingsMessage.settings);
-                    if (typeof settings !== "object" || settings === null || Array.isArray(settings)) {
-                        respondWithError(new Error("SaveSettings payload is not a settings object"));
+                    const parsed = parseSettings(saveSettingsMessage.settings);
+                    if (!parsed.ok) {
+                        respondWithError(new Error(parsed.problems.join(" ")));
                         break;
                     }
                     willRespondAsync = true;
-                    saveSettings(settings)
+                    saveSettings(parsed.settings)
                         .then(() => finish({}))
                         .catch(respondWithError);
                     break;
