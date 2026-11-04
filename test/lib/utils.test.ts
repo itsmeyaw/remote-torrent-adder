@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vite-plus/test";
-import { cn } from "../../src/popup/lib/utils";
+import { cn } from "../../src/lib/utils";
 
 describe("cn", () => {
     it("joins truthy class names", () => {
