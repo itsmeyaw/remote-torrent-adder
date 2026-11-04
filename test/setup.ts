@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vite-plus/test";
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
 import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";

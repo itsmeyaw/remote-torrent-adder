@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { parseSettings } from "../../src/settings/settings-validation";
 import { serializeSettings } from "../../src/settings/serializer";
 import { createWebUiSettings, getDefaultSettings } from "../../src/settings/settings-defaults";

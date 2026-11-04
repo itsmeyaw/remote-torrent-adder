@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { resolveUploadConfig } from "../../src/torrent/upload-config";
 import { makeMagnetTorrent, makeWebUISettings } from "../helpers/fixtures";
 

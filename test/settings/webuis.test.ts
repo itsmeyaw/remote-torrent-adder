@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { findWebUiSettings, getPrimaryWebUi, getWebUi, getWebUis } from "../../src/settings/webuis";
 import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { Client } from "../../src/models/clients";

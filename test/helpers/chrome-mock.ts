@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi } from "vite-plus/test";
 
 /**
  * Builds a fresh, fully-stubbed `chrome` namespace covering every API the

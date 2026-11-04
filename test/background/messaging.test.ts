@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import { at } from "../helpers/assert";
 
 // The Add flow lives in add.ts and has its own tests; here we only check the router hands messages over.

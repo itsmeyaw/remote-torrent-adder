@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vite-plus/test";
 import { requestSettings } from "../../src/settings/request-settings";
 import { serializeSettings } from "../../src/settings/serializer";
 import { getDefaultSettings } from "../../src/settings/settings-defaults";

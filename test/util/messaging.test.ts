@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vite-plus/test";
 import { listenForMessages, sendMessage, sendMessageAndForget, sendMessageToTab } from "../../src/util/messaging";
 
 /** Registers a listener with a few handlers and returns the function the runtime would call. */

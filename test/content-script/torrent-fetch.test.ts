@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { fetchTorrentInPage } from "../../src/content-script/torrent-fetch";
 import { base64ToBytes } from "../../src/torrent/torrent-bytes";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";

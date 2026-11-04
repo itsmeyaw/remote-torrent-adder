@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 
 const { withStore } = vi.hoisted(() => ({ withStore: vi.fn() }));
 vi.mock("../../src/util/idb", () => ({ withStore }));

@@ -21,14 +21,6 @@
         "types": ["chrome", "node", "vitest/globals"],
         "jsx": "react-jsx"
     },
-    "include": [
-        "src/**/*",
-        "test/**/*",
-        "e2e/**/*",
-        "vite.config.ts",
-        "vitest.config.ts",
-        "tailwind.config.ts",
-        "oxlint.config.ts"
-    ],
+    "include": ["src/**/*", "test/**/*", "e2e/**/*", "vite.config.ts", "tailwind.config.ts"],
     "exclude": ["node_modules", "dist", "dist-prod"]
 }

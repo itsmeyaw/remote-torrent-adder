@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { GECKO_UNLISTED } from "../../scripts/generate-manifest.ts";
 import { buildUpdateManifest, xpiAssetUrl } from "../../scripts/generate-update-manifest.ts";
 

@@ -5,7 +5,7 @@
 // correctly, so this file runs in the node environment to exercise the real
 // store-and-read path that Chrome performs natively.
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "../../src/background/buffered-torrent";
 import { withStore } from "../../src/util/idb";
 import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helpers/fixtures";

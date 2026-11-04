@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import { callArgs } from "../helpers/assert";
 
 // Stub out the Add module so we can observe what each click asks for.

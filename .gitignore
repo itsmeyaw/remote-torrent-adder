@@ -12,3 +12,4 @@ test-results/
 web-ext-artifacts*/
 *.xpi
 .worktrees/
+.vitest/

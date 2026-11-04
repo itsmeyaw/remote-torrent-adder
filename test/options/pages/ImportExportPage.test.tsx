@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vite-plus/test";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsProvider } from "../../../src/options/SettingsContext";
 import ImportExportPage from "../../../src/options/pages/ImportExportPage";
