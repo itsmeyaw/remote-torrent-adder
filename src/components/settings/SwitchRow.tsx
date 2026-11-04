@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from "react";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import { SettingsRow } from "./SettingsSection";
 
 interface SwitchRowProps {
@@ -16,7 +17,7 @@ export default function SwitchRow({ label, description, checked, disabled, onCha
     const descriptionId = useId();
     return (
         <SettingsRow className="flex-row items-center justify-between gap-6">
-            <div className="flex min-w-0 flex-col gap-0.5">
+            <div className={cn("flex min-w-0 flex-col gap-0.5", disabled && "opacity-50")}>
                 <label htmlFor={id} className="text-sm font-medium">
                     {label}
                 </label>
