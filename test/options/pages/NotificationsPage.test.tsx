@@ -40,14 +40,14 @@ describe("NotificationsPage add-label button toggle", () => {
         respondWithSettings();
         renderPage();
 
-        expect(await screen.findByRole("checkbox", { name: BUTTON_TOGGLE })).toBeChecked();
+        expect(await screen.findByRole("switch", { name: BUTTON_TOGGLE })).toBeChecked();
     });
 
     it("persists turning it off", async () => {
         respondWithSettings();
         renderPage();
 
-        await userEvent.click(await screen.findByRole("checkbox", { name: BUTTON_TOGGLE }));
+        await userEvent.click(await screen.findByRole("switch", { name: BUTTON_TOGGLE }));
 
         const save = (chrome.runtime.sendMessage as any).mock.calls
             .map((call: any[]) => call[0])
@@ -60,15 +60,15 @@ describe("NotificationsPage add-label button toggle", () => {
         respondWithSettings();
         renderPage();
 
-        expect(await screen.findByRole("checkbox", { name: /Play a sound/ })).toBeInTheDocument();
-        expect(screen.queryByRole("checkbox", { name: BUTTON_TOGGLE })).not.toBeInTheDocument();
+        expect(await screen.findByRole("switch", { name: /Play a sound/ })).toBeInTheDocument();
+        expect(screen.queryByRole("switch", { name: BUTTON_TOGGLE })).not.toBeInTheDocument();
     });
 });
 
 describe("NotificationsPage test buttons", () => {
     it.each([
-        ["Test Success Notification", false],
-        ["Test Failed Notification", true],
+        ["Test success", false],
+        ["Test failure", true],
     ])("%s sends only the outcome for the background to build the notification", async (buttonName, isFailed) => {
         respondWithSettings();
         renderPage();
@@ -79,5 +79,48 @@ describe("NotificationsPage test buttons", () => {
             .map((call: any[]) => call[0])
             .find((message: any) => message?.action === "testNotification");
         expect(sent).toEqual({ action: "testNotification", isFailed });
+    });
+});
+
+describe("NotificationsPage display duration", () => {
+    const savedDuration = () =>
+        (chrome.runtime.sendMessage as any).mock.calls
+            .map((call: any[]) => call[0])
+            .filter((message: any) => message?.action === "saveSettings")
+            .map((message: any) => deserializeSettings(message.settings)!.notificationsDurationMs)
+            .at(-1);
+
+    it("shows the stored milliseconds as seconds", async () => {
+        const settings = getDefaultSettings();
+        settings.notificationsDurationMs = 4500;
+        respondWithSettings(settings);
+        renderPage();
+
+        expect(await screen.findByLabelText("Display duration")).toHaveValue("4.5");
+    });
+
+    it("stores the seconds typed in as milliseconds", async () => {
+        respondWithSettings();
+        renderPage();
+
+        const field = await screen.findByLabelText("Display duration");
+        await userEvent.clear(field);
+        await userEvent.type(field, "2.5");
+        await userEvent.tab();
+
+        expect(savedDuration()).toBe(2500);
+    });
+
+    it("steps by half a second in both directions", async () => {
+        const settings = getDefaultSettings();
+        settings.notificationsDurationMs = 2000;
+        respondWithSettings(settings);
+        renderPage();
+
+        await userEvent.click(await screen.findByRole("button", { name: "Increase display duration" }));
+        expect(savedDuration()).toBe(2500);
+
+        await userEvent.click(screen.getByRole("button", { name: "Decrease display duration" }));
+        expect(savedDuration()).toBe(2000);
     });
 });

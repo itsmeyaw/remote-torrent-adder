@@ -107,7 +107,7 @@ test.describe("firefox content script", () => {
     });
 });
 
-const OPTIONS_TABS = ["WebUIs", "Icon Click", "Notifications", "Link Catching", "Import/Export Settings", "About"];
+const OPTIONS_TABS = ["WebUIs", "Icon Click", "Notifications", "Link Catching", "Import/Export", "About"];
 
 function renderedTabs(extension: FirefoxExtensionHarness): Promise<string[]> {
     return extension.evaluate<string[]>(
