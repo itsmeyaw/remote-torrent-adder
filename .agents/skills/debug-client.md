@@ -45,7 +45,7 @@ Common failure modes and their causes:
 
 Before digging into the client's API, rule out the port. In rough order of likelihood:
 
-- **A bare `chrome.*` call.** On Firefox the bare namespace is callback-only and returns `undefined`, so `.then()` on it throws — often surfacing as a generic failure far from the call site. `pnpm run lint` catches these (`no-restricted-syntax`), so run it first. Everything must go through `ext` from `src/util/browser-api.ts`.
+- **A bare `chrome.*` call.** On Firefox the bare namespace is callback-only and returns `undefined`, so `.then()` on it throws — often surfacing as a generic failure far from the call site. `pnpm run lint` catches these (`no-restricted-globals`), so run it first. Everything must go through `ext` from `src/util/browser-api.ts`.
 - **An unguarded Chrome-only API.** `ext.offscreen` and friends must sit behind `canUseOffscreen()` / `isFirefox()` from `src/util/platform.ts`.
 - **A missing permission in the derived manifest.** `scripts/generate-manifest.ts` builds the Firefox manifest and filters Chrome-only entries; check the generated `dist/firefox/manifest.json`, and run `pnpm run lint:firefox` (`web-ext lint`).
 - **Host access revoked.** Firefox lets the user turn off host permissions per add-on in `about:addons` → Permissions. The options page shows a "cannot access websites" banner when this happens; a user reporting "every client suddenly fails" on Firefox should check there first.

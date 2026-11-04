@@ -15,7 +15,7 @@
 | `pnpm run audit` | — | `pnpm audit (high/critical only)` minus a reviewed allowlist (`scripts/audit.ts`) |
 | `pnpm run clean` | — | Remove `dist/` |
 | `pnpm run typecheck` | — | Type-check `src/`, `test/`, configs (`tsc --noEmit`), then `scripts/` against `scripts/tsconfig.json` |
-| `pnpm run lint` | — | ESLint over the repo (`pnpm run lint:fix` to autofix) |
+| `pnpm run lint` | — | oxlint over the repo (`pnpm run lint:fix` to autofix) |
 | `pnpm test` | — | Run the vitest suite |
 
 ## The prebuild gate

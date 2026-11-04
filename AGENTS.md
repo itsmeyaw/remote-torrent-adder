@@ -8,7 +8,7 @@ Full skill definitions and project context: [`.agents/README.md`](.agents/README
 
 ```bash
 pnpm run typecheck      # tsc --noEmit over src/, test/, scripts/, configs
-pnpm run lint           # eslint (pnpm run lint:fix to autofix)
+pnpm run lint           # oxlint (pnpm run lint:fix to autofix)
 pnpm test               # vitest suite (pnpm run test:watch, pnpm run test:coverage)
 pnpm run audit          # pnpm audit (high/critical only), minus a reviewed allowlist
 pnpm run build          # Chrome dev build → dist/chrome/
@@ -46,7 +46,7 @@ For Firefox, `pnpm run dev:firefox` launches a scratch profile with `dist/firefo
 
 ## Critical Constraints
 
-- **Never call `chrome.*` directly.** Use `ext` from `src/util/browser-api.ts`; on Firefox the bare `chrome` namespace is callback-only and returns `undefined`, so `.then()` on it throws. An eslint rule enforces this. Type positions (`chrome.tabs.Tab`) are fine.
+- **Never call `chrome.*` directly.** Use `ext` from `src/util/browser-api.ts`; on Firefox the bare `chrome` namespace is callback-only and returns `undefined`, so `.then()` on it throws. An oxlint rule enforces this. Type positions (`chrome.tabs.Tab`) are fine.
 - Anything Chrome-only (`ext.offscreen`, …) must be behind `canUseOffscreen()` / `isFirefox()` from `src/util/platform.ts`, and a permission only Chrome understands must be filtered out in `scripts/generate-manifest.ts`.
 - Service worker **must be stateless** — no module-level mutable state. Persist to `ext.storage`.
 - Use `this.fetch()` (not raw `fetch()`) — it throws `HttpError` on non-OK responses. Let errors from `add()` and `login()` throw; the base class maps them to results.
