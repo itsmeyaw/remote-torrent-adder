@@ -9,9 +9,9 @@ import { HandledFailure } from "../util/errors";
 import { computeInfoHash } from "../torrent/info-hash";
 import { type NotificationLabelAction, type NotificationLink, showNotification } from "./notifications";
 import { clearBufferedTorrent, readBufferedTorrent, saveBufferedTorrent } from "./buffered-torrent";
-import { Settings } from "../settings/settings";
+import { loadSettings, saveSettings } from "../settings/settings";
 import { getDefaultSettings } from "../settings/settings-defaults";
-import { initiateWebUis } from "../settings/webuis";
+import { findWebUiSettings, getPrimaryWebUi, getWebUi, getWebUis } from "../settings/webuis";
 
 /** One WebUI by id, the Primary WebUI when no id is given, or Send to All. */
 export type AddTarget = { webUiId?: string | null } | { sendToAll: true };
@@ -33,7 +33,7 @@ export interface ConfigSelectorChoice {
 /** Every Add entry point goes through here, so every failure is reported the same way. */
 export async function addLink(url: string, target: AddTarget, page: AddPage = {}): Promise<void> {
     await reportingFailures(async settings => {
-        const targets = resolveTargets(target, await initiateWebUis(settings));
+        const targets = resolveTargets(target, settings);
         const [first] = targets;
         if (!first) {
             notify(settings, "No WebUI configured", "Check your settings.", true);
@@ -75,7 +75,7 @@ export async function addBufferedTorrent(choice: ConfigSelectorChoice): Promise<
             throw new Error("No buffered torrent to add; it may already have been consumed.");
         }
 
-        const webUi = (await initiateWebUis(settings)).find(candidate => candidate.settings.id === choice.webUiId);
+        const webUi = getWebUi(settings, choice.webUiId);
         if (!webUi) {
             throw new Error(`No WebUI found for id ${choice.webUiId}`);
         }
@@ -91,7 +91,7 @@ export async function addBufferedTorrent(choice: ConfigSelectorChoice): Promise<
 async function reportingFailures(run: (settings: RTASettings) => Promise<void>): Promise<void> {
     let settings: RTASettings | undefined;
     try {
-        settings = await new Settings().loadSettings();
+        settings = await loadSettings();
         await run(settings);
     } catch (error) {
         if (error instanceof HandledFailure) {
@@ -107,14 +107,15 @@ async function reportingFailures(run: (settings: RTASettings) => Promise<void>):
     }
 }
 
-function resolveTargets(target: AddTarget, webUis: TorrentWebUI[]): TorrentWebUI[] {
+function resolveTargets(target: AddTarget, settings: RTASettings): TorrentWebUI[] {
     if ("sendToAll" in target) {
-        return webUis;
+        return getWebUis(settings);
     }
     if (!target.webUiId) {
-        return webUis.slice(0, 1);
+        const primaryWebUi = getPrimaryWebUi(settings);
+        return primaryWebUi ? [primaryWebUi] : [];
     }
-    const webUi = webUis.find(candidate => candidate.settings.id === target.webUiId);
+    const webUi = getWebUi(settings, target.webUiId);
     if (!webUi) {
         throw new Error(`No WebUI found for id ${target.webUiId}`);
     }
@@ -169,7 +170,7 @@ async function createLabelAction(webUi: TorrentWebUI, torrent: Torrent, settings
 }
 
 async function rememberLabelsAndDirs(settings: RTASettings, webUiId: string, labels: string[], directories: string[]): Promise<void> {
-    const webUiSettings = settings.webuiSettings.find(webUi => webUi.id === webUiId);
+    const webUiSettings = findWebUiSettings(settings, webUiId);
     if (!webUiSettings) {
         const message = `WebUI with id ${webUiId} not found in settings; couldn't update labels and directories.`;
         console.error(message);
@@ -177,7 +178,7 @@ async function rememberLabelsAndDirs(settings: RTASettings, webUiId: string, lab
     }
     webUiSettings.labels = labels;
     webUiSettings.dirs = directories;
-    await new Settings().saveSettings(settings);
+    await saveSettings(settings);
 }
 
 function notifyDownloadFailure(settings: RTASettings, error: unknown, webUiId: string): void {

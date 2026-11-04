@@ -3,7 +3,8 @@ import { type IPlaySoundMessage, PlaySoundMessage } from "../models/messages";
 import { canUseOffscreen, isFirefox } from "../util/platform";
 import { playNotificationSound } from "../notifications/play-sound";
 import { openSetLabelWindow, openWebUi } from "./action";
-import { loadWebUis } from "../settings/webuis";
+import { loadSettings } from "../settings/settings";
+import { getWebUi } from "../settings/webuis";
 
 const LINK_KEY_PREFIX = "notificationLink:";
 const LABEL_ACTION_KEY_PREFIX = "notificationLabelAction:";
@@ -96,7 +97,7 @@ async function openNotificationLink(notificationId: string): Promise<void> {
     }
     try {
         if ("webUiId" in link) {
-            const webUi = (await loadWebUis()).find(candidate => candidate.settings.id === link.webUiId);
+            const webUi = getWebUi(await loadSettings(), link.webUiId);
             if (webUi) {
                 await openWebUi(webUi);
             } else {

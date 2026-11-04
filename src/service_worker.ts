@@ -1,12 +1,12 @@
 import { ext } from './util/browser-api';
 import { refreshContextMenu, registerContextMenuClickListener } from './background/context-menu';
 import { registerAuthenticationListener } from './background/authentication-listener';
-import { SETTINGS_KEY } from './settings/settings';
+import { loadSettings, SETTINGS_BACKUP_KEY_PREFIX, SETTINGS_KEY } from './settings/settings';
 import { registerMessageListener } from './background/messaging';
 import { registerActionClickListener } from './background/action';
-import { loadWebUis } from './settings/webuis';
+import { getWebUis } from './settings/webuis';
 import { clearDynamicRules, registerCorsCircumventionForWebUis } from './background/cors-tricks';
-import { registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from './background/notifications';
+import { registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners, showNotification } from './background/notifications';
 
 
 registerMessageListener();
@@ -22,6 +22,11 @@ ext.storage.local.onChanged.addListener(
         if (changes[SETTINGS_KEY]) {
             void rebuildContextMenu();
             void refreshCorsCircumvention();
+        }
+        for (const [key, change] of Object.entries(changes)) {
+            if (key.startsWith(SETTINGS_BACKUP_KEY_PREFIX) && change.newValue !== undefined && change.oldValue === undefined) {
+                showNotification("Settings were reset", "Your stored settings could not be read and were reset to defaults. Re-import an export or set up your WebUIs again.");
+            }
         }
     }) as Parameters<typeof ext.storage.local.onChanged.addListener>[0]
 );
@@ -44,7 +49,7 @@ void refreshCorsCircumvention();
 
 async function rebuildContextMenu(): Promise<void> {
     try {
-        await refreshContextMenu(await loadWebUis());
+        await refreshContextMenu(getWebUis(await loadSettings()));
     } catch (error) {
         console.error("Failed to rebuild the context menu", error);
     }
@@ -52,7 +57,7 @@ async function rebuildContextMenu(): Promise<void> {
 
 async function refreshCorsCircumvention(): Promise<void> {
     try {
-        await registerCorsCircumventionForWebUis(await loadWebUis());
+        await registerCorsCircumventionForWebUis(getWebUis(await loadSettings()));
     } catch (error) {
         console.error("Failed to refresh CORS circumvention rules", error);
     }
