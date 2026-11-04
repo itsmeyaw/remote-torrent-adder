@@ -1,3 +1,4 @@
+import { z } from "zod/mini";
 import { type IconClickAction, type RTASettings } from "../models/settings";
 import { type WebUISettings } from "../models/webui";
 import { getDefaultSettings, getDefaultWebUiFields } from "./settings-defaults";
@@ -6,66 +7,63 @@ import { migrateSettingsClientIdentifiers, resolveClientIdentifier } from "./leg
 
 export type SettingsParseResult = { ok: true; settings: RTASettings } | { ok: false; problems: string[] };
 
-type FieldCheck = (value: unknown) => boolean;
+type FieldCheck = z.ZodMiniType;
 
 const NOT_AN_EXPORT = "That JSON is not a Remote Torrent Adder settings export.";
-const ICON_CLICK_ACTIONS: ReadonlyArray<IconClickAction> = ["openPrimaryWebUi", "showWebUiPicker", "showPageLinks"];
+const ICON_CLICK_ACTIONS: readonly [IconClickAction, ...IconClickAction[]] = [
+    "openPrimaryWebUi",
+    "showWebUiPicker",
+    "showPageLinks",
+];
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-    typeof value === "object" && value !== null && !Array.isArray(value);
-const isBoolean = (value: unknown): boolean => typeof value === "boolean";
-const isString = (value: unknown): boolean => typeof value === "string";
-const isNonEmptyString = (value: unknown): boolean => typeof value === "string" && value.trim() !== "";
-const isNullableString = (value: unknown): boolean => value === null || typeof value === "string";
-const isStringArray = (value: unknown): boolean => Array.isArray(value) && value.every(isString);
-const isNonNegativeNumber = (value: unknown): boolean =>
-    typeof value === "number" && Number.isFinite(value) && value >= 0;
-const isIconClickAction = (value: unknown): boolean => ICON_CLICK_ACTIONS.some((action) => action === value);
-const isPort = (value: unknown): boolean =>
-    value === null || (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 65535);
-const isKnownClient = (value: unknown): boolean => typeof value === "string" && resolveClientIdentifier(value) !== null;
+const SettingsExportSchema = z.looseObject({ webuiSettings: z.array(z.unknown()) });
+const WebUiSchema = z.record(z.string(), z.unknown());
+const PatternListSchema = z.array(z.unknown());
+const PortSchema = z.nullable(z.int().check(z.minimum(0), z.maximum(65535)));
 // A WebUI is stored with an empty client until the user picks one, so an empty client is a draft.
-const isClientOrDraft = (value: unknown): boolean => value === "" || isKnownClient(value);
+const ClientOrDraftSchema = z
+    .string()
+    .check(z.refine((value) => value === "" || resolveClientIdentifier(value) !== null));
 
 const SETTING_CHECKS: ReadonlyArray<readonly [keyof RTASettings, FieldCheck]> = [
-    ["notificationsEnabled", isBoolean],
-    ["notificationsDurationMs", isNonNegativeNumber],
-    ["notificationsSoundEnabled", isBoolean],
-    ["notificationsLabelButtonEnabled", isBoolean],
-    ["linkCatchingEnabled", isBoolean],
-    ["iconClickAction", isIconClickAction],
+    ["notificationsEnabled", z.boolean()],
+    ["notificationsDurationMs", z.number().check(z.nonnegative())],
+    ["notificationsSoundEnabled", z.boolean()],
+    ["notificationsLabelButtonEnabled", z.boolean()],
+    ["linkCatchingEnabled", z.boolean()],
+    ["iconClickAction", z.enum(ICON_CLICK_ACTIONS)],
 ];
 
 // Without these a WebUI cannot be told apart or talked to, so they are never made up.
 const REQUIRED_WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldCheck]> = [
-    ["id", isNonEmptyString],
-    ["client", isClientOrDraft],
+    ["id", z.string().check(z.trim(), z.minLength(1))],
+    ["client", ClientOrDraftSchema],
 ];
 
 // Absent ones are filled from the defaults before they are checked.
 const WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldCheck]> = [
-    ["name", isString],
-    ["host", isString],
-    ["port", isPort],
-    ["secure", isBoolean],
-    ["relativePath", isNullableString],
-    ["username", isString],
-    ["password", isString],
-    ["showPerTorrentConfigSelector", isBoolean],
-    ["useAlternativeLabelDirChooser", isBoolean],
-    ["defaultLabel", isNullableString],
-    ["defaultDir", isNullableString],
-    ["labels", isStringArray],
-    ["dirs", isStringArray],
-    ["addPaused", isBoolean],
-    ["autoLabelDirSettings", Array.isArray],
-    ["clientSpecificSettings", isObject],
+    ["name", z.string()],
+    ["host", z.string()],
+    ["port", PortSchema],
+    ["secure", z.boolean()],
+    ["relativePath", z.nullable(z.string())],
+    ["username", z.string()],
+    ["password", z.string()],
+    ["showPerTorrentConfigSelector", z.boolean()],
+    ["useAlternativeLabelDirChooser", z.boolean()],
+    ["defaultLabel", z.nullable(z.string())],
+    ["defaultDir", z.nullable(z.string())],
+    ["labels", z.array(z.string())],
+    ["dirs", z.array(z.string())],
+    ["addPaused", z.boolean()],
+    ["autoLabelDirSettings", z.array(z.unknown())],
+    ["clientSpecificSettings", z.record(z.string(), z.unknown())],
 ];
 
 function settingProblems(raw: Record<string, unknown>): string[] {
-    return SETTING_CHECKS.filter(([field, check]) => raw[field] !== undefined && !check(raw[field])).map(
-        ([field]) => `Invalid ${field}`,
-    );
+    return SETTING_CHECKS.filter(
+        ([field, check]) => raw[field] !== undefined && !check.safeParse(raw[field]).success,
+    ).map(([field]) => `Invalid ${field}`);
 }
 
 // The id goes first, as in createWebUiSettings, so a WebUI serializes the same however it was made.
@@ -74,18 +72,20 @@ function withWebUiDefaults<T extends { id?: unknown }>(webUi: T): T & Omit<WebUI
 }
 
 function webUiProblems(webUi: unknown, position: number): string[] {
-    if (!isObject(webUi)) {
+    const parsed = WebUiSchema.safeParse(webUi);
+    if (!parsed.success) {
         return [`WebUI ${position} is not an object.`];
     }
-    const name = typeof webUi.name === "string" && webUi.name !== "" ? ` ("${webUi.name}")` : "";
-    const filled: Record<string, unknown> = withWebUiDefaults(webUi);
+    const fields = parsed.data;
+    const name = typeof fields.name === "string" && fields.name !== "" ? ` ("${fields.name}")` : "";
+    const filled: Record<string, unknown> = withWebUiDefaults(fields);
     const failing = [
-        ...REQUIRED_WEBUI_FIELD_CHECKS.filter(([field, check]) => !check(webUi[field])),
-        ...WEBUI_FIELD_CHECKS.filter(([field, check]) => !check(filled[field])),
+        ...REQUIRED_WEBUI_FIELD_CHECKS.filter(([field, check]) => !check.safeParse(fields[field]).success),
+        ...WEBUI_FIELD_CHECKS.filter(([field, check]) => !check.safeParse(filled[field]).success),
     ];
     return failing.map(
         ([field]) =>
-            `WebUI ${position}${name}: ${webUi[field] === undefined || webUi[field] === "" ? "missing" : "invalid"} ${field}`,
+            `WebUI ${position}${name}: ${fields[field] === undefined || fields[field] === "" ? "missing" : "invalid"} ${field}`,
     );
 }
 
@@ -116,16 +116,20 @@ export function parseSettings(text: string): SettingsParseResult {
     } catch {
         return { ok: false, problems: ["That is not valid JSON."] };
     }
-    if (!isObject(raw) || !Array.isArray(raw.webuiSettings)) {
+    const exported = SettingsExportSchema.safeParse(raw);
+    if (!exported.success) {
         return { ok: false, problems: [NOT_AN_EXPORT] };
     }
+    const fields = exported.data;
 
-    const patterns: unknown = raw.linkCatchingRegexes === undefined ? [] : raw.linkCatchingRegexes;
+    const patterns = PatternListSchema.safeParse(
+        fields.linkCatchingRegexes === undefined ? [] : fields.linkCatchingRegexes,
+    );
     const problems = [
-        ...settingProblems(raw),
-        ...raw.webuiSettings.flatMap((webUi, index) => webUiProblems(webUi, index + 1)),
-        ...(Array.isArray(patterns)
-            ? patterns.map((pattern, index) => linkCatchingPatternProblem(pattern, index + 1))
+        ...settingProblems(fields),
+        ...fields.webuiSettings.flatMap((webUi, index) => webUiProblems(webUi, index + 1)),
+        ...(patterns.success
+            ? patterns.data.map((pattern, index) => linkCatchingPatternProblem(pattern, index + 1))
             : ["Link Catching patterns must be a list."]),
     ].filter((problem): problem is string => problem !== null);
     if (problems.length > 0) {
