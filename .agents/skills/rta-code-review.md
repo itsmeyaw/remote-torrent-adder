@@ -20,7 +20,7 @@ pnpm run lint
 
 The same bundle ships to Chrome and Firefox, and this is the newest and most easily broken constraint in the repo.
 
-- [ ] **No bare `chrome.*` calls.** Everything goes through `ext` from `src/util/browser-api.ts`. On Firefox the bare `chrome` namespace is callback-only and returns `undefined`, so `.then()` on it throws. `no-restricted-syntax` in `eslint.config.js` enforces this — if a change disables or works around that rule, it is a BLOCKER. Type positions (`chrome.tabs.Tab`) are exempt and fine.
+- [ ] **No bare `chrome.*` calls.** Everything goes through `ext` from `src/util/browser-api.ts`. On Firefox the bare `chrome` namespace is callback-only and returns `undefined`, so `.then()` on it throws. `no-restricted-globals` in `oxlint.config.ts` enforces this — if a change disables or works around that rule, it is a BLOCKER. Type positions (`chrome.tabs.Tab`) are exempt and fine.
 - [ ] Chrome-only APIs (`ext.offscreen`, and anything else Firefox lacks) are behind `canUseOffscreen()` or `isFirefox()` from `src/util/platform.ts` — never called unguarded.
 - [ ] A permission only Chrome understands is filtered out of the derived Firefox manifest in `scripts/generate-manifest.ts`, and `test/build/manifest.test.ts` still passes.
 - [ ] Firefox has no offscreen document — its background is an event page that plays sound in-process. A change to `play-sound.ts` or `notifications.ts` must work on both paths.
