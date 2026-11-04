@@ -22,6 +22,7 @@ const OPTIONS: { value: IconClickAction; label: string; description: string; dis
         value: "showPageLinks",
         label: "Show links found on this page",
         description: "Lists the torrent and magnet links on the current page. Clicking one adds it.",
+        disabledNote: "Turn on link catching to enable this option.",
     },
 ];
 
@@ -45,7 +46,9 @@ export default function IconClickPage(): JSX.Element {
                 className="gap-2"
             >
                 {OPTIONS.map((option) => {
-                    const disabled = option.value === "showWebUiPicker" && !multipleWebUisConfigured;
+                    const disabled =
+                        (option.value === "showWebUiPicker" && !multipleWebUisConfigured) ||
+                        (option.value === "showPageLinks" && !settings.linkCatchingEnabled);
                     const selected = current === option.value;
                     return (
                         <label
