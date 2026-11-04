@@ -12,6 +12,16 @@ describe("TransmissionWebUI", () => {
         await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: true });
     });
 
+    it("sends basic auth on the session-id request so a password-protected server answers 409, not 401", async () => {
+        const fetch = queueFetch(mockResponse({ status: 409, headers: { "X-Transmission-Session-Id": "sess-123" } }));
+        const ui = build({ username: "user", password: "pass" });
+
+        await expect(ui.testConnection()).resolves.toMatchObject({ reachable: true, authenticated: true });
+        const [url, opts] = callArgs(fetch, 0);
+        expect(url).toBe("http://h:9091/transmission/rpc");
+        expect((opts.headers as any).Authorization).toBe("Basic " + btoa("user:pass"));
+    });
+
     it("reports an authentication failure when the rpc endpoint answers 401", async () => {
         queueFetch(mockResponse({ status: 401 }));
         await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: false });
