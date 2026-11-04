@@ -50,9 +50,9 @@ test.describe("adding through the label/dir popup", () => {
         );
         await expect
             .poll(async () => extension.evaluateHere<string>("return document.body.innerText;"), { timeout: 15_000 })
-            .toContain("Add Torrent");
+            .toContain("Add torrent");
 
-        await extension.clickHereByText("Add Torrent");
+        await extension.clickHereByText("Add torrent");
 
         await expect.poll(() => client.pathsHit(), { timeout: 30_000 }).toContain("/api/torrents/add-files");
 

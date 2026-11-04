@@ -1,8 +1,12 @@
 import { ext } from "../../util/browser-api";
 import { sendMessageAndForget, sendMessageToTab } from "../../util/messaging";
 import { useEffect, useState } from "react";
+import { ChevronRightIcon } from "lucide-react";
 import Notice from "./Notice";
+import PopupFrame from "./PopupFrame";
 import { type IPageLinkInfo } from "../../models/messages";
+import { surfaceClass } from "@/components/settings/SettingsSection";
+import { cn } from "@/lib/utils";
 
 type LoadState =
     | { status: "loading" }
@@ -50,7 +54,11 @@ export default function PageLinksView() {
     };
 
     if (state.status === "loading") {
-        return <Notice title="Remote Torrent Adder">Scanning page…</Notice>;
+        return (
+            <Notice title="Remote Torrent Adder" loading>
+                Scanning page…
+            </Notice>
+        );
     }
     if (state.status === "empty") {
         return <Notice title="No links found">No torrent or magnet links were found on this page.</Notice>;
@@ -64,24 +72,22 @@ export default function PageLinksView() {
     }
 
     return (
-        <div className="h-full bg-background p-6">
-            <div className="max-w-sm mx-auto space-y-4">
-                <div className="text-center">
-                    <h1 className="text-xl font-bold text-foreground">Links found on this page</h1>
-                </div>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {state.links.map((link) => (
-                        <button
-                            key={link.url}
-                            onClick={() => addLink(link.url)}
-                            className="w-full text-left bg-card p-3 rounded-lg border border-border shadow-sm hover:bg-accent transition-colors"
-                        >
-                            <span className="block font-medium text-foreground truncate">{link.label}</span>
-                            <span className="block text-xs text-muted-foreground truncate">{link.url}</span>
-                        </button>
-                    ))}
-                </div>
+        <PopupFrame title="Links found on this page">
+            <div className={cn(surfaceClass, "max-h-96 divide-y divide-border overflow-y-auto")}>
+                {state.links.map((link) => (
+                    <button
+                        key={link.url}
+                        onClick={() => addLink(link.url)}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted"
+                    >
+                        <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="text-sm font-medium">{link.label}</span>
+                            <span className="truncate font-mono text-xs text-muted-foreground">{link.url}</span>
+                        </span>
+                        <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
+                    </button>
+                ))}
             </div>
-        </div>
+        </PopupFrame>
     );
 }
