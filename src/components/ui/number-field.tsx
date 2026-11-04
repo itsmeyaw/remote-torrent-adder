@@ -24,7 +24,7 @@ function NumberField({
                 >
                     <MinusIcon />
                 </NumberFieldPrimitive.Decrement>
-                <NumberFieldPrimitive.Input className="w-12 min-w-0 bg-transparent text-center text-sm tabular-nums outline-none" />
+                <NumberFieldPrimitive.Input className="w-12 min-w-0 bg-transparent text-center text-sm tabular-nums outline-none disabled:opacity-50" />
                 {unit && <span className="-ml-2 pr-1 text-sm text-muted-foreground select-none">{unit}</span>}
                 <NumberFieldPrimitive.Increment
                     aria-label={incrementLabel}
