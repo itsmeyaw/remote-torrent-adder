@@ -88,7 +88,7 @@ export class FirefoxExtensionHarness {
         const deadline = Date.now() + 15_000;
         while (Date.now() < deadline) {
             const handles = await this.driver.getAllWindowHandles();
-            const fresh = handles.find(handle => !before.includes(handle));
+            const fresh = handles.find((handle) => !before.includes(handle));
             if (fresh) {
                 await this.driver.switchTo().window(fresh);
                 if ((await this.driver.getCurrentUrl()).startsWith(url)) {
@@ -199,11 +199,7 @@ export class FirefoxExtensionHarness {
     }
 
     async writeRawSettings(serialized: string): Promise<void> {
-        await this.evaluate(
-            "await browser.storage.local.set({ [args[0]]: args[1] });",
-            SETTINGS_KEY,
-            serialized,
-        );
+        await this.evaluate("await browser.storage.local.set({ [args[0]]: args[1] });", SETTINGS_KEY, serialized);
     }
 
     async seedSettings(settings: RTASettings): Promise<void> {

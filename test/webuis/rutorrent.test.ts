@@ -80,11 +80,16 @@ describe("RuTorrentWebUI", () => {
         expect(result.success).toBe(true);
         const [url, opts] = callArgs(fetch, 0);
         expect(url).toBe("http://h/plugins/httprpc/action.php");
-        expect(opts.body).toBe(`mode=setlabel&hash=${"0123456789abcdef0123456789abcdef01234567".toUpperCase()}&v=My%2520Label`);
+        expect(opts.body).toBe(
+            `mode=setlabel&hash=${"0123456789abcdef0123456789abcdef01234567".toUpperCase()}&v=My%2520Label`,
+        );
     });
 
     it("reports failure when httprpc is unreachable", async () => {
         queueFetch(mockResponse({ status: 404 }));
-        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "tv")).resolves.toMatchObject({ success: false, httpResponseCode: 404 });
+        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "tv")).resolves.toMatchObject({
+            success: false,
+            httpResponseCode: 404,
+        });
     });
 });

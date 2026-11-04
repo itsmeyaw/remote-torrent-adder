@@ -28,14 +28,18 @@ export class TransmissionWebUI extends TorrentWebUI<string> {
         };
     }
 
-    protected override async applyLabel(sessionId: string, hashString: string, label: string): Promise<TorrentAddingResult> {
+    protected override async applyLabel(
+        sessionId: string,
+        hashString: string,
+        label: string,
+    ): Promise<TorrentAddingResult> {
         const response = await this.fetch(this.createBaseUrl() + "/transmission/rpc", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=UTF-8",
-                "X-Transmission-Session-Id": sessionId
+                "X-Transmission-Session-Id": sessionId,
             },
-            body: JSON.stringify({ method: "torrent-set", arguments: { ids: [hashString], labels: [label] } })
+            body: JSON.stringify({ method: "torrent-set", arguments: { ids: [hashString], labels: [label] } }),
         });
         const responseText = await response.text();
         return {
@@ -45,7 +49,11 @@ export class TransmissionWebUI extends TorrentWebUI<string> {
         };
     }
 
-    protected override labelAfterAdd(sessionId: string, torrentId: string, label: string): Promise<TorrentAddingResult> {
+    protected override labelAfterAdd(
+        sessionId: string,
+        torrentId: string,
+        label: string,
+    ): Promise<TorrentAddingResult> {
         return this.applyLabel(sessionId, torrentId, label);
     }
 
@@ -58,22 +66,30 @@ export class TransmissionWebUI extends TorrentWebUI<string> {
     }
 
     private async fetchTransmissionSessionId(): Promise<string> {
-        const response = await this.fetchAllowing(this.createBaseUrl() + "/transmission/rpc", { method: "POST", body: "" }, [409]);
+        const response = await this.fetchAllowing(
+            this.createBaseUrl() + "/transmission/rpc",
+            { method: "POST", body: "" },
+            [409],
+        );
         return response.headers.get("X-Transmission-Session-Id") ?? "";
     }
 
-    private async createTorrentFetchOptions(torrent: Torrent, config: TorrentUploadConfig, transmissionSessionId: string): Promise<RequestInit> {
+    private async createTorrentFetchOptions(
+        torrent: Torrent,
+        config: TorrentUploadConfig,
+        transmissionSessionId: string,
+    ): Promise<RequestInit> {
         const payload: Record<string, string | Record<string, string | boolean>> = {
             method: "torrent-add",
-            arguments: {}
+            arguments: {},
         };
         if (torrent.isMagnet) {
             payload["arguments"] = {
-                filename: torrent.data as string
+                filename: torrent.data as string,
             };
         } else {
             payload["arguments"] = {
-                metainfo: bytesToBase64(new Uint8Array(await (torrent.data as Blob).arrayBuffer()))
+                metainfo: bytesToBase64(new Uint8Array(await (torrent.data as Blob).arrayBuffer())),
             };
         }
 
@@ -91,9 +107,9 @@ export class TransmissionWebUI extends TorrentWebUI<string> {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=UTF-8",
-                "X-Transmission-Session-Id": transmissionSessionId
+                "X-Transmission-Session-Id": transmissionSessionId,
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
         };
     }
 

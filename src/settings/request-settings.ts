@@ -14,7 +14,7 @@ export async function requestSettings(attemptNumber: number = 0): Promise<RTASet
         return deserializeSettings(serialized);
     }
     if (attemptNumber + 1 < MAX_ATTEMPTS) {
-        await new Promise(resolve => setTimeout(resolve, 100 * (attemptNumber + 1)));
+        await new Promise((resolve) => setTimeout(resolve, 100 * (attemptNumber + 1)));
         return requestSettings(attemptNumber + 1);
     }
     return null;

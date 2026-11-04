@@ -56,13 +56,13 @@ describe("getWebUi", () => {
 describe("getWebUis", () => {
     it("constructs every configured WebUI in list order", () => {
         const webUis = getWebUis(settingsWith(qbit("b"), qbit("a")));
-        expect(webUis.map(webUi => webUi.settings.id)).toEqual(["b", "a"]);
+        expect(webUis.map((webUi) => webUi.settings.id)).toEqual(["b", "a"]);
         expect(at(webUis, 0)).toBeInstanceOf(QBittorrentWebUI);
     });
 
     it("skips drafts without a client", () => {
         const webUis = getWebUis(settingsWith(draft("d"), qbit("a")));
-        expect(webUis.map(webUi => webUi.settings.id)).toEqual(["a"]);
+        expect(webUis.map((webUi) => webUi.settings.id)).toEqual(["a"]);
     });
 
     it("returns an empty array when no WebUIs are configured", () => {

@@ -16,8 +16,10 @@ export function registerContextMenuClickListener(): void {
         if (!target) {
             return;
         }
-        addLink(onClickData.linkUrl ?? "", target, { ...resolveDownloadContext(onClickData, tab), windowId: tab?.windowId })
-            .catch(error => console.error("Context menu click failed", error));
+        addLink(onClickData.linkUrl ?? "", target, {
+            ...resolveDownloadContext(onClickData, tab),
+            windowId: tab?.windowId,
+        }).catch((error) => console.error("Context menu click failed", error));
     });
 }
 
@@ -25,9 +27,7 @@ export function registerContextMenuClickListener(): void {
 let pendingRefresh: Promise<void> = Promise.resolve();
 
 export function refreshContextMenu(allWebUis: TorrentWebUI[]): Promise<void> {
-    pendingRefresh = pendingRefresh
-        .catch(() => undefined)
-        .then(() => rebuildContextMenu(allWebUis));
+    pendingRefresh = pendingRefresh.catch(() => undefined).then(() => rebuildContextMenu(allWebUis));
     return pendingRefresh;
 }
 
@@ -37,16 +37,16 @@ async function rebuildContextMenu(allWebUis: TorrentWebUI[]): Promise<void> {
     createMenuItem({
         id: PARENT_MENU_ID,
         title: "Add to Remote WebUI",
-        contexts: ["link"]
+        contexts: ["link"],
     });
 
     if (allWebUis.length > 1) {
-        allWebUis.forEach(webUi => {
+        allWebUis.forEach((webUi) => {
             createMenuItem({
                 id: `${PER_SERVER_MENU_PREFIX}${webUi.settings.id}`,
                 title: webUi.name,
                 contexts: ["link"],
-                parentId: PARENT_MENU_ID
+                parentId: PARENT_MENU_ID,
             });
         });
         createMenuItem({ id: SEPARATOR_MENU_ID, type: "separator", contexts: ["link"], parentId: PARENT_MENU_ID });
@@ -54,7 +54,7 @@ async function rebuildContextMenu(allWebUis: TorrentWebUI[]): Promise<void> {
             id: SEND_ALL_MENU_ID,
             title: "send to all",
             contexts: ["link"],
-            parentId: PARENT_MENU_ID
+            parentId: PARENT_MENU_ID,
         });
     }
 }
@@ -84,6 +84,6 @@ function resolveDownloadContext(onClickData: OnClickData, tab?: Tab): TorrentDow
     return {
         tabId: tab?.id ?? null,
         frameId: onClickData.frameId ?? 0,
-        pageUrl: onClickData.frameUrl ?? onClickData.pageUrl ?? tab?.url ?? null
+        pageUrl: onClickData.frameUrl ?? onClickData.pageUrl ?? tab?.url ?? null,
     };
 }

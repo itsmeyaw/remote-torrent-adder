@@ -29,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version, e.g. 2.0.6 (a v-prefix is accepted)'
+        description: "Release version, e.g. 2.0.6 (a v-prefix is accepted)"
         required: true
         type: string
 
@@ -63,8 +63,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
 
       - name: Normalize and validate version
         id: ver

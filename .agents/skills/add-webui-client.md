@@ -9,6 +9,7 @@ Use when a user wants to add support for a BitTorrent client that is not yet in 
 ## Required Information
 
 Before starting, collect from the user:
+
 - Client name (e.g. "Transmission", "MyClient")
 - Client's WebUI API documentation or endpoint information
 - Authentication method (session token, basic auth, cookie, API key, none)
@@ -44,6 +45,7 @@ The base class defines `sendTorrent` and `setLabel` and the constructor — don'
 ### Adapter hooks
 
 `sendTorrent` and `setLabel` are templates in `TorrentWebUI`: they run the login, the Add, the follow-ups and the failure mapping. Implement only these hooks:
+
 - `add(torrent, config, session)` (required) → `AddResult`: the Add request. Set `torrentId` when the response carries the client's id for the added torrent. Let transport errors throw; the base maps them with `toFailureResult`.
 - `login()` (optional) → `Session`: opens a session before the Add. The return value reaches `add`, `applyLabel` and the follow-ups. Throw `new AuthenticationError(status, reason?)` when the server rejects the credentials, and `new CredentialsUnverifiedError(status, message)` when it answered without saying whether they are right. Omit it when the client has no session.
 - `applyLabel(session, torrentId, label)` (optional) → `TorrentAddingResult`: sets a label on an existing torrent. Its presence makes `setLabel` work; normalise the id case here if the client needs it.
@@ -53,25 +55,29 @@ The base class defines `sendTorrent` and `setLabel` and the constructor — don'
 ### Base class API (`src/models/webui.ts`)
 
 URL and request helpers:
+
 - `this.createBaseUrl()` → `http(s)://host[:port][/relativePath]` (omits the port when it is 80/443 for the matching scheme)
 - `this.createBaseUrlPatternForFilter()` → base URL normalised with a single trailing slash, used for `declarativeNetRequest` filters
 - `this.fetch(url, options)` → wraps `fetch`, throws `HttpError(status, body)` on a non-OK response
 - `this.createBasicAuthHeaders()` → `{ Authorization: "Basic …" }`, or `{}` when both username and password are empty
 
 Per-torrent value resolution (config value first, then the per-client default):
+
 - `this.getLabel(config)` → `string | null`
 - `this.getDirectory(config)` → `string | null`
 - `this.getAddPaused(config)` → `boolean | null`
 - `this.getClientSpecific(key, config)` → `boolean`, for options only this client understands. Declare them by overriding `get clientSpecificSettingDescriptors()`; the options page and the popup then render them with no further wiring. See Step 2b.
 
 Result construction:
+
 - `this.toFailureResult(error)` → `TorrentAddingResult`; maps `HttpError` to its status and body, anything else to code `0` and the error message. The base templates use it; a custom `catch` should too, rather than hand-building a failure object.
 
 Connection testing:
+
 - `get isConnectionTestSupported(): boolean` — defaults to `true`. Override to `false` if the client has no probe-able endpoint; the Options page hides the Test Connection button when it is false.
 - Clients with `login()` get the Connection Test from it: the base class runs the same login the Add runs, so don't override `testConnection()`. Success → authenticated. `AuthenticationError` or a 401/403 → reachable, not authenticated. `CredentialsUnverifiedError` or any other status → reachable, not verified. Network failure → unreachable.
 - Basic-auth clients (no `login()`) override `testConnection()` with `return this.probeWithBasicAuth(url)`, which treats 401/403 as "reachable, not authenticated".
-- Clients with neither get the base default: a GET to the base URL that reports reachability *without* checking credentials.
+- Clients with neither get the base default: a GET to the base URL that reports reachability _without_ checking credentials.
 - `this.toReachableResult(authenticated, code)` / `this.toUnreachableResult(error)` → build a `ConnectionTestResult` in a custom `testConnection()`.
 
 ```typescript
@@ -83,7 +89,7 @@ interface TorrentAddingResult {
 
 interface ConnectionTestResult {
     reachable: boolean;
-    authenticated: boolean | null;   // null = not checked
+    authenticated: boolean | null; // null = not checked
     httpResponseCode: number;
     message: string;
 }
@@ -93,17 +99,18 @@ interface ConnectionTestResult {
 
 ```typescript
 interface Torrent {
-  data: Blob | string;  // Blob for .torrent uploads; magnet URI string when isMagnet
-  name: string;
-  declaredName?: string;
-  isMagnet: boolean;    // ALWAYS branch on this — do not parse the data field
-  trackers?: string[];
-  files?: string[];
-  isPrivate?: boolean;
+    data: Blob | string; // Blob for .torrent uploads; magnet URI string when isMagnet
+    name: string;
+    declaredName?: string;
+    isMagnet: boolean; // ALWAYS branch on this — do not parse the data field
+    trackers?: string[];
+    files?: string[];
+    isPrivate?: boolean;
 }
 ```
 
 When uploading the `.torrent` blob, wrap it in a `File` so the multipart filename is set:
+
 ```typescript
 form.append("torrents", new File([torrent.data as Blob], torrent.name, { type: "application/x-bittorrent" }));
 ```
@@ -112,7 +119,8 @@ form.append("torrents", new File([torrent.data as Blob], torrent.name, { type: "
 
 Edit `src/models/clients.ts`. There are **three** maps to update, and `ClientDisplayName` / `ClientClassByClient` are both `Record<Client, …>`, so a missing entry is a compile error.
 
-1. Add to the `Client` enum. The value is a **stable, opaque, lowercase slug** — it is persisted in user settings and used as a lookup key, so it must never change afterwards. It is *not* the display name:
+1. Add to the `Client` enum. The value is a **stable, opaque, lowercase slug** — it is persisted in user settings and used as a lookup key, so it must never change afterwards. It is _not_ the display name:
+
 ```typescript
 export enum Client {
     // ... existing entries ...
@@ -121,6 +129,7 @@ export enum Client {
 ```
 
 2. Add the human-readable name to `ClientDisplayName`. This is what the user sees, and it can be reworded freely later without touching stored data:
+
 ```typescript
 export const ClientDisplayName: Record<Client, string> = {
     // ... existing entries ...
@@ -129,6 +138,7 @@ export const ClientDisplayName: Record<Client, string> = {
 ```
 
 3. Add the constructor to `ClientClassByClient`:
+
 ```typescript
 import { <ClientName>WebUI } from '../webuis/<clientname>';
 
@@ -138,7 +148,7 @@ export const ClientClassByClient: Record<Client, ConcreteTorrentWebUIConstructor
 };
 ```
 
-Only touch `src/settings/legacy-client-identifiers.ts` if you are *renaming* an existing client's slug — a new client has no legacy identifier to migrate.
+Only touch `src/settings/legacy-client-identifiers.ts` if you are _renaming_ an existing client's slug — a new client has no legacy identifier to migrate.
 
 ### Step 2b: Client-specific options (only if the client has any)
 
@@ -162,6 +172,7 @@ Read the value with `this.getClientSpecific("forceStart", config)`. The options 
 Every client has a matching test file. Create `test/webuis/<clientname>.test.ts` and follow the closest existing one. Use the helpers in `test/helpers/` (`fetch-mock.ts`, `fixtures.ts`, `chrome-mock.ts`) rather than hand-rolling mocks.
 
 Cover at minimum:
+
 - `.torrent` upload: correct URL, method, and body shape; the `File` filename is set
 - Magnet upload: the magnet string is sent, and to the right endpoint if it differs
 - Label / directory / add-paused, for each flag the client reports as supported
@@ -185,26 +196,33 @@ pnpm run lint
 Each pattern points to a real client implementation in `src/webuis/` — copy from there rather than the abstract snippet.
 
 ### Session cookie via login endpoint — see `qbittorrent.ts`
+
 POST `username`/`password` as `application/x-www-form-urlencoded` to `/api/v2/auth/login`; the SID cookie is set automatically by the browser for subsequent fetches.
 
 ### Session-header challenge — see `transmission.ts`
+
 First POST to `/transmission/rpc` returns HTTP 409 with `X-Transmission-Session-Id` header; resend with that header set.
 
 ### JSON-RPC login returning a token — see `porla.ts`, `deluge.ts`
+
 Porla: POST JSON `{username, password}` to `/api/v1/auth/login`, receive token, pass in subsequent JSON-RPC calls. Deluge: POST JSON-RPC `auth.login` with the password.
 
 ### JSON-body login returning a cookie — see `flood.ts`
+
 POST JSON `{username, password}` to `/api/auth/authenticate`; session cookie set by browser. Throw `AuthenticationError` from `login()` on rejection.
 
 ### Basic auth — see `rqbit.ts`, `tixati.ts`, `rutorrent.ts`
+
 Use `this.createBasicAuthHeaders()`, and `this.probeWithBasicAuth(url)` for `testConnection()`.
 
 ### XML-RPC — see `rutorrent.ts`
+
 Build an XML body and POST with `Content-Type: text/xml`.
 
 ## Common Upload Patterns
 
 ### Multipart form with binary `.torrent` (qBittorrent style)
+
 ```typescript
 const form = new FormData();
 form.append("torrents", new File([torrent.data as Blob], torrent.name, { type: "application/x-bittorrent" }));
@@ -214,15 +232,17 @@ await this.fetch(`${this.createBaseUrl()}/api/v2/torrents/add`, { method: "POST"
 ```
 
 ### Magnet URI string in a JSON body
+
 ```typescript
 await this.fetch(`${this.createBaseUrl()}/api/endpoint`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url: torrent.data as string }),  // torrent.isMagnet must be true
+    body: JSON.stringify({ url: torrent.data as string }), // torrent.isMagnet must be true
 });
 ```
 
 ### Split branches by magnet vs file — see `flood.ts`, `deluge.ts`, `rutorrent.ts`
+
 Different endpoints or payload shapes for `torrent.isMagnet === true` vs `false`. Branch in `add` itself; do not try to unify.
 
 ## Output

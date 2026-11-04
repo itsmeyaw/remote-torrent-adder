@@ -31,14 +31,16 @@ const CLOUDFLARE_CHALLENGE_MARKERS = [
     "challenges.cloudflare.com",
     "__cf_chl",
     "cf_chl_opt",
-    "cf-browser-verification"
+    "cf-browser-verification",
 ];
 
 export class CloudflareChallengeError extends Error {
     readonly challengeUrl: string;
 
     constructor(challengeUrl: string) {
-        super("Cloudflare wants to check this browser. Open the link in a tab, complete the check, then add the torrent again.");
+        super(
+            "Cloudflare wants to check this browser. Open the link in a tab, complete the check, then add the torrent again.",
+        );
         this.name = "CloudflareChallengeError";
         this.challengeUrl = challengeUrl;
     }
@@ -64,17 +66,25 @@ export async function downloadTorrent(url: string, context: TorrentDownloadConte
 }
 
 async function fetchTorrentFile(url: string, context: TorrentDownloadContext): Promise<FetchedTorrentFile> {
-    return await fetchTorrentFileFromPage(url, context) ?? await fetchTorrentFileFromWorker(url, context);
+    return (await fetchTorrentFileFromPage(url, context)) ?? (await fetchTorrentFileFromWorker(url, context));
 }
 
-async function fetchTorrentFileFromPage(url: string, context: TorrentDownloadContext): Promise<FetchedTorrentFile | null> {
+async function fetchTorrentFileFromPage(
+    url: string,
+    context: TorrentDownloadContext,
+): Promise<FetchedTorrentFile | null> {
     if (context.tabId === undefined || context.tabId === null || context.tabId < 0) {
         return null;
     }
 
     let fetched: IFetchedTorrentFile;
     try {
-        fetched = await sendMessageToTab(context.tabId, "fetchTorrentInPage", { url }, { frameId: context.frameId ?? 0 });
+        fetched = await sendMessageToTab(
+            context.tabId,
+            "fetchTorrentInPage",
+            { url },
+            { frameId: context.frameId ?? 0 },
+        );
     } catch (error) {
         console.warn("The page could not download the torrent; downloading from the service worker instead.", error);
         return null;
@@ -87,7 +97,7 @@ async function fetchTorrentFileFromPage(url: string, context: TorrentDownloadCon
         contentType: fetched.contentType,
         cfMitigated: fetched.cfMitigated,
         finalUrl: fetched.finalUrl,
-        bytes: base64ToBytes(fetched.base64)
+        bytes: base64ToBytes(fetched.base64),
     };
 }
 
@@ -113,7 +123,7 @@ async function fetchTorrentFileFromWorker(url: string, context: TorrentDownloadC
         contentType: response.headers.get("Content-Type"),
         cfMitigated: response.headers.get("cf-mitigated"),
         finalUrl: response.url || url,
-        bytes
+        bytes,
     };
 }
 
@@ -131,7 +141,7 @@ function isCloudflareChallenge(fetched: FetchedTorrentFile): boolean {
     }
 
     const body = new TextDecoder().decode(fetched.bytes.subarray(0, 64 * 1024));
-    return CLOUDFLARE_CHALLENGE_MARKERS.some(marker => body.includes(marker));
+    return CLOUDFLARE_CHALLENGE_MARKERS.some((marker) => body.includes(marker));
 }
 
 function decodeTorrentDataAndValidate(fetched: FetchedTorrentFile): DecodedTorrent {
@@ -140,7 +150,12 @@ function decodeTorrentDataAndValidate(fetched: FetchedTorrentFile): DecodedTorre
     } catch (error) {
         console.error("Invalid torrent data received", fetched.bytes);
 
-        throw new Error("Received " + describeContentType(fetched.contentType) + " instead of a torrent file. Please check the devtools view for details.", { cause: error });
+        throw new Error(
+            "Received " +
+                describeContentType(fetched.contentType) +
+                " instead of a torrent file. Please check the devtools view for details.",
+            { cause: error },
+        );
     }
 }
 

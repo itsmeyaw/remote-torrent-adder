@@ -18,8 +18,9 @@ const isString = (value: unknown): boolean => typeof value === "string";
 const isNonEmptyString = (value: unknown): boolean => typeof value === "string" && value.trim() !== "";
 const isNullableString = (value: unknown): boolean => value === null || typeof value === "string";
 const isStringArray = (value: unknown): boolean => Array.isArray(value) && value.every(isString);
-const isNonNegativeNumber = (value: unknown): boolean => typeof value === "number" && Number.isFinite(value) && value >= 0;
-const isIconClickAction = (value: unknown): boolean => ICON_CLICK_ACTIONS.some(action => action === value);
+const isNonNegativeNumber = (value: unknown): boolean =>
+    typeof value === "number" && Number.isFinite(value) && value >= 0;
+const isIconClickAction = (value: unknown): boolean => ICON_CLICK_ACTIONS.some((action) => action === value);
 const isPort = (value: unknown): boolean =>
     value === null || (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 65535);
 const isKnownClient = (value: unknown): boolean => typeof value === "string" && resolveClientIdentifier(value) !== null;
@@ -62,9 +63,9 @@ const WEBUI_FIELD_CHECKS: ReadonlyArray<readonly [keyof WebUISettings, FieldChec
 ];
 
 function settingProblems(raw: Record<string, unknown>): string[] {
-    return SETTING_CHECKS
-        .filter(([field, check]) => raw[field] !== undefined && !check(raw[field]))
-        .map(([field]) => `Invalid ${field}`);
+    return SETTING_CHECKS.filter(([field, check]) => raw[field] !== undefined && !check(raw[field])).map(
+        ([field]) => `Invalid ${field}`,
+    );
 }
 
 // The id goes first, as in createWebUiSettings, so a WebUI serializes the same however it was made.
@@ -82,7 +83,10 @@ function webUiProblems(webUi: unknown, position: number): string[] {
         ...REQUIRED_WEBUI_FIELD_CHECKS.filter(([field, check]) => !check(webUi[field])),
         ...WEBUI_FIELD_CHECKS.filter(([field, check]) => !check(filled[field])),
     ];
-    return failing.map(([field]) => `WebUI ${position}${name}: ${webUi[field] === undefined || webUi[field] === "" ? "missing" : "invalid"} ${field}`);
+    return failing.map(
+        ([field]) =>
+            `WebUI ${position}${name}: ${webUi[field] === undefined || webUi[field] === "" ? "missing" : "invalid"} ${field}`,
+    );
 }
 
 function linkCatchingPatternProblem(pattern: unknown, position: number): string | null {

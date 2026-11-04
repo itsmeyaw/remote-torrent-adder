@@ -33,12 +33,17 @@ export function registerMessageListener(): void {
         },
         testNotification: async ({ isFailed }) => notify({ type: "test", isFailed }, await loadSettings()),
         testConnection: ({ webUiSettings }) => testConnectionForWebUiSettings(webUiSettings),
-        preAddTorrent: (message, sender) => addLink(message.url, { webUiId: message.webUiId }, {
-            ...resolveDownloadContext(message, sender),
-            windowId: sender.tab?.windowId,
-        }),
-        addTorrentMessageWithLabelAndDir: choice => addBufferedTorrent(choice),
-        setTorrentLabel: message => setTorrentLabel(message),
+        preAddTorrent: (message, sender) =>
+            addLink(
+                message.url,
+                { webUiId: message.webUiId },
+                {
+                    ...resolveDownloadContext(message, sender),
+                    windowId: sender.tab?.windowId,
+                },
+            ),
+        addTorrentMessageWithLabelAndDir: (choice) => addBufferedTorrent(choice),
+        setTorrentLabel: (message) => setTorrentLabel(message),
         updateActionBadgeText: ({ text }, sender) => updateBadgeText(text, sender.tab?.id ?? -1),
         openWebUi: async ({ webUiId }, sender) => {
             if (!sender.url?.startsWith(ext.runtime.getURL(""))) {
@@ -48,24 +53,32 @@ export function registerMessageListener(): void {
             if (!webUi) {
                 throw new Error(`No WebUI found for id ${webUiId}`);
             }
-            void openWebUi(webUi).catch(error => console.error("Failed opening WebUI", error));
+            void openWebUi(webUi).catch((error) => console.error("Failed opening WebUI", error));
         },
     });
 }
 
-export function resolveDownloadContext(message: PreAddTorrentRequest, sender: chrome.runtime.MessageSender): TorrentDownloadContext {
-    const senderPageUrl = sender.tab ? sender.url ?? sender.tab.url ?? null : null;
+export function resolveDownloadContext(
+    message: PreAddTorrentRequest,
+    sender: chrome.runtime.MessageSender,
+): TorrentDownloadContext {
+    const senderPageUrl = sender.tab ? (sender.url ?? sender.tab.url ?? null) : null;
     return {
         tabId: sender.tab?.id ?? message.tabId ?? null,
         frameId: (sender.tab ? sender.frameId : message.frameId) ?? 0,
-        pageUrl: senderPageUrl ?? message.pageUrl ?? null
+        pageUrl: senderPageUrl ?? message.pageUrl ?? null,
     };
 }
 
 async function testConnectionForWebUiSettings(webUiSettings: WebUISettings): Promise<ConnectionTestResult> {
     const webUi = WebUIFactory.createWebUI(webUiSettings);
     if (!webUi) {
-        return { reachable: false, authenticated: null, httpResponseCode: 0, message: "No client selected for this WebUI." };
+        return {
+            reachable: false,
+            authenticated: null,
+            httpResponseCode: 0,
+            message: "No client selected for this WebUI.",
+        };
     }
     return executeMethodWrappedWithOriginStripped(() => webUi.testConnection(), webUi.createBaseUrl());
 }

@@ -135,8 +135,14 @@ describe("DelugeWebUI", () => {
 
         expect(result.success).toBe(true);
         expect(JSON.parse(callArgs(fetch, 0)[1].body as string).method).toBe("auth.login");
-        expect(JSON.parse(callArgs(fetch, 1)[1].body as string)).toMatchObject({ method: "label.add", params: ["movies"] });
-        expect(JSON.parse(callArgs(fetch, 2)[1].body as string)).toMatchObject({ method: "label.set_torrent", params: ["0123456789abcdef0123456789abcdef01234567", "movies"] });
+        expect(JSON.parse(callArgs(fetch, 1)[1].body as string)).toMatchObject({
+            method: "label.add",
+            params: ["movies"],
+        });
+        expect(JSON.parse(callArgs(fetch, 2)[1].body as string)).toMatchObject({
+            method: "label.set_torrent",
+            params: ["0123456789abcdef0123456789abcdef01234567", "movies"],
+        });
     });
 
     it("reports failure when label.set_torrent returns an error", async () => {
@@ -145,6 +151,8 @@ describe("DelugeWebUI", () => {
             mockResponse({ status: 200, json: { result: null, error: null } }),
             mockResponse({ status: 200, json: { result: null, error: { message: "Unknown Torrent" } } }),
         );
-        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toMatchObject({ success: false });
+        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toMatchObject({
+            success: false,
+        });
     });
 });

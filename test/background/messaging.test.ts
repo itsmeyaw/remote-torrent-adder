@@ -73,12 +73,15 @@ describe("registerMessageListener routing", () => {
         ["", "That is not valid JSON."],
         ["null", "That JSON is not a Remote Torrent Adder settings export."],
         ["[]", "That JSON is not a Remote Torrent Adder settings export."],
-    ])("rejects a SaveSettings payload that is not a settings export (%j) and keeps the stored settings", async (settings, problem) => {
-        const before = (chrome as any).__storage.settings;
-        const response = await dispatch({ action: "saveSettings", settings });
-        expect(response).toEqual({ error: problem });
-        expect((chrome as any).__storage.settings).toBe(before);
-    });
+    ])(
+        "rejects a SaveSettings payload that is not a settings export (%j) and keeps the stored settings",
+        async (settings, problem) => {
+            const before = (chrome as any).__storage.settings;
+            const response = await dispatch({ action: "saveSettings", settings });
+            expect(response).toEqual({ error: problem });
+            expect((chrome as any).__storage.settings).toBe(before);
+        },
+    );
 
     it("rejects a SaveSettings payload with an invalid setting and reports the problem", async () => {
         const before = (chrome as any).__storage.settings;
@@ -93,7 +96,10 @@ describe("registerMessageListener routing", () => {
             action: "testNotification",
             isFailed: true,
         });
-        expect(notify).toHaveBeenCalledWith({ type: "test", isFailed: true }, expect.objectContaining({ notificationsEnabled: true }));
+        expect(notify).toHaveBeenCalledWith(
+            { type: "test", isFailed: true },
+            expect.objectContaining({ notificationsEnabled: true }),
+        );
     });
 });
 
@@ -142,7 +148,9 @@ describe("Add messages", () => {
     });
 
     it("responds with the message of a failed buffered add", async () => {
-        addBufferedTorrent.mockRejectedValueOnce(new HandledFailure("No buffered torrent to add; it may already have been consumed."));
+        addBufferedTorrent.mockRejectedValueOnce(
+            new HandledFailure("No buffered torrent to add; it may already have been consumed."),
+        );
 
         const response = await dispatch({
             action: "addTorrentMessageWithLabelAndDir",
@@ -161,7 +169,9 @@ describe("setTorrentLabel", () => {
 
     function seedWebUi() {
         const settings = getDefaultSettings();
-        settings.webuiSettings = [makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, host: "h", port: 8080, labels: ["old"] })];
+        settings.webuiSettings = [
+            makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, host: "h", port: 8080, labels: ["old"] }),
+        ];
         (chrome as any).__storage.settings = serializeSettings(settings);
     }
 
@@ -185,15 +195,23 @@ describe("setTorrentLabel", () => {
         });
 
         expect(response).toEqual({ value: undefined });
-        const setCategoryCall = (globalThis as any).fetch.mock.calls.find((call: any[]) => String(call[0]).endsWith("/setCategory"));
+        const setCategoryCall = (globalThis as any).fetch.mock.calls.find((call: any[]) =>
+            String(call[0]).endsWith("/setCategory"),
+        );
         expect(setCategoryCall[1].body.get("hashes")).toBe(infoHash);
-        expect(at(deserializeSettings((chrome as any).__storage.settings)!.webuiSettings, 0).labels).toEqual(["movies", "old"]);
-        expect(notify).toHaveBeenCalledWith({
-            type: "labelSet",
-            webUi: expect.objectContaining({ settings: expect.objectContaining({ id: "w1" }) }),
-            torrentName: "Cool Torrent",
-            label: "movies",
-        }, expect.anything());
+        expect(at(deserializeSettings((chrome as any).__storage.settings)!.webuiSettings, 0).labels).toEqual([
+            "movies",
+            "old",
+        ]);
+        expect(notify).toHaveBeenCalledWith(
+            {
+                type: "labelSet",
+                webUi: expect.objectContaining({ settings: expect.objectContaining({ id: "w1" }) }),
+                torrentName: "Cool Torrent",
+                label: "movies",
+            },
+            expect.anything(),
+        );
     });
 
     it("reports the failure to the popup and keeps the label list when the client refuses", async () => {

@@ -9,262 +9,283 @@
 
 /* Tailwind colours that follow the theme below, so dark mode needs no `dark:` variants. */
 @theme inline {
-  --color-rta-bg: var(--rta-bg);
-  --color-rta-surface: var(--rta-surface);
-  --color-rta-surface-alt: var(--rta-surface-alt);
-  --color-rta-green: var(--rta-green);
-  --color-rta-green-dark: var(--rta-green-dark);
-  --color-rta-accent: var(--rta-accent);
-  --color-rta-border: var(--rta-border);
-  --color-rta-chip-bg: var(--rta-chip-bg);
-  --color-rta-chip-border: var(--rta-chip-border);
-  --color-rta-input-bg: var(--rta-input-bg);
-  --color-rta-text: var(--rta-text);
-  --color-rta-text-muted: var(--rta-text-muted);
-  --color-rta-success: var(--rta-success);
-  --color-rta-danger: var(--rta-danger);
-  --color-rta-danger-dark: var(--rta-danger-dark);
-  --color-rta-info: var(--rta-info);
-  --color-rta-neutral: var(--rta-neutral);
-  --color-rta-warning: #b8860b;
+    --color-rta-bg: var(--rta-bg);
+    --color-rta-surface: var(--rta-surface);
+    --color-rta-surface-alt: var(--rta-surface-alt);
+    --color-rta-green: var(--rta-green);
+    --color-rta-green-dark: var(--rta-green-dark);
+    --color-rta-accent: var(--rta-accent);
+    --color-rta-border: var(--rta-border);
+    --color-rta-chip-bg: var(--rta-chip-bg);
+    --color-rta-chip-border: var(--rta-chip-border);
+    --color-rta-input-bg: var(--rta-input-bg);
+    --color-rta-text: var(--rta-text);
+    --color-rta-text-muted: var(--rta-text-muted);
+    --color-rta-success: var(--rta-success);
+    --color-rta-danger: var(--rta-danger);
+    --color-rta-danger-dark: var(--rta-danger-dark);
+    --color-rta-info: var(--rta-info);
+    --color-rta-neutral: var(--rta-neutral);
+    --color-rta-warning: #b8860b;
 }
 
 /* Light theme (default) */
 :root {
-  --rta-bg: #eaf5ea;
-  --rta-surface: #ffffff;
-  --rta-surface-alt: #f7faf7;
-  --rta-green: #6e8b74;
-  --rta-green-dark: #4e6a57;
-  --rta-accent: #b7c9a7;
-  --rta-border: #b7c9a7;
-  --rta-chip-bg: #eaf5ea;
-  --rta-chip-border: #b7c9a7;
-  --rta-input-bg: #ffffff;
-  --rta-text: #1b241d;
-  --rta-text-muted: #888888;
-  --rta-success: #228b22;
-  --rta-danger: #b22222;
-  --rta-danger-dark: #8b0000;
-  --rta-info: #4682b4;
-  --rta-neutral: #eeeeee;
-  --rta-shadow-color: rgba(110,139,116,0.10);
+    --rta-bg: #eaf5ea;
+    --rta-surface: #ffffff;
+    --rta-surface-alt: #f7faf7;
+    --rta-green: #6e8b74;
+    --rta-green-dark: #4e6a57;
+    --rta-accent: #b7c9a7;
+    --rta-border: #b7c9a7;
+    --rta-chip-bg: #eaf5ea;
+    --rta-chip-border: #b7c9a7;
+    --rta-input-bg: #ffffff;
+    --rta-text: #1b241d;
+    --rta-text-muted: #888888;
+    --rta-success: #228b22;
+    --rta-danger: #b22222;
+    --rta-danger-dark: #8b0000;
+    --rta-info: #4682b4;
+    --rta-neutral: #eeeeee;
+    --rta-shadow-color: rgba(110, 139, 116, 0.1);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --rta-bg: #141a16;
-    --rta-surface: #1d2420;
-    --rta-surface-alt: #202a24;
-    --rta-green: #7fa88e;
-    --rta-green-dark: #9cc8ae;
-    --rta-accent: #2e4136;
-    --rta-border: #2e4136;
-    --rta-chip-bg: #1f2924;
-    --rta-chip-border: #365144;
-    --rta-input-bg: #252f29;
-    --rta-text: #dfe7e2;
-    --rta-text-muted: #a2b0a8;
-    --rta-success: #2fae4b;
-    --rta-danger: #d85858;
-    --rta-danger-dark: #b00000;
-    --rta-info: #5ca2d6;
-    --rta-neutral: #444444;
-    --rta-shadow-color: rgba(0,0,0,0.5);
-  }
-  body {
-    background: #0d110f;
-    color: var(--rta-text);
-  }
+    :root {
+        --rta-bg: #141a16;
+        --rta-surface: #1d2420;
+        --rta-surface-alt: #202a24;
+        --rta-green: #7fa88e;
+        --rta-green-dark: #9cc8ae;
+        --rta-accent: #2e4136;
+        --rta-border: #2e4136;
+        --rta-chip-bg: #1f2924;
+        --rta-chip-border: #365144;
+        --rta-input-bg: #252f29;
+        --rta-text: #dfe7e2;
+        --rta-text-muted: #a2b0a8;
+        --rta-success: #2fae4b;
+        --rta-danger: #d85858;
+        --rta-danger-dark: #b00000;
+        --rta-info: #5ca2d6;
+        --rta-neutral: #444444;
+        --rta-shadow-color: rgba(0, 0, 0, 0.5);
+    }
+    body {
+        background: #0d110f;
+        color: var(--rta-text);
+    }
 }
 
 body {
-  background: var(--rta-bg);
-  color: var(--rta-text);
-  margin: 0;
-  font-family: system-ui, sans-serif;
+    background: var(--rta-bg);
+    color: var(--rta-text);
+    margin: 0;
+    font-family: system-ui, sans-serif;
 }
 
 /* Scrollbar styling (works in Chromium) */
-body::-webkit-scrollbar { width: 10px; }
-body::-webkit-scrollbar-track { background: var(--rta-bg); }
-body::-webkit-scrollbar-thumb { background: var(--rta-accent); border-radius: 5px; }
-body::-webkit-scrollbar-thumb:hover { background: var(--rta-green); }
+body::-webkit-scrollbar {
+    width: 10px;
+}
+body::-webkit-scrollbar-track {
+    background: var(--rta-bg);
+}
+body::-webkit-scrollbar-thumb {
+    background: var(--rta-accent);
+    border-radius: 5px;
+}
+body::-webkit-scrollbar-thumb:hover {
+    background: var(--rta-green);
+}
 
 /* Utility classes (if needed later) */
-.rta-muted { color: var(--rta-text-muted); }
-.rta-border { border: 1px solid var(--rta-border); }
-.rta-surface { background: var(--rta-surface); }
-.rta-surface-alt { background: var(--rta-surface-alt); }
+.rta-muted {
+    color: var(--rta-text-muted);
+}
+.rta-border {
+    border: 1px solid var(--rta-border);
+}
+.rta-surface {
+    background: var(--rta-surface);
+}
+.rta-surface-alt {
+    background: var(--rta-surface-alt);
+}
 /* ---- Options shell ------------------------------------------------------ */
 
 .rta-shell {
-  font-family: sans-serif;
-  width: 80%;
-  margin: 40px auto;
-  background: var(--rta-bg);
-  border-radius: 16px;
-  box-shadow: 0 2px 16px var(--rta-shadow-color);
-  border: 1px solid var(--rta-green-dark);
-  min-height: 400px;
-  color: var(--rta-text);
+    font-family: sans-serif;
+    width: 80%;
+    margin: 40px auto;
+    background: var(--rta-bg);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px var(--rta-shadow-color);
+    border: 1px solid var(--rta-green-dark);
+    min-height: 400px;
+    color: var(--rta-text);
 }
 
 .rta-shell__header {
-  width: 100%;
-  padding: 24px 0 8px;
-  text-align: center;
+    width: 100%;
+    padding: 24px 0 8px;
+    text-align: center;
 }
 
 .rta-shell__title {
-  color: var(--rta-green-dark);
-  font-weight: 700;
-  font-size: 32px;
-  margin: 0;
-  letter-spacing: 1px;
-  text-shadow: 0 2px 8px var(--rta-accent);
+    color: var(--rta-green-dark);
+    font-weight: 700;
+    font-size: 32px;
+    margin: 0;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px var(--rta-accent);
 }
 
 .rta-tablist {
-  display: flex;
-  border-bottom: 2px solid var(--rta-green);
+    display: flex;
+    border-bottom: 2px solid var(--rta-green);
 }
 
 .rta-tab {
-  flex: 1;
-  padding: 16px 0;
-  background: var(--rta-bg);
-  border: none;
-  border-bottom: 4px solid transparent;
-  font-weight: normal;
-  color: var(--rta-green-dark);
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 0.2s;
+    flex: 1;
+    padding: 16px 0;
+    background: var(--rta-bg);
+    border: none;
+    border-bottom: 4px solid transparent;
+    font-weight: normal;
+    color: var(--rta-green-dark);
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
 .rta-tab:hover {
-  background: var(--rta-surface-alt);
+    background: var(--rta-surface-alt);
 }
 
 /* A visible focus ring matters here: the tablist is keyboard navigable. */
 .rta-tab:focus-visible {
-  outline: 3px solid var(--rta-green-dark);
-  outline-offset: -3px;
+    outline: 3px solid var(--rta-green-dark);
+    outline-offset: -3px;
 }
 
 .rta-tab[aria-selected="true"] {
-  background: var(--rta-accent);
-  border-bottom-color: var(--rta-green-dark);
-  font-weight: bold;
+    background: var(--rta-accent);
+    border-bottom-color: var(--rta-green-dark);
+    font-weight: bold;
 }
 
 .rta-tabpanel {
-  padding: 10px;
-  background: var(--rta-surface);
-  min-height: 200px;
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 2px 8px var(--rta-accent);
+    padding: 10px;
+    background: var(--rta-surface);
+    min-height: 200px;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 2px 8px var(--rta-accent);
 }
 
 .rta-tabpanel:focus-visible {
-  outline: 3px solid var(--rta-green-dark);
-  outline-offset: -3px;
+    outline: 3px solid var(--rta-green-dark);
+    outline-offset: -3px;
 }
 
 /* ---- Shared building blocks --------------------------------------------- */
 
 .rta-page {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 24px;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 24px;
 }
 
 .rta-card {
-  background: var(--rta-bg);
-  border: 1px solid var(--rta-border);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 8px var(--rta-accent);
+    background: var(--rta-bg);
+    border: 1px solid var(--rta-border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px var(--rta-accent);
 }
 
 .rta-card + .rta-card {
-  margin-top: 32px;
+    margin-top: 32px;
 }
 
 .rta-card__heading {
-  margin-top: 0;
+    margin-top: 0;
 }
 
 .rta-textarea {
-  width: 100%;
-  height: 120px;
-  font-family: monospace;
-  font-size: 14px;
-  border-radius: 8px;
-  border: 1px solid var(--rta-border);
-  margin-bottom: 12px;
-  background: var(--rta-surface);
-  color: var(--rta-text);
+    width: 100%;
+    height: 120px;
+    font-family: monospace;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--rta-border);
+    margin-bottom: 12px;
+    background: var(--rta-surface);
+    color: var(--rta-text);
 }
 
 .rta-button {
-  border: none;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-weight: 500;
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.2s;
-  background: var(--rta-green);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s;
+    background: var(--rta-green);
 }
 
 .rta-button:focus-visible {
-  outline: 3px solid var(--rta-green-dark);
-  outline-offset: 2px;
+    outline: 3px solid var(--rta-green-dark);
+    outline-offset: 2px;
 }
 
-.rta-button--accent { background: var(--rta-accent); }
-.rta-button--success { background: var(--rta-success); }
+.rta-button--accent {
+    background: var(--rta-accent);
+}
+.rta-button--success {
+    background: var(--rta-success);
+}
 
 .rta-error {
-  color: var(--rta-danger);
-  margin-top: 8px;
+    color: var(--rta-danger);
+    margin-top: 8px;
 }
 
 .rta-notice {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 8px 0 0;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 8px 0 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 .rta-notice--warning {
-  background: var(--rta-surface);
-  border: 2px solid var(--rta-danger);
-  color: var(--rta-text);
+    background: var(--rta-surface);
+    border: 2px solid var(--rta-danger);
+    color: var(--rta-text);
 }
 
 .rta-notice__action {
-  flex: none;
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  background: var(--rta-danger);
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
+    flex: none;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    background: var(--rta-danger);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .rta-notice__action:hover {
-  background: var(--rta-danger-dark);
+    background: var(--rta-danger-dark);
 }

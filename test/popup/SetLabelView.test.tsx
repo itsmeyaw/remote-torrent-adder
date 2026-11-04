@@ -71,7 +71,9 @@ describe("SetLabelView", () => {
 
         await userEvent.type(input, "{Enter}");
 
-        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(expect.objectContaining({ action: "setTorrentLabel", label: "movies" }));
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ action: "setTorrentLabel", label: "movies" }),
+        );
     });
 
     it("stays open and shows the error when the client refuses", async () => {

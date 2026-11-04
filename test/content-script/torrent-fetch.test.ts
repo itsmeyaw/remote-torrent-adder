@@ -23,12 +23,14 @@ describe("fetchTorrentInPage", () => {
     });
 
     it("reports the status, content type and cf-mitigated header back to the worker", async () => {
-        queueFetch(mockResponse({
-            status: 403,
-            body: "challenge",
-            url: "https://tracker.org/get/1.torrent?redirected",
-            headers: { "Content-Type": "text/html; charset=utf-8", "cf-mitigated": "challenge" },
-        }));
+        queueFetch(
+            mockResponse({
+                status: 403,
+                body: "challenge",
+                url: "https://tracker.org/get/1.torrent?redirected",
+                headers: { "Content-Type": "text/html; charset=utf-8", "cf-mitigated": "challenge" },
+            }),
+        );
 
         const fetched = await fetchTorrentInPage("https://tracker.org/get/1.torrent");
 

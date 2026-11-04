@@ -8,10 +8,13 @@ import { getDefaultSettings } from "../../src/settings/settings-defaults";
 import { makeMagnetTorrent, makeWebUISettings } from "../helpers/fixtures";
 import { callArgs } from "../helpers/assert";
 
-const qbit = (overrides: Partial<WebUISettings> = {}) => makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, ...overrides });
+const qbit = (overrides: Partial<WebUISettings> = {}) =>
+    makeWebUISettings({ id: "w1", client: Client.QBittorrentWebUI, ...overrides });
 
 function serveSettings(...webuiSettings: WebUISettings[]) {
-    (chrome.runtime.sendMessage as any).mockResolvedValue({ value: serializeSettings({ ...getDefaultSettings(), webuiSettings }) });
+    (chrome.runtime.sendMessage as any).mockResolvedValue({
+        value: serializeSettings({ ...getDefaultSettings(), webuiSettings }),
+    });
 }
 
 const park = async (webUiOverrides = {}, torrentOverrides = {}) => {
@@ -158,7 +161,7 @@ describe("loadPopupData", () => {
         const id = await park();
 
         const { descriptors, initial } = (await loadPopupData(id))!.clientSpecific;
-        expect(descriptors.map(descriptor => descriptor.key)).toEqual(["forceStart"]);
+        expect(descriptors.map((descriptor) => descriptor.key)).toEqual(["forceStart"]);
         expect(initial).toEqual({ forceStart: false });
     });
 
@@ -202,7 +205,12 @@ describe("submitTorrent", () => {
         expect(message.action).toBe("addTorrentMessageWithLabelAndDir");
         expect(message.bufferedId).toBe("b1");
         expect(message).not.toHaveProperty("webUiId");
-        expect(message.config).toEqual({ label: "movies", dir: "/data", addPaused: true, clientSpecificSettings: { forceStart: true } });
+        expect(message.config).toEqual({
+            label: "movies",
+            dir: "/data",
+            addPaused: true,
+            clientSpecificSettings: { forceStart: true },
+        });
         expect(message.labels).toEqual(["movies", "tv"]);
         expect(message.directories).toEqual(["/data"]);
         expect(message).not.toHaveProperty("serializedTorrent");

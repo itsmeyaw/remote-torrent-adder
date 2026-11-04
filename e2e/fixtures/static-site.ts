@@ -50,13 +50,13 @@ export class StaticSite {
             res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
             res.end(PAGE);
         });
-        await new Promise<void>(resolve => this.server.listen(0, "127.0.0.1", resolve));
+        await new Promise<void>((resolve) => this.server.listen(0, "127.0.0.1", resolve));
         this.port = (this.server.address() as AddressInfo).port;
     }
 
     async stop(): Promise<void> {
         this.server.closeAllConnections();
-        await new Promise<void>(resolve => this.server.close(() => resolve()));
+        await new Promise<void>((resolve) => this.server.close(() => resolve()));
     }
 
     get baseUrl(): string {

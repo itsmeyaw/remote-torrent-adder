@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { AuthenticationError, CredentialsUnverifiedError, HttpError, TorrentWebUI, resolveClientSpecificSetting } from "../../src/models/webui";
+import {
+    AuthenticationError,
+    CredentialsUnverifiedError,
+    HttpError,
+    TorrentWebUI,
+    resolveClientSpecificSetting,
+} from "../../src/models/webui";
 import type { AddResult, ClientSpecificSettingDescriptor, TorrentAddingResult } from "../../src/models/webui";
 import type { Torrent, TorrentUploadConfig } from "../../src/models/torrent";
 import { makeWebUISettings, makeFileTorrent } from "../helpers/fixtures";
@@ -148,7 +154,9 @@ describe("config resolution helpers", () => {
 
     it("getClientSpecific prefers config, then the stored setting, then the declared default", () => {
         const stored = { clientSpecificSettings: { flagOff: true } };
-        expect(build(stored).publicGetClientSpecific("flagOff", { clientSpecificSettings: { flagOff: false } })).toBe(false);
+        expect(build(stored).publicGetClientSpecific("flagOff", { clientSpecificSettings: { flagOff: false } })).toBe(
+            false,
+        );
         expect(build(stored).publicGetClientSpecific("flagOff", {})).toBe(true);
         expect(build({ clientSpecificSettings: {} }).publicGetClientSpecific("flagOff", {})).toBe(false);
         expect(build({ clientSpecificSettings: {} }).publicGetClientSpecific("flagOn", {})).toBe(true);
@@ -224,7 +232,11 @@ describe("probeWithBasicAuth", () => {
 
     it("reports an authentication failure on 401 and 403", async () => {
         for (const status of [401, 403]) {
-            expect(await probeWithStatus(status)).toMatchObject({ reachable: true, authenticated: false, httpResponseCode: status });
+            expect(await probeWithStatus(status)).toMatchObject({
+                reachable: true,
+                authenticated: false,
+                httpResponseCode: status,
+            });
         }
     });
 
@@ -239,13 +251,18 @@ describe("probeWithBasicAuth", () => {
     });
 
     it("reports reachable but not verified with a message that does not blame the path on 5xx", async () => {
-        expect((await probeWithStatus(500)).message).toBe("Reachable, but the server answered HTTP 500; credentials could not be verified");
+        expect((await probeWithStatus(500)).message).toBe(
+            "Reachable, but the server answered HTTP 500; credentials could not be verified",
+        );
     });
 
     it("accepts a response the client itself recognises as authenticated", async () => {
         const isAuthenticated = (response: Response) => response.status === 409;
         queueFetch(mockResponse({ status: 409 }));
-        expect(await build().publicProbeWithBasicAuth("http://x/", isAuthenticated)).toMatchObject({ reachable: true, authenticated: true });
+        expect(await build().publicProbeWithBasicAuth("http://x/", isAuthenticated)).toMatchObject({
+            reachable: true,
+            authenticated: true,
+        });
     });
 });
 
@@ -276,7 +293,11 @@ class RecordingWebUI extends TorrentWebUI<string> {
         return this.addResult;
     }
 
-    protected override async applyLabel(session: string, torrentId: string, label: string): Promise<TorrentAddingResult> {
+    protected override async applyLabel(
+        session: string,
+        torrentId: string,
+        label: string,
+    ): Promise<TorrentAddingResult> {
         this.calls.push(`applyLabel:${session}:${torrentId}:${label}`);
         return this.followUp();
     }
@@ -551,7 +572,9 @@ describe("testConnection through login", () => {
     });
 
     it("reports reachable but not verified with the reason when login throws CredentialsUnverifiedError", async () => {
-        await expect(connectionTestOf(new CredentialsUnverifiedError(503, "Could not query the API list"))).resolves.toEqual({
+        await expect(
+            connectionTestOf(new CredentialsUnverifiedError(503, "Could not query the API list")),
+        ).resolves.toEqual({
             reachable: true,
             authenticated: null,
             httpResponseCode: 503,
@@ -584,10 +607,15 @@ describe("testConnection without login", () => {
     });
 
     it("reports unreachable when the base URL cannot be fetched", async () => {
-        (globalThis as any).fetch = async () => { throw new TypeError("Failed to fetch"); };
+        (globalThis as any).fetch = async () => {
+            throw new TypeError("Failed to fetch");
+        };
         const ui = new MinimalWebUI(makeWebUISettings());
 
-        await expect(ui.testConnection()).resolves.toMatchObject({ reachable: false, authenticated: null, httpResponseCode: 0 });
+        await expect(ui.testConnection()).resolves.toMatchObject({
+            reachable: false,
+            authenticated: null,
+            httpResponseCode: 0,
+        });
     });
 });
-

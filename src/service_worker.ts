@@ -1,14 +1,18 @@
-import { ext } from './util/browser-api';
-import { refreshContextMenu, registerContextMenuClickListener } from './background/context-menu';
-import { registerAuthenticationListener } from './background/authentication-listener';
-import { loadSettings, SETTINGS_BACKUP_KEY_PREFIX, SETTINGS_KEY } from './settings/settings';
-import { registerMessageListener } from './background/messaging';
-import { registerActionClickListener } from './background/action';
-import { clearAllBufferedTorrents } from './background/buffered-torrent';
-import { getWebUis } from './settings/webuis';
-import { clearDynamicRules, registerCorsCircumventionForWebUis } from './background/cors-tricks';
-import { notify, registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners } from './background/notifications';
-
+import { ext } from "./util/browser-api";
+import { refreshContextMenu, registerContextMenuClickListener } from "./background/context-menu";
+import { registerAuthenticationListener } from "./background/authentication-listener";
+import { loadSettings, SETTINGS_BACKUP_KEY_PREFIX, SETTINGS_KEY } from "./settings/settings";
+import { registerMessageListener } from "./background/messaging";
+import { registerActionClickListener } from "./background/action";
+import { clearAllBufferedTorrents } from "./background/buffered-torrent";
+import { getWebUis } from "./settings/webuis";
+import { clearDynamicRules, registerCorsCircumventionForWebUis } from "./background/cors-tricks";
+import {
+    notify,
+    registerNotificationButtonListener,
+    registerNotificationClickListener,
+    registerNotificationCleanupListeners,
+} from "./background/notifications";
 
 registerMessageListener();
 registerNotificationClickListener();
@@ -18,21 +22,23 @@ registerActionClickListener();
 registerContextMenuClickListener();
 registerAuthenticationListener();
 
-ext.storage.local.onChanged.addListener(
-    ((changes: Record<string, chrome.storage.StorageChange>) => {
-        if (changes[SETTINGS_KEY]) {
-            void rebuildContextMenu();
-            void refreshCorsCircumvention();
+ext.storage.local.onChanged.addListener(((changes: Record<string, chrome.storage.StorageChange>) => {
+    if (changes[SETTINGS_KEY]) {
+        void rebuildContextMenu();
+        void refreshCorsCircumvention();
+    }
+    for (const [key, change] of Object.entries(changes)) {
+        if (
+            key.startsWith(SETTINGS_BACKUP_KEY_PREFIX) &&
+            change.newValue !== undefined &&
+            change.oldValue === undefined
+        ) {
+            void loadSettings()
+                .then((settings) => notify({ type: "settingsReset" }, settings))
+                .catch((error) => console.error("Failed to show the settings reset notification", error));
         }
-        for (const [key, change] of Object.entries(changes)) {
-            if (key.startsWith(SETTINGS_BACKUP_KEY_PREFIX) && change.newValue !== undefined && change.oldValue === undefined) {
-                void loadSettings()
-                    .then(settings => notify({ type: "settingsReset" }, settings))
-                    .catch(error => console.error("Failed to show the settings reset notification", error));
-            }
-        }
-    }) as Parameters<typeof ext.storage.local.onChanged.addListener>[0]
-);
+    }
+}) as Parameters<typeof ext.storage.local.onChanged.addListener>[0]);
 
 // Context menus outlive a worker restart but not a browser restart or an
 // update, so they are rebuilt on those two events and whenever settings change.
@@ -40,19 +46,20 @@ ext.runtime.onInstalled.addListener((details) => {
     void rebuildContextMenu();
     if (details.reason === "update") {
         // Older versions parked a copy of the WebUI, password included, with each Buffered Torrent.
-        clearAllBufferedTorrents().catch(error => console.error("Failed to clear Buffered Torrents after an update", error));
+        clearAllBufferedTorrents().catch((error) =>
+            console.error("Failed to clear Buffered Torrents after an update", error),
+        );
     }
 });
 
 ext.runtime.onStartup.addListener(() => {
-    clearDynamicRules().catch(error => console.error("Failed to clear dynamic CORS rules", error));
+    clearDynamicRules().catch((error) => console.error("Failed to clear dynamic CORS rules", error));
     void rebuildContextMenu();
 });
 
 // Session rules are dropped when the browser session ends, so they are cheap to
 // recompute and worth re-asserting on every worker start.
 void refreshCorsCircumvention();
-
 
 async function rebuildContextMenu(): Promise<void> {
     try {

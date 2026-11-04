@@ -66,16 +66,16 @@ Several of these properties are already asserted by the test suite — `test/bac
 
 ## Quick triage by severity
 
-| Finding | Severity |
-|---|---|
-| Password logged or sent off-host | BLOCKER |
-| CORS rule with `<all_urls>` filter | BLOCKER |
-| `innerHTML` from page content in content-script | BLOCKER |
-| `onMessageExternal` without allowlist | BLOCKER |
-| Credentials in URL query string | WARNING |
-| Redos-prone default regex | WARNING |
-| Stale CORS rule not cleaned up | WARNING |
-| `console.log` of settings object that includes password | WARNING |
+| Finding                                                      | Severity   |
+| ------------------------------------------------------------ | ---------- |
+| Password logged or sent off-host                             | BLOCKER    |
+| CORS rule with `<all_urls>` filter                           | BLOCKER    |
+| `innerHTML` from page content in content-script              | BLOCKER    |
+| `onMessageExternal` without allowlist                        | BLOCKER    |
+| Credentials in URL query string                              | WARNING    |
+| Redos-prone default regex                                    | WARNING    |
+| Stale CORS rule not cleaned up                               | WARNING    |
+| `console.log` of settings object that includes password      | WARNING    |
 | Response body shown in notification when it could echo creds | SUGGESTION |
 
 ## Reporting

@@ -26,28 +26,28 @@ There **is** an automated test suite, and it has three layers:
 
 Commands are listed once, in [`skills/build.md`](skills/build.md). How to write and run the tests: [`skills/testing-guide.md`](skills/testing-guide.md); the manual matrix: [`skills/smoke-test-matrix.md`](skills/smoke-test-matrix.md).
 
-CI (`.github/workflows/build-extension.yml`) runs `typecheck`, `lint`, `test:coverage` and `pnpm run audit` in a `verify` job that gates both build jobs. The e2e suite runs in its own job, on `master` only, against the artifact `build-dev` produces.
+CI (`.github/workflows/build-extension.yml`) runs `typecheck`, `lint`, `format:check`, `test:coverage` and `pnpm run audit` in a `verify` job that gates both build jobs. The e2e suite runs in its own job, on `master` only, against the artifact `build-dev` produces.
 
 ## Intermediate Documentation (`/.tmp/`)
 
 Write findings, analysis, and summaries to `.tmp/<task>-<YYYY-MM-DD>.md` when the work justifies it — e.g. `.tmp/debug-qbittorrent-2026-05-21.md`. The folder is gitignored: a session-scoped scratchpad, not a permanent record.
 
-Write one when the change spans many files, when the output *is* a report (code review, security review, a debugging session with a non-obvious root cause), or when you are handing state to a later session. Skip it for small, mechanical, self-explanatory changes — a gitignored file nobody reads is pure overhead. When in doubt, put the summary in the conversation instead.
+Write one when the change spans many files, when the output _is_ a report (code review, security review, a debugging session with a non-obvious root cause), or when you are handing state to a later session. Skip it for small, mechanical, self-explanatory changes — a gitignored file nobody reads is pure overhead. When in doubt, put the summary in the conversation instead.
 
 Structure it as: a summary paragraph, the detailed findings or changes, then anything deliberately deferred.
 
 ## Available Skills
 
-| Skill | Purpose | Claude Code | Copilot |
-|---|---|---|---|
-| `add-webui-client` | Scaffold a new BitTorrent client implementation | `.claude/skills/` | `.github/prompts/` |
-| `add-setting` | Add a new global, per-client, or per-torrent setting | `.claude/skills/` | `.github/prompts/` |
-| `debug-client` | Debug auth/API/CORS issues with a specific client | `.claude/skills/` | `.github/prompts/` |
-| `rta-code-review` | Review changes against this project's checklist | `.claude/skills/` | `.github/prompts/` |
-| `rta-security-review` | This extension's real attack surfaces | `.claude/skills/` | — |
-| `build` | Build the extension for dev or production | `.claude/skills/` | — |
-| `testing-guide` | vitest suite, Playwright e2e, and the manual pass | `.claude/skills/` | — |
-| `smoke-test-matrix` | Defined manual test matrix (rows A–H, H is Firefox) | `.claude/skills/` | — |
+| Skill                 | Purpose                                              | Claude Code       | Copilot            |
+| --------------------- | ---------------------------------------------------- | ----------------- | ------------------ |
+| `add-webui-client`    | Scaffold a new BitTorrent client implementation      | `.claude/skills/` | `.github/prompts/` |
+| `add-setting`         | Add a new global, per-client, or per-torrent setting | `.claude/skills/` | `.github/prompts/` |
+| `debug-client`        | Debug auth/API/CORS issues with a specific client    | `.claude/skills/` | `.github/prompts/` |
+| `rta-code-review`     | Review changes against this project's checklist      | `.claude/skills/` | `.github/prompts/` |
+| `rta-security-review` | This extension's real attack surfaces                | `.claude/skills/` | —                  |
+| `build`               | Build the extension for dev or production            | `.claude/skills/` | —                  |
+| `testing-guide`       | vitest suite, Playwright e2e, and the manual pass    | `.claude/skills/` | —                  |
+| `smoke-test-matrix`   | Defined manual test matrix (rows A–H, H is Firefox)  | `.claude/skills/` | —                  |
 
 An agent on a harness with no adapter needs none of the above: the routing table in the root `AGENTS.md` names the right file for each task in plain English.
 
@@ -136,7 +136,7 @@ Required secrets: `CWS_EXTENSION_ID`, `CWS_PUBLISHER_ID`, `CWS_CLIENT_ID`, `CWS_
 ### addons.mozilla.org
 
 Live. The listing was created by hand for the first submission, because
-`web-ext sign` can upload a new version but cannot *create* a listing. That first
+`web-ext sign` can upload a new version but cannot _create_ a listing. That first
 upload is what permanently claimed `browser_specific_settings.gecko.id`
 (`remote-torrent-adder@bogenpirat`, fixed in `scripts/generate-manifest.ts` and
 asserted by `test/build/manifest.test.ts`).

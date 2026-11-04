@@ -1,7 +1,11 @@
 import { WebUIFactory } from "../models/clients";
 import { sendMessage } from "../util/messaging";
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type ClientSpecificSettingDescriptor, resolveClientSpecificSetting, type WebUISettings } from "../models/webui";
+import {
+    type ClientSpecificSettingDescriptor,
+    resolveClientSpecificSetting,
+    type WebUISettings,
+} from "../models/webui";
 import { readBufferedTorrent } from "../background/buffered-torrent";
 import { resolveUploadConfig } from "../torrent/upload-config";
 import { requestSettings } from "../settings/request-settings";
@@ -57,7 +61,9 @@ export async function loadPopupData(bufferedId: string): Promise<PopupData | nul
     // the service worker compute it and ship the result across a message.
     const resolved = resolveUploadConfig(torrent, webUiSettings);
 
-    const clientSpecificDescriptors = (webUi?.clientSpecificSettingDescriptors ?? []).filter(descriptor => descriptor.perTorrent);
+    const clientSpecificDescriptors = (webUi?.clientSpecificSettingDescriptors ?? []).filter(
+        (descriptor) => descriptor.perTorrent,
+    );
 
     return {
         bufferedId,
@@ -81,10 +87,16 @@ export async function loadPopupData(bufferedId: string): Promise<PopupData | nul
         directoryOptions: webUiSettings.dirs,
         clientSpecific: {
             descriptors: clientSpecificDescriptors,
-            initial: Object.fromEntries(clientSpecificDescriptors.map(descriptor => [
-                descriptor.key,
-                resolveClientSpecificSetting(descriptor.key, clientSpecificDescriptors, webUiSettings.clientSpecificSettings),
-            ])),
+            initial: Object.fromEntries(
+                clientSpecificDescriptors.map((descriptor) => [
+                    descriptor.key,
+                    resolveClientSpecificSetting(
+                        descriptor.key,
+                        clientSpecificDescriptors,
+                        webUiSettings.clientSpecificSettings,
+                    ),
+                ]),
+            ),
         },
     };
 }
@@ -129,4 +141,3 @@ export async function submitTorrent(request: AddTorrentRequest): Promise<void> {
         directories: request.directoryOptions,
     });
 }
-

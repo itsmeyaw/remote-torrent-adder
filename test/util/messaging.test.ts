@@ -31,7 +31,9 @@ describe("sendMessage", () => {
     it("throws the message of an error reply", async () => {
         (chrome.runtime.sendMessage as any).mockResolvedValue({ error: "Invalid notificationsDurationMs" });
 
-        await expect(sendMessage("saveSettings", { settings: "{}" })).rejects.toThrow("Invalid notificationsDurationMs");
+        await expect(sendMessage("saveSettings", { settings: "{}" })).rejects.toThrow(
+            "Invalid notificationsDurationMs",
+        );
     });
 
     it("resolves undefined for a void reply", async () => {
@@ -40,7 +42,7 @@ describe("sendMessage", () => {
         await expect(sendMessage("saveSettings", { settings: "{}" })).resolves.toBeUndefined();
     });
 
-    it.each([undefined, null, "hello"])("throws when the reply is %j instead of an envelope", async reply => {
+    it.each([undefined, null, "hello"])("throws when the reply is %j instead of an envelope", async (reply) => {
         (chrome.runtime.sendMessage as any).mockResolvedValue(reply);
 
         await expect(sendMessage("getSettings", {})).rejects.toThrow("No reply to getSettings");
@@ -66,7 +68,9 @@ describe("sendMessageAndForget", () => {
 
         sendMessageAndForget("updateActionBadgeText", { text: "" });
 
-        await vi.waitFor(() => expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: "updateActionBadgeText", text: "" }));
+        await vi.waitFor(() =>
+            expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: "updateActionBadgeText", text: "" }),
+        );
     });
 });
 

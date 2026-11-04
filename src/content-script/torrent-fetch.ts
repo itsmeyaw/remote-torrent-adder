@@ -5,7 +5,7 @@ export async function fetchTorrentInPage(url: string): Promise<IFetchedTorrentFi
     const response = await fetch(url, {
         mode: isSameOrigin(url) ? "same-origin" : "cors",
         credentials: "include",
-        redirect: "follow"
+        redirect: "follow",
     });
 
     const bytes = new Uint8Array(await response.arrayBuffer());
@@ -20,7 +20,7 @@ export async function fetchTorrentInPage(url: string): Promise<IFetchedTorrentFi
         contentType: response.headers.get("Content-Type"),
         cfMitigated: response.headers.get("cf-mitigated"),
         finalUrl: response.url || url,
-        base64: bytesToBase64(bytes)
+        base64: bytesToBase64(bytes),
     };
 }
 

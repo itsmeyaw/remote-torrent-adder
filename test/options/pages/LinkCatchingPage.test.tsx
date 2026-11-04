@@ -29,7 +29,12 @@ function settingsWith(regexes: RegExp[]) {
     return settings;
 }
 
-const renderPage = () => render(<SettingsProvider><LinkCatchingPage /></SettingsProvider>);
+const renderPage = () =>
+    render(
+        <SettingsProvider>
+            <LinkCatchingPage />
+        </SettingsProvider>,
+    );
 
 describe("LinkCatchingPage", () => {
     it("adds a valid pattern", async () => {

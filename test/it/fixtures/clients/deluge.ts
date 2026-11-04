@@ -60,7 +60,11 @@ export const deluge: ClientProbe = {
 
     async find(infoHash) {
         const session = await DelugeSession.login();
-        const torrent = (await session.call("core.get_torrent_status", infoHash, ["label", "download_location", "state"])) as Record<string, unknown>;
+        const torrent = (await session.call("core.get_torrent_status", infoHash, [
+            "label",
+            "download_location",
+            "state",
+        ])) as Record<string, unknown>;
         if (!torrent.state || /^(Checking|Allocating|Moving)/.test(torrent.state as string)) {
             return null;
         }

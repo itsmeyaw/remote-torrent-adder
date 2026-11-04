@@ -42,9 +42,9 @@ function base32ToHex(encoded: string): string {
     for (const character of encoded) {
         bits += BASE32_ALPHABET.indexOf(character).toString(2).padStart(5, "0");
     }
-    return (bits.match(/.{4}/g) ?? []).map(nibble => parseInt(nibble, 2).toString(16)).join("");
+    return (bits.match(/.{4}/g) ?? []).map((nibble) => parseInt(nibble, 2).toString(16)).join("");
 }
 
 function toHex(bytes: Uint8Array): string {
-    return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }

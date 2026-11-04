@@ -12,10 +12,7 @@ const webUi = (over = {}) => new QBittorrentWebUI(makeWebUISettings(over));
 describe("registerCorsCircumventionForWebUis", () => {
     it("replaces old session rules with origin-removing rules for each webui", async () => {
         (chrome.declarativeNetRequest.getSessionRules as any).mockResolvedValue([{ id: 7 }, { id: 8 }]);
-        await registerCorsCircumventionForWebUis([
-            webUi({ host: "a", port: 80 }),
-            webUi({ host: "b", port: 80 }),
-        ]);
+        await registerCorsCircumventionForWebUis([webUi({ host: "a", port: 80 }), webUi({ host: "b", port: 80 })]);
 
         const arg = (chrome.declarativeNetRequest.updateSessionRules as any).mock.calls[0][0];
         expect(arg.removeRuleIds).toEqual([7, 8]);
@@ -34,10 +31,7 @@ describe("registerCorsCircumventionForWebUis", () => {
 
     it("skips half-configured webuis whose host is still blank", async () => {
         (chrome.declarativeNetRequest.getSessionRules as any).mockResolvedValue([]);
-        await registerCorsCircumventionForWebUis([
-            webUi({ host: "", port: 80 }),
-            webUi({ host: "   ", port: 8080 }),
-        ]);
+        await registerCorsCircumventionForWebUis([webUi({ host: "", port: 80 }), webUi({ host: "   ", port: 8080 })]);
 
         const arg = (chrome.declarativeNetRequest.updateSessionRules as any).mock.calls[0][0];
         expect(arg.addRules).toHaveLength(0);
@@ -61,8 +55,9 @@ describe("registerCorsCircumventionForWebUis", () => {
         (chrome.declarativeNetRequest.updateSessionRules as any).mockImplementation(
             async ({ removeRuleIds, addRules }: { removeRuleIds: number[]; addRules: { id: number }[] }) => {
                 await Promise.resolve();
-                sessionRules = [...sessionRules.filter(rule => !removeRuleIds.includes(rule.id)), ...addRules];
-            });
+                sessionRules = [...sessionRules.filter((rule) => !removeRuleIds.includes(rule.id)), ...addRules];
+            },
+        );
 
         await Promise.all([
             registerCorsCircumventionForWebUis([webUi({ host: "a", port: 80 })]),
@@ -147,7 +142,9 @@ describe("executeMethodWrappedWithReferer", () => {
             return Promise.resolve();
         });
         let finishFirst!: () => void;
-        const firstDone = new Promise<void>(resolve => { finishFirst = resolve; });
+        const firstDone = new Promise<void>((resolve) => {
+            finishFirst = resolve;
+        });
         vi.resetModules();
         const before = await import("../../src/background/cors-tricks");
         const first = before.executeMethodWrappedWithReferer(() => firstDone.then(() => "a"), "http://t/1", "http://t");

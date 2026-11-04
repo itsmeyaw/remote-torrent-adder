@@ -19,13 +19,16 @@ vi.mock("../src/background/notifications", async (importOriginal) => ({
  * module's own top-level startup work is still in flight. Firing it after an
  * await instead would let that work drain first and hide every race against it.
  */
-async function bootServiceWorker(event: "installed" | "startup" | "none" = "installed", installReason: chrome.runtime.OnInstalledReason = "install" as chrome.runtime.OnInstalledReason): Promise<void> {
+async function bootServiceWorker(
+    event: "installed" | "startup" | "none" = "installed",
+    installReason: chrome.runtime.OnInstalledReason = "install" as chrome.runtime.OnInstalledReason,
+): Promise<void> {
     if (event !== "none") {
-        const registration = event === "installed"
-            ? chrome.runtime.onInstalled.addListener
-            : chrome.runtime.onStartup.addListener;
+        const registration =
+            event === "installed" ? chrome.runtime.onInstalled.addListener : chrome.runtime.onStartup.addListener;
         (registration as any).mockImplementation((listener: (details: chrome.runtime.InstalledDetails) => void) =>
-            queueMicrotask(() => listener({ reason: installReason } as chrome.runtime.InstalledDetails)));
+            queueMicrotask(() => listener({ reason: installReason } as chrome.runtime.InstalledDetails)),
+        );
     }
 
     vi.resetModules();
@@ -40,7 +43,7 @@ async function bootServiceWorker(event: "installed" | "startup" | "none" = "inst
  */
 async function settle(): Promise<void> {
     for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
     }
 }
 
@@ -160,7 +163,9 @@ describe("service worker boot on a configured profile", () => {
 
 describe("service worker when a settings backup is written", () => {
     function fireStorageChange(changes: Record<string, chrome.storage.StorageChange>): void {
-        (chrome.storage.local.onChanged.addListener as any).mock.calls.forEach(([listener]: [(changes: Record<string, chrome.storage.StorageChange>) => void]) => listener(changes));
+        (chrome.storage.local.onChanged.addListener as any).mock.calls.forEach(
+            ([listener]: [(changes: Record<string, chrome.storage.StorageChange>) => void]) => listener(changes),
+        );
     }
 
     beforeEach(() => {

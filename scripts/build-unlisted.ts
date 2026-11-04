@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import { access, cp, rm, writeFile } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { buildManifest, SOURCE_MANIFEST } from './generate-manifest.ts';
+import { access, cp, rm, writeFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { buildManifest, SOURCE_MANIFEST } from "./generate-manifest.ts";
 
 const rootDir = path.dirname(import.meta.dirname);
-const sourceDir = path.join(rootDir, 'dist-prod', 'firefox');
-const outDir = path.join(rootDir, 'dist-prod', 'firefox-unlisted');
+const sourceDir = path.join(rootDir, "dist-prod", "firefox");
+const outDir = path.join(rootDir, "dist-prod", "firefox-unlisted");
 
 try {
     await access(sourceDir);
@@ -18,8 +18,8 @@ try {
 await rm(outDir, { recursive: true, force: true });
 await cp(sourceDir, outDir, { recursive: true });
 
-const base = JSON.parse(readFileSync(path.join(rootDir, SOURCE_MANIFEST), 'utf8'));
+const base = JSON.parse(readFileSync(path.join(rootDir, SOURCE_MANIFEST), "utf8"));
 await writeFile(
-    path.join(outDir, 'manifest.json'),
-    JSON.stringify(buildManifest(base, 'firefox', { unlisted: true }), null, 4) + '\n'
+    path.join(outDir, "manifest.json"),
+    JSON.stringify(buildManifest(base, "firefox", { unlisted: true }), null, 4) + "\n",
 );

@@ -29,11 +29,14 @@ export function withStore<T>(
     mode: IDBTransactionMode,
     operation: (objectStore: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T> {
-    return openDb(store).then(db => new Promise<T>((resolve, reject) => {
-        const transaction = db.transaction(store.storeName, mode);
-        const request = operation(transaction.objectStore(store.storeName));
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-        transaction.oncomplete = () => db.close();
-    }));
+    return openDb(store).then(
+        (db) =>
+            new Promise<T>((resolve, reject) => {
+                const transaction = db.transaction(store.storeName, mode);
+                const request = operation(transaction.objectStore(store.storeName));
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+                transaction.oncomplete = () => db.close();
+            }),
+    );
 }

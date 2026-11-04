@@ -16,10 +16,7 @@ export class QNAPDownloadStationWebUI extends TorrentWebUI<string> {
     }
 
     private createQNAPDownloadStationBaseUrl(): string {
-        return [
-            this.createBaseUrl(),
-            "/downloadstation/V4",
-        ].join("");
+        return [this.createBaseUrl(), "/downloadstation/V4"].join("");
     }
 
     private createAddingUrlForTorrent(torrent: Torrent): string {
@@ -31,7 +28,7 @@ export class QNAPDownloadStationWebUI extends TorrentWebUI<string> {
         const payload = new FormData();
         payload.append("user", this.settings.username);
         payload.append("pass", btoa(this.settings.password));
-        const response = await this.fetch(loginUrl, { method: 'POST', body: payload });
+        const response = await this.fetch(loginUrl, { method: "POST", body: payload });
         const responseJson = await response.json();
         if (!responseJson["sid"]) {
             throw new AuthenticationError(response.status);
@@ -39,7 +36,11 @@ export class QNAPDownloadStationWebUI extends TorrentWebUI<string> {
         return responseJson["sid"];
     }
 
-    private async createTorrentFetchOptions(sessionId: string, torrent: Torrent, config: TorrentUploadConfig): Promise<RequestInit> {
+    private async createTorrentFetchOptions(
+        sessionId: string,
+        torrent: Torrent,
+        config: TorrentUploadConfig,
+    ): Promise<RequestInit> {
         const payload = new FormData();
         payload.append("sid", sessionId);
 
@@ -52,12 +53,16 @@ export class QNAPDownloadStationWebUI extends TorrentWebUI<string> {
         if (torrent.isMagnet) {
             payload.append("url", torrent.data as string);
         } else {
-            payload.append("file", new Blob([await (torrent.data as Blob).arrayBuffer()], { type: "application/octet-stream" }), torrent.name);
+            payload.append(
+                "file",
+                new Blob([await (torrent.data as Blob).arrayBuffer()], { type: "application/octet-stream" }),
+                torrent.name,
+            );
         }
 
         return {
-            method: 'POST',
-            body: payload
+            method: "POST",
+            body: payload,
         } as RequestInit;
     }
 

@@ -1,5 +1,11 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type AddResult, AuthenticationError, CredentialsUnverifiedError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import {
+    type AddResult,
+    AuthenticationError,
+    CredentialsUnverifiedError,
+    type TorrentAddingResult,
+    TorrentWebUI,
+} from "../models/webui";
 
 interface SynologyApiInfo {
     path: string;
@@ -65,7 +71,11 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI<SynologySession> 
         return { apis, sessionId: await this.authenticate(apis) };
     }
 
-    protected override async add(torrent: Torrent, config: TorrentUploadConfig, { apis, sessionId }: SynologySession): Promise<AddResult> {
+    protected override async add(
+        torrent: Torrent,
+        config: TorrentUploadConfig,
+        { apis, sessionId }: SynologySession,
+    ): Promise<AddResult> {
         const modernApi = apis[TASK2_API];
         if (modernApi) {
             return await this.createTaskWithModernApi(modernApi, sessionId, torrent, config);
@@ -171,7 +181,10 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI<SynologySession> 
         if (destination) {
             payload.append("destination", `"${destination}"`);
         }
-        payload.append("fileData", new File([torrent.data as Blob], torrent.name, { type: "application/x-bittorrent" }));
+        payload.append(
+            "fileData",
+            new File([torrent.data as Blob], torrent.name, { type: "application/x-bittorrent" }),
+        );
 
         const uploadUrl = `${url}?${new URLSearchParams({ _sid: sessionId }).toString()}`;
         return this.toTorrentAddingResult(await this.fetch(uploadUrl, { method: "POST", body: payload }), TASK_ERRORS);
@@ -218,7 +231,10 @@ export class SynologyDownloadStationWebUI extends TorrentWebUI<SynologySession> 
         return this.toTorrentAddingResult(await this.fetch(url, { method: "POST", body: payload }), TASK_ERRORS);
     }
 
-    private async toTorrentAddingResult(response: Response, errors: Record<number, string>): Promise<TorrentAddingResult> {
+    private async toTorrentAddingResult(
+        response: Response,
+        errors: Record<number, string>,
+    ): Promise<TorrentAddingResult> {
         const responseText = await response.text();
 
         let json: { success?: boolean; error?: { code?: number } };

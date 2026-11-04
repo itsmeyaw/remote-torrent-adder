@@ -4,14 +4,13 @@ import { loadSettings } from "../settings/settings";
 import { rememberWebUiTab } from "./authentication-listener";
 import { type TorrentWebUI } from "../models/webui";
 
-
 export const POPUP_PAGE = "popup/popup.html";
 
 export type PopupMode = "picker" | "links" | "label";
 
 export function registerActionClickListener(): void {
     ext.action.onClicked.addListener((tab) => {
-        handleActionClick(tab).catch(error => console.error("Failed handling action icon click", error));
+        handleActionClick(tab).catch((error) => console.error("Failed handling action icon click", error));
     });
 }
 
@@ -91,7 +90,7 @@ export function openPopupWindow(mode?: PopupMode, bufferedId?: string): Promise<
         type: "popup",
         width: 420,
         height: 600,
-        focused: true
+        focused: true,
     });
 }
 
@@ -101,10 +100,10 @@ export function openSetLabelWindow(params: Record<string, string>): void {
         type: "popup",
         width: 420,
         height: 360,
-        focused: true
+        focused: true,
     });
 }
 
 export function updateBadgeText(text: string, tabId: number): void {
-    ext.action.setBadgeText({text, tabId}).then();
+    ext.action.setBadgeText({ text, tabId }).then();
 }

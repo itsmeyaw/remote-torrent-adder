@@ -10,7 +10,12 @@ export class RqbitWebUI extends TorrentWebUI {
         const url = this.createBaseUrl() + "/torrents" + this.createQueryString(config);
         const response = await this.fetch(url, this.createTorrentFetchOptions(torrent));
         const responseBody = await response.text();
-        return { success: true, httpResponseCode: response.status, httpResponseBody: responseBody, torrentId: this.parseTorrentId(responseBody) };
+        return {
+            success: true,
+            httpResponseCode: response.status,
+            httpResponseBody: responseBody,
+            torrentId: this.parseTorrentId(responseBody),
+        };
     }
 
     protected override async pauseAfterAdd(_session: unknown, torrentId: string): Promise<void> {

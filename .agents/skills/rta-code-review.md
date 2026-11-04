@@ -38,6 +38,7 @@ The same bundle ships to Chrome and Firefox, and this is the newest and most eas
 ### Client Implementation Review
 
 For changes in `src/webuis/`:
+
 - [ ] Class extends `TorrentWebUI` and is registered in **all three** tables in `src/models/clients.ts`: the `Client` enum, `ClientDisplayName`, and `ClientClassByClient`
 - [ ] The `Client` enum value is a stable lowercase slug, not a display string — these values are persisted in user settings and must never change. Renaming an existing one requires a migration entry in `src/settings/legacy-client-identifiers.ts`
 - [ ] All three abstract getters implemented: `isLabelSupported`, `isDirSupported`, `isAddPausedSupported`

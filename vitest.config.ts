@@ -14,11 +14,7 @@ export default defineConfig({
         coverage: {
             provider: "v8",
             include: ["src/**/*.{ts,tsx}"],
-            exclude: [
-                "src/**/*.d.ts",
-                "src/notifications/offscreen.ts",
-                "src/notifications/play-sound.ts",
-            ],
+            exclude: ["src/**/*.d.ts", "src/notifications/offscreen.ts", "src/notifications/play-sound.ts"],
             reporter: ["text", "html"],
         },
     },

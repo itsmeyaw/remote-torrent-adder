@@ -7,7 +7,8 @@ const torrentFile = (content: string, name = "test.torrent") =>
 
 describe("buildTorrentFromMagnetLink", () => {
     it("parses the trackers from the tr parameters", () => {
-        const magnet = "magnet:?xt=urn:btih:abc&dn=My+Movie" +
+        const magnet =
+            "magnet:?xt=urn:btih:abc&dn=My+Movie" +
             "&tr=http%3A%2F%2Ftracker.one%2Fannounce" +
             "&tr=udp%3A%2F%2Ftracker.two%3A6969%2Fannounce";
         const torrent = buildTorrentFromMagnetLink(magnet);
@@ -61,15 +62,17 @@ describe("buildTorrentFromMagnetLink", () => {
 
 describe("parseTorrentFile", () => {
     it("parses trackers, files and the private flag from a .torrent file", async () => {
-        const file = torrentFile(buildBencodedTorrent({
-            announce: "http://tracker.one/announce",
-            "announce-list": [["http://tracker.two/announce"]],
-            info: {
-                name: "ubuntu.iso",
-                private: 1,
-                files: [{ path: ["folder", "a.bin"] }, { path: ["b.bin"] }],
-            },
-        }));
+        const file = torrentFile(
+            buildBencodedTorrent({
+                announce: "http://tracker.one/announce",
+                "announce-list": [["http://tracker.two/announce"]],
+                info: {
+                    name: "ubuntu.iso",
+                    private: 1,
+                    files: [{ path: ["folder", "a.bin"] }, { path: ["b.bin"] }],
+                },
+            }),
+        );
 
         const torrent = await parseTorrentFile(file);
         expect(torrent.isMagnet).toBe(false);
@@ -89,12 +92,14 @@ describe("parseTorrentFile", () => {
     });
 
     it("rejects a file that is not bencoded", async () => {
-        await expect(parseTorrentFile(torrentFile("<html>nope</html>", "fake.torrent")))
-            .rejects.toThrow(/"fake.torrent" doesn't look like a .torrent file/);
+        await expect(parseTorrentFile(torrentFile("<html>nope</html>", "fake.torrent"))).rejects.toThrow(
+            /"fake.torrent" doesn't look like a .torrent file/,
+        );
     });
 
     it("rejects a bencoded file without an info dictionary", async () => {
-        await expect(parseTorrentFile(torrentFile(buildBencodedTorrent({ announce: "http://t" }), "odd.torrent")))
-            .rejects.toThrow(/doesn't look like a .torrent file/);
+        await expect(
+            parseTorrentFile(torrentFile(buildBencodedTorrent({ announce: "http://t" }), "odd.torrent")),
+        ).rejects.toThrow(/doesn't look like a .torrent file/);
     });
 });

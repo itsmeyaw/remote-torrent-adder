@@ -39,13 +39,13 @@ export class TorrentServer {
             res.writeHead(200, { "Content-Type": "application/x-bittorrent" });
             res.end(file);
         });
-        await new Promise<void>(resolve => this.server.listen(0, "127.0.0.1", resolve));
+        await new Promise<void>((resolve) => this.server.listen(0, "127.0.0.1", resolve));
         this.port = (this.server.address() as AddressInfo).port;
     }
 
     async stop(): Promise<void> {
         this.server.closeAllConnections();
-        await new Promise<void>(resolve => this.server.close(() => resolve()));
+        await new Promise<void>((resolve) => this.server.close(() => resolve()));
     }
 
     createTorrent({ multiFile = false }: { multiFile?: boolean } = {}): GeneratedTorrent {
@@ -55,7 +55,12 @@ export class TorrentServer {
             "piece length": 16384,
             pieces: randomBytes(20),
             ...(multiFile
-                ? { files: [{ length: 512, path: ["a.bin"] }, { length: 512, path: ["b.bin"] }] }
+                ? {
+                      files: [
+                          { length: 512, path: ["a.bin"] },
+                          { length: 512, path: ["b.bin"] },
+                      ],
+                  }
                 : { length: 1024 }),
         };
         const infoHash = createHash("sha1").update(bencode.encode(info)).digest("hex");

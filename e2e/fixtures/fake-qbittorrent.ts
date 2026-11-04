@@ -43,20 +43,20 @@ export class FakeQBittorrent {
                 res.end(body);
             });
         });
-        this.server.on("connection", socket => {
-            socket.once("data", chunk => {
+        this.server.on("connection", (socket) => {
+            socket.once("data", (chunk) => {
                 if (chunk[0] === TLS_HANDSHAKE_RECORD) {
                     this.tlsHandshakes++;
                 }
             });
         });
-        await new Promise<void>(resolve => this.server.listen(0, "127.0.0.1", resolve));
+        await new Promise<void>((resolve) => this.server.listen(0, "127.0.0.1", resolve));
         this.port = (this.server.address() as AddressInfo).port;
     }
 
     async stop(): Promise<void> {
         this.server.closeAllConnections();
-        await new Promise<void>(resolve => this.server.close(() => resolve()));
+        await new Promise<void>((resolve) => this.server.close(() => resolve()));
     }
 
     get baseUrl(): string {
@@ -64,11 +64,11 @@ export class FakeQBittorrent {
     }
 
     pathsHit(): string[] {
-        return this.requests.map(request => request.path);
+        return this.requests.map((request) => request.path);
     }
 
     lastAddRequest(): RecordedRequest | undefined {
-        return this.requests.filter(request => request.path === "/api/v2/torrents/add").at(-1);
+        return this.requests.filter((request) => request.path === "/api/v2/torrents/add").at(-1);
     }
 
     private async handle(req: IncomingMessage): Promise<[number, string]> {

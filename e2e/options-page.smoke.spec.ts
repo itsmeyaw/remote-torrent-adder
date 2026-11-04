@@ -1,14 +1,7 @@
 import { test, expect } from "./fixtures/extension";
 import { makeSettings, makeWebUISettings } from "./fixtures/settings";
 
-const TAB_TITLES = [
-    "WebUIs",
-    "Icon Click",
-    "Notifications",
-    "Link Catching",
-    "Import/Export Settings",
-    "About",
-];
+const TAB_TITLES = ["WebUIs", "Icon Click", "Notifications", "Link Catching", "Import/Export Settings", "About"];
 
 test.describe("options page", () => {
     test("renders every tab on a profile with no WebUIs", async ({ extension, logs }) => {
@@ -30,7 +23,9 @@ test.describe("options page", () => {
 
     test("shows a configured WebUI", async ({ extension, logs }) => {
         await extension.seedSettings(
-            makeSettings([makeWebUISettings({ id: "webui-1", name: "Living room box", host: "127.0.0.1", port: 8080 })]),
+            makeSettings([
+                makeWebUISettings({ id: "webui-1", name: "Living room box", host: "127.0.0.1", port: 8080 }),
+            ]),
         );
 
         const page = await extension.openPage(extension.url("options/options.html"));
@@ -50,10 +45,9 @@ test.describe("options page", () => {
         await expect(page.getByRole("button", { name: "Reorder Unnamed WebUI" })).toBeVisible();
         await logs.waitForQuiet();
 
-        expect(
-            await extension.sessionRules(),
-            "a draft row has no host yet, so it must not produce a rule",
-        ).toEqual([]);
+        expect(await extension.sessionRules(), "a draft row has no host yet, so it must not produce a rule").toEqual(
+            [],
+        );
 
         const problems = logs.unexpectedProblems();
         expect(problems, logs.report(problems)).toEqual([]);

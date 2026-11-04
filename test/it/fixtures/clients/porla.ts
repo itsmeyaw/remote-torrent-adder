@@ -13,7 +13,11 @@ interface PorlaTorrent extends Record<string, unknown> {
     $userdata?: { category?: string | null };
 }
 
-async function call<T>(method: string, params: Record<string, unknown>, token?: string): Promise<{ result?: T; error?: { code: number } }> {
+async function call<T>(
+    method: string,
+    params: Record<string, unknown>,
+    token?: string,
+): Promise<{ result?: T; error?: { code: number } }> {
     const response = await fetch(RPC_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -23,7 +27,9 @@ async function call<T>(method: string, params: Record<string, unknown>, token?: 
 }
 
 async function login(): Promise<string | null> {
-    return (await call<{ token: string }>("auth.login", { username: USERNAME, password: PASSWORD })).result?.token ?? null;
+    return (
+        (await call<{ token: string }>("auth.login", { username: USERNAME, password: PASSWORD })).result?.token ?? null
+    );
 }
 
 export const porla: ClientProbe = {
@@ -48,7 +54,7 @@ export const porla: ClientProbe = {
     async find(infoHash) {
         const token = await login();
         const list = await call<{ torrents: PorlaTorrent[] }>("torrents.list", { page_size: 1000 }, token ?? undefined);
-        const torrent = list.result?.torrents.find(candidate => candidate.info_hash[0] === infoHash.toLowerCase());
+        const torrent = list.result?.torrents.find((candidate) => candidate.info_hash[0] === infoHash.toLowerCase());
         if (!torrent) {
             return null;
         }

@@ -22,7 +22,7 @@
 
 ## 🤔 What is this?
 
-Chrome doesn't let extensions hand a downloaded `.torrent` file over to a desktop application. *Remote Torrent Adder* (RTA) works around this by talking directly to the **WebUI of your BitTorrent client**: click a torrent or magnet link, and RTA uploads it to your client's web API instead of saving a file to disk. Because everything happens over HTTP(S), it works just as well with a client running on your own machine as with one on a seedbox, NAS, or home server on the other side of the world.
+Chrome doesn't let extensions hand a downloaded `.torrent` file over to a desktop application. _Remote Torrent Adder_ (RTA) works around this by talking directly to the **WebUI of your BitTorrent client**: click a torrent or magnet link, and RTA uploads it to your client's web API instead of saving a file to disk. Because everything happens over HTTP(S), it works just as well with a client running on your own machine as with one on a seedbox, NAS, or home server on the other side of the world.
 
 ## ✨ Features
 
@@ -39,21 +39,21 @@ Chrome doesn't let extensions hand a downloaded `.torrent` file over to a deskto
 
 ## 🧩 Supported clients
 
-| Client | Notes |
-|---|---|
-| [qBittorrent](https://www.qbittorrent.org/) | v5+ |
-| [ruTorrent](https://github.com/Novik/ruTorrent) | |
-| [Transmission](https://transmissionbt.com/) | |
-| [Deluge](https://deluge-torrent.org/) | |
-| [flood](https://github.com/jesec/flood) | jesec's flood |
-| [BiglyBT](https://www.biglybt.com/) | via Web Remote (formerly Vuze/Azureus) |
-| [Porla](https://porla.org/) | |
-| [Tixati](https://www.tixati.com/) | |
-| [Elementum](https://elementum.surge.sh/) | Kodi add-on |
-| [rqbit](https://github.com/ikatson/rqbit) | |
-| [tTorrent](https://ttorrent.org/) | Android |
-| QNAP Download Station | |
-| [Synology Download Station](https://www.synology.com/en-global/dsm/packages/DownloadStation) | DSM 6 & 7; no 2FA yet |
+| Client                                                                                       | Notes                                  |
+| -------------------------------------------------------------------------------------------- | -------------------------------------- |
+| [qBittorrent](https://www.qbittorrent.org/)                                                  | v5+                                    |
+| [ruTorrent](https://github.com/Novik/ruTorrent)                                              |                                        |
+| [Transmission](https://transmissionbt.com/)                                                  |                                        |
+| [Deluge](https://deluge-torrent.org/)                                                        |                                        |
+| [flood](https://github.com/jesec/flood)                                                      | jesec's flood                          |
+| [BiglyBT](https://www.biglybt.com/)                                                          | via Web Remote (formerly Vuze/Azureus) |
+| [Porla](https://porla.org/)                                                                  |                                        |
+| [Tixati](https://www.tixati.com/)                                                            |                                        |
+| [Elementum](https://elementum.surge.sh/)                                                     | Kodi add-on                            |
+| [rqbit](https://github.com/ikatson/rqbit)                                                    |                                        |
+| [tTorrent](https://ttorrent.org/)                                                            | Android                                |
+| QNAP Download Station                                                                        |                                        |
+| [Synology Download Station](https://www.synology.com/en-global/dsm/packages/DownloadStation) | DSM 6 & 7; no 2FA yet                  |
 
 Missing your client? [Open an issue](https://github.com/bogenpirat/remote-torrent-adder/issues) — or better yet, [add it yourself](#-contributing); client integrations are small, self-contained classes.
 
@@ -61,13 +61,14 @@ Missing your client? [Open an issue](https://github.com/bogenpirat/remote-torren
 
 1. **Chrome** — install from the [Chrome Web Store](https://chrome.google.com/webstore/detail/oabphaconndgibllomdcjbfdghcmenci).
 
-   **Firefox** — needs **Firefox 149 or newer**. Install from
-   [addons.mozilla.org](https://addons.mozilla.org/en-US/firefox/addon/remote-torrent-adder16/).
+    **Firefox** — needs **Firefox 149 or newer**. Install from
+    [addons.mozilla.org](https://addons.mozilla.org/en-US/firefox/addon/remote-torrent-adder16/).
 
-   Prefer to stay off the store? Download the signed `.xpi` from the
-   [latest release](https://github.com/bogenpirat/remote-torrent-adder/releases/latest) and
-   install it from `about:addons` → the gear icon → **Install Add-on From File**; that build
-   updates itself from this repository. You can also [build it from source](#-building-from-source).
+    Prefer to stay off the store? Download the signed `.xpi` from the
+    [latest release](https://github.com/bogenpirat/remote-torrent-adder/releases/latest) and
+    install it from `about:addons` → the gear icon → **Install Add-on From File**; that build
+    updates itself from this repository. You can also [build it from source](#-building-from-source).
+
 2. Open the extension's **options** and add your server(s): client type, host, port, credentials
 3. Click a torrent link — done!
 

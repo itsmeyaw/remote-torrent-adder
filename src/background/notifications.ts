@@ -42,7 +42,9 @@ interface Presentation {
 
 export function registerNotificationClickListener(): void {
     ext.notifications.onClicked.addListener((notificationId) => {
-        void openNotificationLink(notificationId).catch(error => console.error("Opening the link of a notification failed", error));
+        void openNotificationLink(notificationId).catch((error) =>
+            console.error("Opening the link of a notification failed", error),
+        );
     });
 }
 
@@ -92,9 +94,19 @@ async function present(event: NotificationEvent, settings: RTASettings): Promise
                 link: event.webUiId ? { webUiId: event.webUiId } : undefined,
             };
         case "downloadFailed":
-            return { title: "Error downloading torrent", message: `Error: ${event.error}`, isFailed: true, link: { webUiId: event.webUiId } };
+            return {
+                title: "Error downloading torrent",
+                message: `Error: ${event.error}`,
+                isFailed: true,
+                link: { webUiId: event.webUiId },
+            };
         case "cloudflareChallenge":
-            return { title: "Cloudflare is blocking this download", message: event.message, isFailed: true, link: { url: event.challengeUrl } };
+            return {
+                title: "Cloudflare is blocking this download",
+                message: event.message,
+                isFailed: true,
+                link: { url: event.challengeUrl },
+            };
         case "labelSet":
             return {
                 title: "Label set",
@@ -105,7 +117,8 @@ async function present(event: NotificationEvent, settings: RTASettings): Promise
         case "settingsReset":
             return {
                 title: "Settings were reset",
-                message: "Your stored settings could not be read and were reset to defaults. Re-import an export or set up your WebUIs again.",
+                message:
+                    "Your stored settings could not be read and were reset to defaults. Re-import an export or set up your WebUIs again.",
                 isFailed: true,
             };
         case "test":
@@ -117,7 +130,11 @@ async function present(event: NotificationEvent, settings: RTASettings): Promise
     }
 }
 
-async function labelActionFor(webUi: TorrentWebUI, torrent: Torrent, settings: RTASettings): Promise<NotificationLabelAction | undefined> {
+async function labelActionFor(
+    webUi: TorrentWebUI,
+    torrent: Torrent,
+    settings: RTASettings,
+): Promise<NotificationLabelAction | undefined> {
     // Firefox rejects notifications that carry buttons.
     if (isFirefox() || !settings.notificationsLabelButtonEnabled || !webUi.isLabelSupported) {
         return undefined;
@@ -132,13 +149,13 @@ function show(presentation: Presentation, settings: RTASettings): void {
         type: "basic",
         iconUrl: isFailed ? "assets/icons/BitTorrent128-red.png" : "assets/icons/BitTorrent128.png",
         title: title,
-        message: message
+        message: message,
     };
     if (labelAction) {
         notificationCreateOptions.buttons = [{ title: "Add label" }];
     }
 
-    void ext.notifications.create("", notificationCreateOptions).then(async myId => {
+    void ext.notifications.create("", notificationCreateOptions).then(async (myId) => {
         if (link) {
             await ext.storage.session.set({ [LINK_KEY_PREFIX + myId]: link });
         }
@@ -206,7 +223,7 @@ async function ensureOffscreenDocument(): Promise<void> {
     if (await ext.offscreen.hasDocument()) return;
     await ext.offscreen.createDocument({
         reasons: ["AUDIO_PLAYBACK"],
-        url: 'notifications/offscreen.html',
-        justification: "playing a lil audio along with the notification"
+        url: "notifications/offscreen.html",
+        justification: "playing a lil audio along with the notification",
     });
 }

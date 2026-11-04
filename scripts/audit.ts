@@ -48,9 +48,9 @@ for (const advisory of Object.values(report.advisories ?? {})) {
     found.set(`${name}:${ghsa}`, { package: name, ghsa, severity, title });
 }
 
-const waived = new Set(ALLOWLIST.map(entry => `${entry.package}:${entry.ghsa}`));
-const blocking = [...found.values()].filter(entry => !waived.has(`${entry.package}:${entry.ghsa}`));
-const stale = [...waived].filter(key => !found.has(key));
+const waived = new Set(ALLOWLIST.map((entry) => `${entry.package}:${entry.ghsa}`));
+const blocking = [...found.values()].filter((entry) => !waived.has(`${entry.package}:${entry.ghsa}`));
+const stale = [...waived].filter((key) => !found.has(key));
 
 for (const key of stale) {
     console.warn(`Allowlisted advisory no longer reported: ${key} - remove it from scripts/audit.ts.`);

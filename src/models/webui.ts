@@ -1,5 +1,5 @@
-import { type Client } from './clients';
-import { type Torrent, type TorrentUploadConfig } from './torrent';
+import { type Client } from "./clients";
+import { type Torrent, type TorrentUploadConfig } from "./torrent";
 
 export interface WebUISettings {
     id: string;
@@ -46,15 +46,15 @@ export function resolveClientSpecificSetting(
     stored: Record<string, unknown> | undefined,
     perTorrent?: Record<string, boolean>,
 ): boolean {
-    const descriptor = descriptors.find(candidate => candidate.key === key);
-    return perTorrent?.[key]
-        ?? (stored?.[key] as boolean | undefined)
-        ?? descriptor?.default
-        ?? false;
+    const descriptor = descriptors.find((candidate) => candidate.key === key);
+    return perTorrent?.[key] ?? (stored?.[key] as boolean | undefined) ?? descriptor?.default ?? false;
 }
 
 export class HttpError extends Error {
-    constructor(public readonly status: number, public readonly body: string) {
+    constructor(
+        public readonly status: number,
+        public readonly body: string,
+    ) {
         super(`HTTP error ${status}`);
         this.name = "HttpError";
     }
@@ -68,7 +68,10 @@ export interface AddResult extends TorrentAddingResult {
 
 /** Thrown by a login when the server answered but rejected the credentials. */
 export class AuthenticationError extends Error {
-    constructor(public readonly httpResponseCode: number, public readonly reason?: string) {
+    constructor(
+        public readonly httpResponseCode: number,
+        public readonly reason?: string,
+    ) {
         super(reason ? `Authentication failed: ${reason}` : "Authentication failed");
         this.name = "AuthenticationError";
     }
@@ -76,7 +79,10 @@ export class AuthenticationError extends Error {
 
 /** Thrown by a login when the server answered, but not in a way that says whether the credentials are right. */
 export class CredentialsUnverifiedError extends Error {
-    constructor(public readonly httpResponseCode: number, message: string) {
+    constructor(
+        public readonly httpResponseCode: number,
+        message: string,
+    ) {
         super(message);
         this.name = "CredentialsUnverifiedError";
     }
@@ -163,7 +169,12 @@ export abstract class TorrentWebUI<Session = unknown> {
         }
     }
 
-    private async runAddFollowUps(session: Session, torrent: Torrent, added: AddResult, config: TorrentUploadConfig): Promise<string[]> {
+    private async runAddFollowUps(
+        session: Session,
+        torrent: Torrent,
+        added: AddResult,
+        config: TorrentUploadConfig,
+    ): Promise<string[]> {
         let torrentId: Promise<string> | undefined;
         const addedId = (): Promise<string> => {
             torrentId ??= this.addedTorrentId(added, torrent).then((id) => {
@@ -177,14 +188,20 @@ export abstract class TorrentWebUI<Session = unknown> {
 
         const label = this.getLabel(config);
         const labelAfterAdd = this.labelAfterAdd?.bind(this);
-        const labelWarning = label && labelAfterAdd
-            ? await this.runFollowUp(`Label "${label}" was not applied`, async () => labelAfterAdd(session, await addedId(), label))
-            : undefined;
+        const labelWarning =
+            label && labelAfterAdd
+                ? await this.runFollowUp(`Label "${label}" was not applied`, async () =>
+                      labelAfterAdd(session, await addedId(), label),
+                  )
+                : undefined;
 
         const pauseAfterAdd = this.pauseAfterAdd?.bind(this);
-        const pauseWarning = this.getAddPaused(config) === true && pauseAfterAdd
-            ? await this.runFollowUp("Add Paused was not applied", async () => pauseAfterAdd(session, await addedId()))
-            : undefined;
+        const pauseWarning =
+            this.getAddPaused(config) === true && pauseAfterAdd
+                ? await this.runFollowUp("Add Paused was not applied", async () =>
+                      pauseAfterAdd(session, await addedId()),
+                  )
+                : undefined;
 
         return [labelWarning, pauseWarning].filter((warning): warning is string => warning !== undefined);
     }
@@ -242,9 +259,7 @@ export abstract class TorrentWebUI<Session = unknown> {
             reachable: true,
             authenticated,
             httpResponseCode,
-            message: authenticated
-                ? "Reachable & authenticated"
-                : "Reachable, but authentication failed",
+            message: authenticated ? "Reachable & authenticated" : "Reachable, but authentication failed",
         };
     }
 
@@ -268,7 +283,7 @@ export abstract class TorrentWebUI<Session = unknown> {
 
     protected createBasicAuthHeaders(): Record<string, string> {
         if (this._settings.username || this._settings.password) {
-            return { "Authorization": "Basic " + btoa(`${this._settings.username}:${this._settings.password}`) };
+            return { Authorization: "Basic " + btoa(`${this._settings.username}:${this._settings.password}`) };
         }
         return {};
     }
@@ -293,11 +308,11 @@ export abstract class TorrentWebUI<Session = unknown> {
 
     createBaseUrl(): string {
         let portPart: string;
-        if(this._settings.port === null || this._settings.port === undefined) {
+        if (this._settings.port === null || this._settings.port === undefined) {
             portPart = "";
-        } else if(this.settings.secure && this._settings.port === 443) {
+        } else if (this.settings.secure && this._settings.port === 443) {
             portPart = "";
-        } else if(!this.settings.secure && this._settings.port === 80) {
+        } else if (!this.settings.secure && this._settings.port === 80) {
             portPart = "";
         } else {
             portPart = `:${this._settings.port}`;
@@ -320,7 +335,11 @@ export abstract class TorrentWebUI<Session = unknown> {
         return this.fetchAllowing(url, options, []);
     }
 
-    protected async fetchAllowing(url: string, options: RequestInit | undefined, allowedStatuses: ReadonlyArray<number>): Promise<Response> {
+    protected async fetchAllowing(
+        url: string,
+        options: RequestInit | undefined,
+        allowedStatuses: ReadonlyArray<number>,
+    ): Promise<Response> {
         const res: Response = await fetch(url, options);
         if (!res.ok && !allowedStatuses.includes(res.status)) {
             throw new HttpError(res.status, await res.text().catch(() => ""));
@@ -339,7 +358,10 @@ export abstract class TorrentWebUI<Session = unknown> {
      * Runs a step after the Add succeeded. If it throws or fails, the Add still succeeded, so the
      * problem comes back as a warning instead of a failed result.
      */
-    private async runFollowUp(notApplied: string, step: () => Promise<TorrentAddingResult | void>): Promise<string | undefined> {
+    private async runFollowUp(
+        notApplied: string,
+        step: () => Promise<TorrentAddingResult | void>,
+    ): Promise<string | undefined> {
         try {
             const result = await step();
             if (result && !result.success) {
@@ -378,7 +400,6 @@ export abstract class TorrentWebUI<Session = unknown> {
             config.clientSpecificSettings,
         );
     }
-
 }
 
 export interface TorrentAddingResult {

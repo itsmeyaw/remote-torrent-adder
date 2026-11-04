@@ -3,7 +3,7 @@ name: Build Extension
 on:
   push:
     branches:
-      - '**'
+      - "**"
   pull_request:
 
 # Least privilege: nothing here needs to write to the repo.
@@ -27,14 +27,16 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Type check
         run: pnpm run typecheck
       - name: Lint
         run: pnpm run lint
+      - name: Format check
+        run: pnpm run format:check
       - name: Test
         run: pnpm run test:coverage
       - name: Upload coverage
@@ -56,8 +58,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build Chrome extension
@@ -95,8 +97,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Download the built Chrome extension
@@ -116,7 +118,7 @@ jobs:
       - name: Run end-to-end tests
         run: pnpm run test:e2e
         env:
-          MOZ_HEADLESS: '1'
+          MOZ_HEADLESS: "1"
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v7
@@ -141,8 +143,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Download the built Chrome extension
@@ -180,8 +182,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build Chrome extension (production)

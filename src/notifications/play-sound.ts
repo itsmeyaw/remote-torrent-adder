@@ -20,5 +20,5 @@ export async function playNotificationSound(isFailed: boolean): Promise<void> {
     if (objectUrl) {
         audio.addEventListener("ended", () => URL.revokeObjectURL(objectUrl));
     }
-    audio.play().catch(e => console.error("Failed to play notification sound", e));
+    audio.play().catch((e) => console.error("Failed to play notification sound", e));
 }

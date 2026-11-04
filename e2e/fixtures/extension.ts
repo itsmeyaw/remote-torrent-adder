@@ -30,10 +30,7 @@ export class ExtensionHarness {
     async launch(): Promise<void> {
         this.context = await chromium.launchPersistentContext(this.userDataDir, {
             channel: "chromium",
-            args: [
-                `--disable-extensions-except=${EXTENSION_DIR}`,
-                `--load-extension=${EXTENSION_DIR}`,
-            ],
+            args: [`--disable-extensions-except=${EXTENSION_DIR}`, `--load-extension=${EXTENSION_DIR}`],
         });
         this.logs.attach(this.context);
         this.worker = this.context.serviceWorkers()[0] ?? (await this.context.waitForEvent("serviceworker"));
@@ -52,7 +49,7 @@ export class ExtensionHarness {
             if (await this.readSettings()) {
                 break;
             }
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise((resolve) => setTimeout(resolve, 50));
         }
         await this.logs.waitForQuiet({ quietMs: 400 });
     }
@@ -90,11 +87,9 @@ export class ExtensionHarness {
             if (!tab?.id) {
                 throw new Error(`No tab matched ${pattern}`);
             }
-            const reply = (await chrome.tabs.sendMessage(
-                tab.id,
-                { action: "getPageLinks" },
-                { frameId: 0 },
-            )) as { value?: { links?: { url: string; label: string }[] } } | undefined;
+            const reply = (await chrome.tabs.sendMessage(tab.id, { action: "getPageLinks" }, { frameId: 0 })) as
+                | { value?: { links?: { url: string; label: string }[] } }
+                | undefined;
             return reply?.value?.links ?? [];
         }, tabUrlPattern);
     }
@@ -162,9 +157,7 @@ export class ExtensionHarness {
     }
 
     async contextMenuIds(): Promise<string[]> {
-        return this.worker.evaluate(
-            () => (self as unknown as { __rtaE2eMenuIds?: string[] }).__rtaE2eMenuIds ?? [],
-        );
+        return this.worker.evaluate(() => (self as unknown as { __rtaE2eMenuIds?: string[] }).__rtaE2eMenuIds ?? []);
     }
 
     /** Records every notification the worker raises from this point on. */
@@ -178,7 +171,7 @@ export class ExtensionHarness {
             const notifications = chrome.notifications as unknown as { create: (...args: any[]) => unknown };
             const create = notifications.create.bind(notifications);
             notifications.create = (...args: any[]) => {
-                scope.__rtaE2eNotifications!.push(args.find(arg => typeof arg === "object" && arg !== null));
+                scope.__rtaE2eNotifications!.push(args.find((arg) => typeof arg === "object" && arg !== null));
                 return create(...args);
             };
         });

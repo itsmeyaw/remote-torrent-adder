@@ -8,7 +8,7 @@ import { makeWebUISettings } from "../helpers/fixtures";
 import { at } from "../helpers/assert";
 
 function backupKeys(): string[] {
-    return Object.keys((chrome as any).__storage).filter(key => key.startsWith("settingsBackup:"));
+    return Object.keys((chrome as any).__storage).filter((key) => key.startsWith("settingsBackup:"));
 }
 
 function storedSettings(): RTASettings {
@@ -57,13 +57,16 @@ describe("loadSettings", () => {
         expect(storedSettings()).toEqual(getDefaultSettings());
     });
 
-    it.each(["null", "0", "true", "[]", "\"x\""])("treats the stored value %s, which is not a plain object, as corrupt", async (stored) => {
-        (chrome as any).__storage.settings = stored;
-        const loaded = await loadSettings();
+    it.each(["null", "0", "true", "[]", '"x"'])(
+        "treats the stored value %s, which is not a plain object, as corrupt",
+        async (stored) => {
+            (chrome as any).__storage.settings = stored;
+            const loaded = await loadSettings();
 
-        expect(loaded).toEqual(getDefaultSettings());
-        expect(backupKeys()).toHaveLength(1);
-    });
+            expect(loaded).toEqual(getDefaultSettings());
+            expect(backupKeys()).toHaveLength(1);
+        },
+    );
 
     it("does not reset when persisting a migration fails, and returns the migrated settings", async () => {
         const stored = getDefaultSettings();
@@ -94,7 +97,7 @@ describe("loadSettings", () => {
         (chrome as any).__storage.settings = "second corrupt";
         await loadSettings();
 
-        const originals = backupKeys().map(key => (chrome as any).__storage[key]);
+        const originals = backupKeys().map((key) => (chrome as any).__storage[key]);
         expect(originals.sort()).toEqual(["first corrupt", "second corrupt"]);
     });
 
@@ -111,7 +114,11 @@ describe("loadSettings", () => {
 
     it("backs up and resets a config with an invalid value, without repeating the stored value in the log", async () => {
         const password = "s3cret-webui-password";
-        const stored = { ...getDefaultSettings(), notificationsDurationMs: -1, webuiSettings: [makeWebUISettings({ password })] };
+        const stored = {
+            ...getDefaultSettings(),
+            notificationsDurationMs: -1,
+            webuiSettings: [makeWebUISettings({ password })],
+        };
         const original = serializeSettings(stored);
         (chrome as any).__storage.settings = original;
         const error = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -129,7 +136,12 @@ describe("loadSettings", () => {
     });
 
     it("fills keys missing from an older config with defaults and keeps stored values, falsy ones included", async () => {
-        const stored = { ...getDefaultSettings(), notificationsDurationMs: 5000, notificationsSoundEnabled: true, linkCatchingEnabled: false } as Partial<RTASettings>;
+        const stored = {
+            ...getDefaultSettings(),
+            notificationsDurationMs: 5000,
+            notificationsSoundEnabled: true,
+            linkCatchingEnabled: false,
+        } as Partial<RTASettings>;
         delete stored.notificationsLabelButtonEnabled;
         delete stored.iconClickAction;
         (chrome as any).__storage.settings = serializeSettings(stored as RTASettings);
@@ -182,7 +194,9 @@ describe("saveSettings", () => {
 describe("Settings console output", () => {
     it("never logs WebUI credentials on load or save", async () => {
         const password = "s3cret-webui-password";
-        const spies = (["log", "info", "debug", "warn", "error"] as const).map(method => vi.spyOn(console, method).mockImplementation(() => {}));
+        const spies = (["log", "info", "debug", "warn", "error"] as const).map((method) =>
+            vi.spyOn(console, method).mockImplementation(() => {}),
+        );
         try {
             const settings = getDefaultSettings();
             settings.webuiSettings = [makeWebUISettings({ password })];
@@ -192,7 +206,7 @@ describe("Settings console output", () => {
             (chrome as any).__storage.settings = undefined;
             await loadSettings();
 
-            expect(spies.some(spy => spy.mock.calls.length > 0)).toBe(true);
+            expect(spies.some((spy) => spy.mock.calls.length > 0)).toBe(true);
             for (const spy of spies) {
                 expect(JSON.stringify(spy.mock.calls)).not.toContain(password);
             }

@@ -13,9 +13,7 @@ export default async function globalSetup(): Promise<void> {
         try {
             await access(join(dir, "manifest.json"));
         } catch {
-            throw new Error(
-                `No built extension at ${dir}. Run \`${script}\` before \`pnpm run test:e2e\`.`
-            );
+            throw new Error(`No built extension at ${dir}. Run \`${script}\` before \`pnpm run test:e2e\`.`);
         }
     }
 }

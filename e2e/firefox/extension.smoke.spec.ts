@@ -29,9 +29,7 @@ test.describe("firefox event page", () => {
     });
 
     test("has no offscreen API and does not need one", async ({ extension }) => {
-        const hasOffscreen = await extension.evaluate<boolean>(
-            'return typeof browser.offscreen !== "undefined";',
-        );
+        const hasOffscreen = await extension.evaluate<boolean>('return typeof browser.offscreen !== "undefined";');
 
         expect(hasOffscreen).toBe(false);
     });
@@ -44,14 +42,12 @@ test.describe("firefox event page", () => {
             ]),
         );
 
-        await expect
-            .poll(async () => (await extension.sessionRules()).length, { timeout: 15_000 })
-            .toBe(2);
+        await expect.poll(async () => (await extension.sessionRules()).length, { timeout: 15_000 }).toBe(2);
 
         const rules = await extension.sessionRules();
-        const stripped = rules.map(rule => rule.action.requestHeaders?.[0]);
-        expect(stripped.every(header => header?.header === "origin" && header.operation === "remove")).toBe(true);
-        expect(rules.map(rule => rule.condition.urlFilter).sort()).toEqual([
+        const stripped = rules.map((rule) => rule.action.requestHeaders?.[0]);
+        expect(stripped.every((header) => header?.header === "origin" && header.operation === "remove")).toBe(true);
+        expect(rules.map((rule) => rule.condition.urlFilter).sort()).toEqual([
             "|http://alpha.invalid:8080*",
             "|http://beta.invalid:9090*",
         ]);
@@ -93,12 +89,10 @@ test.describe("firefox content script", () => {
     test("catches torrent and magnet links on a real page", async ({ extension }) => {
         await extension.openPage(site.baseUrl);
 
-        await expect
-            .poll(async () => (await extension.pageLinks(SITE_PATTERN)).length, { timeout: 15_000 })
-            .toBe(2);
+        await expect.poll(async () => (await extension.pageLinks(SITE_PATTERN)).length, { timeout: 15_000 }).toBe(2);
 
         const links = await extension.pageLinks(SITE_PATTERN);
-        const urls = links.map(link => link.url).sort();
+        const urls = links.map((link) => link.url).sort();
         expect(urls[0]).toContain("/files/sample.torrent");
         expect(urls[1]).toMatch(/^magnet:/);
     });
@@ -113,14 +107,7 @@ test.describe("firefox content script", () => {
     });
 });
 
-const OPTIONS_TABS = [
-    "WebUIs",
-    "Icon Click",
-    "Notifications",
-    "Link Catching",
-    "Import/Export Settings",
-    "About",
-];
+const OPTIONS_TABS = ["WebUIs", "Icon Click", "Notifications", "Link Catching", "Import/Export Settings", "About"];
 
 function renderedTabs(extension: FirefoxExtensionHarness): Promise<string[]> {
     return extension.evaluate<string[]>(
@@ -140,9 +127,7 @@ test.describe("firefox options page", () => {
 
         expect(granted).toBe(true);
         await expect.poll(() => renderedTabs(extension)).toEqual(OPTIONS_TABS);
-        const alerts = await extension.evaluate<number>(
-            'return document.querySelectorAll("[role=alert]").length;',
-        );
+        const alerts = await extension.evaluate<number>('return document.querySelectorAll("[role=alert]").length;');
         expect(alerts).toBe(0);
     });
 });

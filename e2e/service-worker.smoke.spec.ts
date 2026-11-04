@@ -25,7 +25,10 @@ test.describe("service worker", () => {
         expect(problems, logs.report(problems)).toEqual([]);
     });
 
-    test("registers one CORS session rule per configured WebUI after a browser restart", async ({ extension, logs }) => {
+    test("registers one CORS session rule per configured WebUI after a browser restart", async ({
+        extension,
+        logs,
+    }) => {
         await extension.seedSettings(
             makeSettings([
                 makeWebUISettings({ id: "webui-1", name: "First", host: "127.0.0.1", port: 8080 }),
@@ -37,7 +40,7 @@ test.describe("service worker", () => {
         await logs.waitForQuiet();
 
         const rules = await extension.sessionRules();
-        expect(rules.map(rule => rule.condition.urlFilter)).toEqual([
+        expect(rules.map((rule) => rule.condition.urlFilter)).toEqual([
             "|http://127.0.0.1:8080*",
             "|http://10.0.0.5:9091*",
         ]);
@@ -84,7 +87,7 @@ test.describe("service worker", () => {
 
         const rules = await extension.sessionRules();
         expect(
-            rules.map(rule => rule.condition.urlFilter),
+            rules.map((rule) => rule.condition.urlFilter),
             "the blank-host draft must be skipped without taking its valid sibling down with it",
         ).toEqual(["|http://127.0.0.1:8080*"]);
 

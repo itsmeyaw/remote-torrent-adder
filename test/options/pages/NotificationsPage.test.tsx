@@ -24,7 +24,12 @@ function respondWithSettings(settings = getDefaultSettings()) {
     });
 }
 
-const renderPage = () => render(<SettingsProvider><NotificationsPage /></SettingsProvider>);
+const renderPage = () =>
+    render(
+        <SettingsProvider>
+            <NotificationsPage />
+        </SettingsProvider>,
+    );
 
 beforeEach(() => {
     platform.firefox = false;

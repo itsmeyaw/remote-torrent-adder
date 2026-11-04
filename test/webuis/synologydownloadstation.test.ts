@@ -5,7 +5,9 @@ import { makeWebUISettings, makeMagnetTorrent, makeFileTorrent } from "../helper
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";
 
 const build = (over = {}) =>
-    new SynologyDownloadStationWebUI(makeWebUISettings({ host: "nas", port: 5000, username: "u", password: "p", ...over }));
+    new SynologyDownloadStationWebUI(
+        makeWebUISettings({ host: "nas", port: 5000, username: "u", password: "p", ...over }),
+    );
 
 const AUTH_V7 = { path: "auth.cgi", minVersion: 1, maxVersion: 7 };
 const AUTH_V3 = { path: "auth.cgi", minVersion: 1, maxVersion: 3 };

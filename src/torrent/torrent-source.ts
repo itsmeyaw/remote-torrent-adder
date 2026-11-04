@@ -8,7 +8,7 @@ import {
     parseNameFromDecodedTorrentData,
     parsePrivateFlagFromDecodedTorrentData,
     parseTrackersFromDecodedTorrentData,
-    parseTrackersFromMagnetLink
+    parseTrackersFromMagnetLink,
 } from "./parsers";
 
 export function buildTorrentFromMagnetLink(magnetLink: string): Torrent {
@@ -17,11 +17,15 @@ export function buildTorrentFromMagnetLink(magnetLink: string): Torrent {
         name: getTorrentNameFromMagnetLink(magnetLink),
         declaredName: getDeclaredTorrentNameFromMagnetLink(magnetLink) ?? undefined,
         isMagnet: true,
-        trackers: parseTrackersFromMagnetLink(magnetLink)
+        trackers: parseTrackersFromMagnetLink(magnetLink),
     };
 }
 
-export function buildTorrentFromDecodedData(decodedTorrentData: DecodedTorrent, fallbackName: string, data: Blob): Torrent {
+export function buildTorrentFromDecodedData(
+    decodedTorrentData: DecodedTorrent,
+    fallbackName: string,
+    data: Blob,
+): Torrent {
     const declaredName = parseNameFromDecodedTorrentData(decodedTorrentData);
 
     return {
@@ -31,7 +35,7 @@ export function buildTorrentFromDecodedData(decodedTorrentData: DecodedTorrent, 
         isMagnet: false,
         trackers: parseTrackersFromDecodedTorrentData(decodedTorrentData),
         files: parseFilesFromDecodedTorrentData(decodedTorrentData),
-        isPrivate: parsePrivateFlagFromDecodedTorrentData(decodedTorrentData)
+        isPrivate: parsePrivateFlagFromDecodedTorrentData(decodedTorrentData),
     };
 }
 

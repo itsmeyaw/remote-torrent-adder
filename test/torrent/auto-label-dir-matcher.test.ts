@@ -109,7 +109,9 @@ describe("filePath criteria", () => {
     });
 
     it("does not match when the torrent has no file list (magnet link)", () => {
-        expect(getAutoLabelResult(torrentWith(["http://x"], undefined), [fileSetting("\\.mkv$", "video", null)])).toBeNull();
+        expect(
+            getAutoLabelResult(torrentWith(["http://x"], undefined), [fileSetting("\\.mkv$", "video", null)]),
+        ).toBeNull();
     });
 
     it("does not match against an empty file list", () => {
@@ -131,7 +133,9 @@ describe("filePath criteria", () => {
         };
         expect(getAutoLabelResult(torrentWith(["http://private.org/announce"], ["a.iso"]), [mixed])).toBeNull();
         expect(getAutoLabelResult(torrentWith(["http://other.org/announce"], ["a.mkv"]), [mixed])).toBeNull();
-        expect(getAutoLabelResult(torrentWith(["http://private.org/announce"], ["a.mkv"]), [mixed])).toBe("private-video");
+        expect(getAutoLabelResult(torrentWith(["http://private.org/announce"], ["a.mkv"]), [mixed])).toBe(
+            "private-video",
+        );
     });
 
     it("resolves a dir from a file criterion", () => {
@@ -145,8 +149,12 @@ describe("torrentName criteria", () => {
 
     it("matches a regex against the torrent name", () => {
         const torrent = torrentWith(undefined, undefined, movieName);
-        expect(getAutoLabelResult(torrent, [nameSetting("2160p", "MOVIES/2160p", "/movies/2160p")])).toBe("MOVIES/2160p");
-        expect(getAutoDirResult(torrent, [nameSetting("2160p", "MOVIES/2160p", "/movies/2160p")])).toBe("/movies/2160p");
+        expect(getAutoLabelResult(torrent, [nameSetting("2160p", "MOVIES/2160p", "/movies/2160p")])).toBe(
+            "MOVIES/2160p",
+        );
+        expect(getAutoDirResult(torrent, [nameSetting("2160p", "MOVIES/2160p", "/movies/2160p")])).toBe(
+            "/movies/2160p",
+        );
     });
 
     it("matches case-insensitively", () => {
@@ -165,11 +173,15 @@ describe("torrentName criteria", () => {
     });
 
     it("does not throw and does not match on an invalid regex pattern", () => {
-        expect(getAutoLabelResult(torrentWith(undefined, undefined, movieName), [nameSetting("(", "bad", null)])).toBeNull();
+        expect(
+            getAutoLabelResult(torrentWith(undefined, undefined, movieName), [nameSetting("(", "bad", null)]),
+        ).toBeNull();
     });
 
     it("reports the name as the matched candidate in the explanation", () => {
-        const explanation = explainAutoLabelDir(torrentWith(undefined, undefined, movieName), [nameSetting("2160p", "l", null)]);
+        const explanation = explainAutoLabelDir(torrentWith(undefined, undefined, movieName), [
+            nameSetting("2160p", "l", null),
+        ]);
         expect(at(at(explanation.rules, 0).criteria, 0).matchedCandidates).toEqual([movieName]);
     });
 
@@ -206,9 +218,15 @@ describe("torrentName criteria", () => {
             label: "private-uhd",
             dir: null,
         };
-        expect(getAutoLabelResult(torrentWith(["http://private.org/announce"], undefined, "a.1080p"), [mixed])).toBeNull();
-        expect(getAutoLabelResult(torrentWith(["http://other.org/announce"], undefined, movieName), [mixed])).toBeNull();
-        expect(getAutoLabelResult(torrentWith(["http://private.org/announce"], undefined, movieName), [mixed])).toBe("private-uhd");
+        expect(
+            getAutoLabelResult(torrentWith(["http://private.org/announce"], undefined, "a.1080p"), [mixed]),
+        ).toBeNull();
+        expect(
+            getAutoLabelResult(torrentWith(["http://other.org/announce"], undefined, movieName), [mixed]),
+        ).toBeNull();
+        expect(getAutoLabelResult(torrentWith(["http://private.org/announce"], undefined, movieName), [mixed])).toBe(
+            "private-uhd",
+        );
     });
 });
 
@@ -258,8 +276,10 @@ describe("explainAutoLabelDir", () => {
         const explanation = explainAutoLabelDir(torrent, [setting("a\\.org", "l", "/d")]);
 
         expect(at(explanation.rules, 0).matched).toBe(true);
-        expect(at(at(explanation.rules, 0).criteria, 0).matchedCandidates)
-            .toEqual(["http://a.org/announce", "http://a.org/announce2"]);
+        expect(at(at(explanation.rules, 0).criteria, 0).matchedCandidates).toEqual([
+            "http://a.org/announce",
+            "http://a.org/announce2",
+        ]);
         expect(at(at(explanation.rules, 0).criteria, 0).invalidPattern).toBe(false);
     });
 
@@ -267,8 +287,10 @@ describe("explainAutoLabelDir", () => {
         const torrent = torrentWith(undefined, ["Season 01/ep01.mkv", "readme.nfo", "Season 01/ep02.MKV"]);
         const explanation = explainAutoLabelDir(torrent, [fileSetting("\\.mkv$", "video", null)]);
 
-        expect(at(at(explanation.rules, 0).criteria, 0).matchedCandidates)
-            .toEqual(["Season 01/ep01.mkv", "Season 01/ep02.MKV"]);
+        expect(at(at(explanation.rules, 0).criteria, 0).matchedCandidates).toEqual([
+            "Season 01/ep01.mkv",
+            "Season 01/ep02.MKV",
+        ]);
     });
 
     it("flags an invalid regex without matching", () => {
@@ -302,7 +324,7 @@ describe("explainAutoLabelDir", () => {
             setting("a\\.org", "third", "/third"),
         ]);
 
-        expect(explanation.rules.map(rule => rule.matched)).toEqual([false, true, true]);
+        expect(explanation.rules.map((rule) => rule.matched)).toEqual([false, true, true]);
         expect(explanation.winningRuleIndex).toBe(1);
         expect(explanation.label).toBe("second");
         expect(explanation.dir).toBe("/second");
@@ -314,7 +336,7 @@ describe("explainAutoLabelDir", () => {
             setting("a\\.org", "second", null),
         ]);
 
-        expect(explanation.rules.map(rule => rule.index)).toEqual([0, 1]);
+        expect(explanation.rules.map((rule) => rule.index)).toEqual([0, 1]);
         expect(at(explanation.rules, 1).setting.label).toBe("second");
     });
 

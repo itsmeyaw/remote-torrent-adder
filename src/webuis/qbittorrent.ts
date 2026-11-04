@@ -1,5 +1,12 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type AddResult, AuthenticationError, type ClientSpecificSettingDescriptor, HttpError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import {
+    type AddResult,
+    AuthenticationError,
+    type ClientSpecificSettingDescriptor,
+    HttpError,
+    type TorrentAddingResult,
+    TorrentWebUI,
+} from "../models/webui";
 
 const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> = [
     {
@@ -8,7 +15,8 @@ const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> =
         type: "boolean",
         default: false,
         perTorrent: true,
-        description: "Bypass the queueing system and start immediately. Needs WebAPI 2.11 or newer; older servers ignore it.",
+        description:
+            "Bypass the queueing system and start immediately. Needs WebAPI 2.11 or newer; older servers ignore it.",
     },
 ];
 
@@ -25,7 +33,11 @@ export class QBittorrentWebUI extends TorrentWebUI {
         };
     }
 
-    protected override async applyLabel(_session: unknown, infoHash: string, label: string): Promise<TorrentAddingResult> {
+    protected override async applyLabel(
+        _session: unknown,
+        infoHash: string,
+        label: string,
+    ): Promise<TorrentAddingResult> {
         await this.createCategory(label);
         const body = new URLSearchParams();
         body.append("hashes", infoHash.toLowerCase());
@@ -33,7 +45,7 @@ export class QBittorrentWebUI extends TorrentWebUI {
         const response = await this.fetch(this.createBaseUrl() + "/api/v2/torrents/setCategory", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded; charset=utf-8" },
-            body
+            body,
         });
         return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
@@ -45,7 +57,7 @@ export class QBittorrentWebUI extends TorrentWebUI {
             await this.fetch(this.createBaseUrl() + "/api/v2/torrents/createCategory", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded; charset=utf-8" },
-                body
+                body,
             });
         } catch (error) {
             if (!(error instanceof HttpError && error.status === 409)) {
@@ -61,9 +73,9 @@ export class QBittorrentWebUI extends TorrentWebUI {
         const response = await this.fetch(this.createBaseUrl() + "/api/v2/auth/login", {
             method: "POST",
             headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
+                "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
             },
-            body: authenticationBody
+            body: authenticationBody,
         });
         if ((await response.text()).trim() !== "Ok.") {
             throw new AuthenticationError(response.status, "qBittorrent rejected the username or password");
@@ -75,7 +87,10 @@ export class QBittorrentWebUI extends TorrentWebUI {
         if (torrent.isMagnet) {
             body.append("urls", torrent.data as string);
         } else {
-            body.append("torrents", new File([torrent.data as Blob], torrent.name, { type: "application/x-bittorrent" }));
+            body.append(
+                "torrents",
+                new File([torrent.data as Blob], torrent.name, { type: "application/x-bittorrent" }),
+            );
         }
 
         const dir = this.getDirectory(config);

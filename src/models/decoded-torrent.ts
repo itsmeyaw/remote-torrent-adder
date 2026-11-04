@@ -38,10 +38,7 @@ export function isBytes(value: unknown): value is Uint8Array {
 }
 
 export function isBencodeDictionary(value: BencodeValue | undefined): value is BencodeDictionary {
-    return typeof value === "object"
-        && value !== null
-        && !Array.isArray(value)
-        && !isBytes(value);
+    return typeof value === "object" && value !== null && !Array.isArray(value) && !isBytes(value);
 }
 
 /** True when the value looks like a torrent, i.e. carries an info dictionary. */

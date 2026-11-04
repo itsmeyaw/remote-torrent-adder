@@ -30,7 +30,12 @@ function Probe() {
     );
 }
 
-const renderProbe = () => render(<SettingsProvider><Probe /></SettingsProvider>);
+const renderProbe = () =>
+    render(
+        <SettingsProvider>
+            <Probe />
+        </SettingsProvider>,
+    );
 
 describe("SettingsContext", () => {
     it("shows a loading state until settings arrive", () => {
@@ -59,8 +64,9 @@ describe("SettingsContext", () => {
         await userEvent.click(screen.getByRole("button", { name: "bump" }));
 
         await waitFor(() => {
-            const saves = (chrome.runtime.sendMessage as any).mock.calls
-                .filter((call: any[]) => call[0]?.action === "saveSettings");
+            const saves = (chrome.runtime.sendMessage as any).mock.calls.filter(
+                (call: any[]) => call[0]?.action === "saveSettings",
+            );
             expect(saves).toHaveLength(1);
         });
     });
@@ -75,8 +81,9 @@ describe("SettingsContext", () => {
         await userEvent.click(screen.getByRole("button", { name: "bump" }));
 
         await waitFor(() => {
-            const save = (chrome.runtime.sendMessage as any).mock.calls
-                .find((call: any[]) => call[0]?.action === "saveSettings");
+            const save = (chrome.runtime.sendMessage as any).mock.calls.find(
+                (call: any[]) => call[0]?.action === "saveSettings",
+            );
             const persisted = deserializeSettings(save[0].settings)!;
             expect(persisted.notificationsDurationMs).toBe(9999);
             expect(persisted.notificationsSoundEnabled).toBe(true);
@@ -98,8 +105,9 @@ describe("SettingsContext", () => {
         renderProbe();
         await screen.findByTestId("duration");
 
-        const gets = (chrome.runtime.sendMessage as any).mock.calls
-            .filter((call: any[]) => call[0]?.action === "getSettings");
+        const gets = (chrome.runtime.sendMessage as any).mock.calls.filter(
+            (call: any[]) => call[0]?.action === "getSettings",
+        );
         expect(gets).toHaveLength(1);
         expect(callArgs(chrome.runtime.sendMessage as any, 0)[0].action).toBe("getSettings");
     });
@@ -111,14 +119,18 @@ describe("SettingsContext", () => {
         renderProbe();
         await screen.findByTestId("duration");
 
-        const fromBackground = { ...stored, webuiSettings: [makeWebUISettings({ id: "webui-1", labels: ["movies", "tv"] })] };
+        const fromBackground = {
+            ...stored,
+            webuiSettings: [makeWebUISettings({ id: "webui-1", labels: ["movies", "tv"] })],
+        };
         await chrome.storage.local.set({ settings: serializeSettings(fromBackground) });
         await waitFor(() => expect(screen.getByTestId("labels")).toHaveTextContent("movies,tv"));
         await userEvent.click(screen.getByRole("button", { name: "bump" }));
 
         await waitFor(() => {
-            const save = (chrome.runtime.sendMessage as any).mock.calls
-                .find((call: any[]) => call[0]?.action === "saveSettings");
+            const save = (chrome.runtime.sendMessage as any).mock.calls.find(
+                (call: any[]) => call[0]?.action === "saveSettings",
+            );
             expect(deserializeSettings(save[0].settings)!.webuiSettings[0]!.labels).toEqual(["movies", "tv"]);
         });
     });
@@ -127,7 +139,8 @@ describe("SettingsContext", () => {
         const saves: string[] = [];
         respondWithSettings();
         (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-            if (message.action === "getSettings") return Promise.resolve({ value: serializeSettings(getDefaultSettings()) });
+            if (message.action === "getSettings")
+                return Promise.resolve({ value: serializeSettings(getDefaultSettings()) });
             if (message.action === "saveSettings") saves.push(message.settings);
             return Promise.resolve({ value: undefined });
         });
@@ -175,8 +188,10 @@ describe("SettingsContext", () => {
         vi.spyOn(console, "error").mockImplementation(() => undefined);
         let accept = false;
         (chrome.runtime.sendMessage as any).mockImplementation((message: any) => {
-            if (message.action === "getSettings") return Promise.resolve({ value: serializeSettings(getDefaultSettings()) });
-            if (message.action === "saveSettings" && !accept) return Promise.resolve({ error: "Invalid notificationsDurationMs" });
+            if (message.action === "getSettings")
+                return Promise.resolve({ value: serializeSettings(getDefaultSettings()) });
+            if (message.action === "saveSettings" && !accept)
+                return Promise.resolve({ error: "Invalid notificationsDurationMs" });
             return Promise.resolve({ value: undefined });
         });
         renderProbe();
@@ -184,7 +199,9 @@ describe("SettingsContext", () => {
 
         await userEvent.click(screen.getByRole("button", { name: "bump" }));
 
-        expect(await screen.findByRole("alert")).toHaveTextContent("Could not save settings: Invalid notificationsDurationMs");
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+            "Could not save settings: Invalid notificationsDurationMs",
+        );
         accept = true;
         await userEvent.click(screen.getByRole("button", { name: "bump again" }));
         await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());

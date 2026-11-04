@@ -23,7 +23,7 @@ export interface AddPage extends TorrentDownloadContext {
 
 /** Every Add entry point goes through here, so every failure is reported the same way. */
 export async function addLink(url: string, target: AddTarget, page: AddPage = {}): Promise<void> {
-    await reportingFailures(async settings => {
+    await reportingFailures(async (settings) => {
         const targets = resolveTargets(target, settings);
         const [first] = targets;
         if (!first) {
@@ -36,9 +36,12 @@ export async function addLink(url: string, target: AddTarget, page: AddPage = {}
             torrent = await downloadTorrent(url, { tabId: page.tabId, frameId: page.frameId, pageUrl: page.pageUrl });
         } catch (error) {
             console.error("Error downloading torrent:", error);
-            void notify(error instanceof CloudflareChallengeError
-                ? { type: "cloudflareChallenge", message: error.message, challengeUrl: error.challengeUrl }
-                : { type: "downloadFailed", error, webUiId: first.settings.id }, settings);
+            void notify(
+                error instanceof CloudflareChallengeError
+                    ? { type: "cloudflareChallenge", message: error.message, challengeUrl: error.challengeUrl }
+                    : { type: "downloadFailed", error, webUiId: first.settings.id },
+                settings,
+            );
             throw handledFailure(error);
         }
 
@@ -47,8 +50,11 @@ export async function addLink(url: string, target: AddTarget, page: AddPage = {}
             return;
         }
 
-        const results = await Promise.allSettled(targets.map(async webUi =>
-            sendTorrentToWebUi(webUi, torrent, settings, resolveUploadConfig(torrent, webUi.settings).config)));
+        const results = await Promise.allSettled(
+            targets.map(async (webUi) =>
+                sendTorrentToWebUi(webUi, torrent, settings, resolveUploadConfig(torrent, webUi.settings).config),
+            ),
+        );
         const rejected = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
         if (rejected) {
             throw rejected.reason;
@@ -62,7 +68,7 @@ export async function addLink(url: string, target: AddTarget, page: AddPage = {}
  * which WebUI and which label/dir the user picked.
  */
 export async function addBufferedTorrent(choice: ConfigSelectorChoice): Promise<void> {
-    await reportingFailures(async settings => {
+    await reportingFailures(async (settings) => {
         const buffered = await readBufferedTorrent(choice.bufferedId);
         if (!buffered) {
             throw new Error("No buffered torrent to add; it may already have been consumed.");
@@ -75,9 +81,12 @@ export async function addBufferedTorrent(choice: ConfigSelectorChoice): Promise<
 
         await sendTorrentToWebUi(webUi, buffered.torrent, settings, choice.config);
         // The Add already succeeded; failing here would invite a retry that adds the torrent twice.
-        await clearBufferedTorrent(choice.bufferedId).catch(e => console.error("Failed clearing the buffered torrent", e));
-        await rememberLabelsAndDirs(settings, buffered.webUiId, choice.labels, choice.directories)
-            .catch(e => console.error("Failed updating labels/dirs", e));
+        await clearBufferedTorrent(choice.bufferedId).catch((e) =>
+            console.error("Failed clearing the buffered torrent", e),
+        );
+        await rememberLabelsAndDirs(settings, buffered.webUiId, choice.labels, choice.directories).catch((e) =>
+            console.error("Failed updating labels/dirs", e),
+        );
     });
 }
 
@@ -115,7 +124,11 @@ function resolveTargets(target: AddTarget, settings: RTASettings): TorrentWebUI[
     return [webUi];
 }
 
-async function openConfigSelector(torrent: Torrent, webUiSettings: WebUISettings, windowId: number | null | undefined): Promise<void> {
+async function openConfigSelector(
+    torrent: Torrent,
+    webUiSettings: WebUISettings,
+    windowId: number | null | undefined,
+): Promise<void> {
     const bufferedId = await saveBufferedTorrent({ torrent, webUiId: webUiSettings.id });
     if (webUiSettings.useAlternativeLabelDirChooser) {
         await openPopupWindow(undefined, bufferedId);
@@ -131,10 +144,19 @@ async function openConfigSelector(torrent: Torrent, webUiSettings: WebUISettings
     }
 }
 
-async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, settings: RTASettings, config: TorrentUploadConfig): Promise<void> {
+async function sendTorrentToWebUi(
+    webUi: TorrentWebUI,
+    torrent: Torrent,
+    settings: RTASettings,
+    config: TorrentUploadConfig,
+): Promise<void> {
     const result = await webUi.sendTorrent(torrent, config).catch((error: unknown): TorrentAddingResult => {
         console.error("Error sending torrent:", error);
-        return { success: false, httpResponseCode: 0, httpResponseBody: error instanceof Error ? error.message : String(error) };
+        return {
+            success: false,
+            httpResponseCode: 0,
+            httpResponseBody: error instanceof Error ? error.message : String(error),
+        };
     });
     if (result.success) {
         console.debug(`Torrent added: ${torrent.name} to -> ${webUi.name}`);
@@ -142,15 +164,25 @@ async function sendTorrentToWebUi(webUi: TorrentWebUI, torrent: Torrent, setting
         return;
     }
     console.warn(`Torrent rejected by ${webUi.name}: ${torrent.name}`, result);
-    void notify({
-        type: "addFailed",
-        reason: `HTTP Response code: ${result.httpResponseCode}\nResponse body: ${result.httpResponseBody}`,
-        webUiId: webUi.settings.id,
-    }, settings);
-    throw new HandledFailure(`Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`);
+    void notify(
+        {
+            type: "addFailed",
+            reason: `HTTP Response code: ${result.httpResponseCode}\nResponse body: ${result.httpResponseBody}`,
+            webUiId: webUi.settings.id,
+        },
+        settings,
+    );
+    throw new HandledFailure(
+        `Adding ${torrent.name} to ${webUi.name} failed (HTTP ${result.httpResponseCode}): ${result.httpResponseBody}`,
+    );
 }
 
-async function rememberLabelsAndDirs(settings: RTASettings, webUiId: string, labels: string[], directories: string[]): Promise<void> {
+async function rememberLabelsAndDirs(
+    settings: RTASettings,
+    webUiId: string,
+    labels: string[],
+    directories: string[],
+): Promise<void> {
     const webUiSettings = findWebUiSettings(settings, webUiId);
     if (!webUiSettings) {
         const message = `WebUI with id ${webUiId} not found in settings; couldn't update labels and directories.`;

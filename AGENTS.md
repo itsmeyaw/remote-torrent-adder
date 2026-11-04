@@ -9,6 +9,7 @@ Full skill definitions and project context: [`.agents/README.md`](.agents/README
 ```bash
 pnpm run typecheck      # tsc --noEmit over src/, test/, scripts/, configs
 pnpm run lint           # oxlint (pnpm run lint:fix to autofix)
+pnpm run format         # oxfmt (pnpm run format:check in CI)
 pnpm test               # vitest suite (pnpm run test:watch, pnpm run test:coverage)
 pnpm run audit          # pnpm audit (high/critical only), minus a reviewed allowlist
 pnpm run build          # Chrome dev build → dist/chrome/
@@ -64,16 +65,16 @@ Do not bump versions or create tags locally. Releases run through the manually-t
 
 This project keeps a detailed guide per task in `.agents/skills/`. They are plain Markdown with no tool-specific syntax: any agent that can read a file can use them. **Before starting one of these tasks, read the matching file.** They contain the exact steps, the file lists, and the mistakes that have actually been made here.
 
-| If you are asked to… | Read |
-| --- | --- |
-| add support for a new BitTorrent client | [`.agents/skills/add-webui-client.md`](.agents/skills/add-webui-client.md) |
-| add a setting, option, flag, or toggle | [`.agents/skills/add-setting.md`](.agents/skills/add-setting.md) |
-| fix a client that fails to add torrents (auth, CORS, HTTP errors) | [`.agents/skills/debug-client.md`](.agents/skills/debug-client.md) |
-| review a PR, diff, or set of changes | [`.agents/skills/rta-code-review.md`](.agents/skills/rta-code-review.md) |
-| review changes for security | [`.agents/skills/rta-security-review.md`](.agents/skills/rta-security-review.md) |
-| build the extension, or explain a build failure | [`.agents/skills/build.md`](.agents/skills/build.md) |
-| write or run tests | [`.agents/skills/testing-guide.md`](.agents/skills/testing-guide.md) |
-| verify a change in a real browser before release | [`.agents/skills/smoke-test-matrix.md`](.agents/skills/smoke-test-matrix.md) |
+| If you are asked to…                                              | Read                                                                             |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| add support for a new BitTorrent client                           | [`.agents/skills/add-webui-client.md`](.agents/skills/add-webui-client.md)       |
+| add a setting, option, flag, or toggle                            | [`.agents/skills/add-setting.md`](.agents/skills/add-setting.md)                 |
+| fix a client that fails to add torrents (auth, CORS, HTTP errors) | [`.agents/skills/debug-client.md`](.agents/skills/debug-client.md)               |
+| review a PR, diff, or set of changes                              | [`.agents/skills/rta-code-review.md`](.agents/skills/rta-code-review.md)         |
+| review changes for security                                       | [`.agents/skills/rta-security-review.md`](.agents/skills/rta-security-review.md) |
+| build the extension, or explain a build failure                   | [`.agents/skills/build.md`](.agents/skills/build.md)                             |
+| write or run tests                                                | [`.agents/skills/testing-guide.md`](.agents/skills/testing-guide.md)             |
+| verify a change in a real browser before release                  | [`.agents/skills/smoke-test-matrix.md`](.agents/skills/smoke-test-matrix.md)     |
 
 Project background and the release process: [`.agents/README.md`](.agents/README.md).
 

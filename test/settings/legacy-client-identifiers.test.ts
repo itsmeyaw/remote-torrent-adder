@@ -24,9 +24,17 @@ describe("resolveClientIdentifier", () => {
 
     it("maps every legacy identifier to a valid Client value", () => {
         const legacy = [
-            "BiglyBT WebUI", "Deluge WebUI", "Elementum WebUI", "flood WebUI",
-            "qBittorrent WebUI", "ruTorrent WebUI", "Tixati WebUI", "Transmission WebUI",
-            "tTorrent WebUI", "Porla WebUI", "QNAP Download Station WebUI",
+            "BiglyBT WebUI",
+            "Deluge WebUI",
+            "Elementum WebUI",
+            "flood WebUI",
+            "qBittorrent WebUI",
+            "ruTorrent WebUI",
+            "Tixati WebUI",
+            "Transmission WebUI",
+            "tTorrent WebUI",
+            "Porla WebUI",
+            "QNAP Download Station WebUI",
         ];
         const validClients = new Set(Object.values(Client));
         for (const id of legacy) {

@@ -30,14 +30,17 @@ describe("buffered torrent store", () => {
     it("stores only the WebUI id, never its settings or password", async () => {
         const id = await saveBufferedTorrent({ torrent: makeMagnetTorrent(), webUiId: "w1" });
 
-        const stored = await withStore(BUFFERED_STORE, "readonly", store => store.get(id));
+        const stored = await withStore(BUFFERED_STORE, "readonly", (store) => store.get(id));
         expect(stored).toEqual({ torrent: expect.anything(), webUiId: "w1" });
     });
 
     it("reads a record written before the WebUI id existed without throwing", async () => {
-        const legacy = { torrent: makeMagnetTorrent({ name: "legacy" }), webUiSettings: makeWebUISettings({ password: "secret" }) };
+        const legacy = {
+            torrent: makeMagnetTorrent({ name: "legacy" }),
+            webUiSettings: makeWebUISettings({ password: "secret" }),
+        };
         const id = "1700000000000-legacy";
-        await withStore(BUFFERED_STORE, "readwrite", store => store.put(legacy, id));
+        await withStore(BUFFERED_STORE, "readwrite", (store) => store.put(legacy, id));
 
         const buffered = await readBufferedTorrent(id);
         expect(buffered!.torrent.name).toBe("legacy");
@@ -120,7 +123,10 @@ describe("buffered torrent store", () => {
         try {
             const savedAt = Date.now();
             vi.setSystemTime(savedAt);
-            const expired = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "expired" }), webUiId: "w1" });
+            const expired = await saveBufferedTorrent({
+                torrent: makeMagnetTorrent({ name: "expired" }),
+                webUiId: "w1",
+            });
             vi.setSystemTime(savedAt + 25 * HOUR_MS);
             const fresh = await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "fresh" }), webUiId: "w1" });
 
@@ -133,7 +139,7 @@ describe("buffered torrent store", () => {
 
     it("drops the single record left by versions before per-click ids on the next save", async () => {
         const legacy = { torrent: makeMagnetTorrent({ name: "legacy" }), webUiSettings: makeWebUISettings() };
-        await withStore(BUFFERED_STORE, "readwrite", store => store.put(legacy, "pending"));
+        await withStore(BUFFERED_STORE, "readwrite", (store) => store.put(legacy, "pending"));
 
         await saveBufferedTorrent({ torrent: makeMagnetTorrent({ name: "new" }), webUiId: "w1" });
 

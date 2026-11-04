@@ -21,7 +21,7 @@ function savedWebUiNames(): string[] | undefined {
         .map((call: any[]) => call[0])
         .filter((message: any) => message?.action === "saveSettings")
         .at(-1);
-    return save && deserializeSettings(save.settings)!.webuiSettings.map(webUi => webUi.name);
+    return save && deserializeSettings(save.settings)!.webuiSettings.map((webUi) => webUi.name);
 }
 
 function exportWithWebUis(webUis: unknown[]): string {
@@ -30,10 +30,17 @@ function exportWithWebUis(webUis: unknown[]): string {
     return serializeSettings(settings);
 }
 
-const renderPage = () => render(<SettingsProvider><ImportExportPage /></SettingsProvider>);
+const renderPage = () =>
+    render(
+        <SettingsProvider>
+            <ImportExportPage />
+        </SettingsProvider>,
+    );
 
 async function importText(text: string) {
-    fireEvent.change(await screen.findByLabelText(/Paste a previously exported/i, { selector: "textarea" }), { target: { value: text } });
+    fireEvent.change(await screen.findByLabelText(/Paste a previously exported/i, { selector: "textarea" }), {
+        target: { value: text },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Import settings" }));
 }
 
@@ -62,7 +69,9 @@ describe("ImportExportPage export", () => {
 
         const warning = await screen.findByText(/passwords in plain text/i);
         expect(warning).toHaveClass("rta-notice--warning");
-        expect(screen.getByLabelText(/keep it somewhere safe/i)).toHaveAccessibleDescription(/passwords in plain text/i);
+        expect(screen.getByLabelText(/keep it somewhere safe/i)).toHaveAccessibleDescription(
+            /passwords in plain text/i,
+        );
     });
 
     it("confirms a successful copy", async () => {
@@ -124,10 +133,12 @@ describe("ImportExportPage import", () => {
         respondWithSettings();
         renderPage();
 
-        await importText(exportWithWebUis([
-            makeWebUISettings({ id: "w1", name: "Good" }),
-            { ...makeWebUISettings({ id: "w2", name: "Home" }), client: undefined },
-        ]));
+        await importText(
+            exportWithWebUis([
+                makeWebUISettings({ id: "w1", name: "Good" }),
+                { ...makeWebUISettings({ id: "w2", name: "Home" }), client: undefined },
+            ]),
+        );
 
         expect(screen.getByRole("alert")).toHaveTextContent('WebUI 2 ("Home"): missing client');
         expect(savedWebUiNames()).toBeUndefined();

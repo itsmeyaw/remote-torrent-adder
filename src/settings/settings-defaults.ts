@@ -10,14 +10,11 @@ export function getDefaultSettings(): RTASettings {
         notificationsLabelButtonEnabled: true,
 
         linkCatchingEnabled: true,
-        linkCatchingRegexes: [
-            /([\][]|\b|\.)\.torrent\b([^-]|$)/,
-            /torrents\.php\?action=download/
-        ],
+        linkCatchingRegexes: [/([\][]|\b|\.)\.torrent\b([^-]|$)/, /torrents\.php\?action=download/],
 
         iconClickAction: "openPrimaryWebUi",
 
-        webuiSettings: [] // TODO: should probably add an empty one? or not? who knows, i sure don't
+        webuiSettings: [], // TODO: should probably add an empty one? or not? who knows, i sure don't
     };
 }
 
