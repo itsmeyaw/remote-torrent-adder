@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { Client, ClientDisplayName, ClientClassByClient, WebUIFactory } from "../../src/models/clients";
 import { TorrentWebUI } from "../../src/models/webui";
 import { makeWebUISettings } from "../helpers/fixtures";

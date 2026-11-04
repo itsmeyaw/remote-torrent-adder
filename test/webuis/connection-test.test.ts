@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { callArgs } from "../helpers/assert";
 import { type TorrentWebUI } from "../../src/models/webui";
 import { QBittorrentWebUI } from "../../src/webuis/qbittorrent";

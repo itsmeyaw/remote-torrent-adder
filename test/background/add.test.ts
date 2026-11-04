@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import { callArgs } from "../helpers/assert";
 
 // Mock the heavy collaborators so the Add module can be exercised in isolation.

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import { SETTINGS_KEY, loadSettings, saveSettings } from "../src/settings/settings";
 import { notify } from "../src/background/notifications";
 import { makeMagnetTorrent, makeWebUISettings, seedWebUISettings } from "./helpers/fixtures";

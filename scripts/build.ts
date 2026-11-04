@@ -6,7 +6,7 @@ import path from "node:path";
 import { devDistDir, parseBrowser, prodDistDir, targetsFor } from "./browsers.ts";
 
 const rootDir = path.dirname(import.meta.dirname);
-const viteBin = path.join(rootDir, "node_modules", "vite", "bin", "vite.js");
+const vpBin = path.join(rootDir, "node_modules", "vite-plus", "bin", "vp");
 
 const argv = process.argv.slice(2);
 const flag = (name: string) => argv.find((arg) => arg.startsWith(`--${name}=`))?.split("=")[1];
@@ -57,5 +57,5 @@ for (const target of targetsFor(browser)) {
     if (only && only !== target) {
         continue;
     }
-    run([viteBin, "build", ...(watch ? ["--watch"] : [])], { RTA_TARGET: target });
+    run([vpBin, "build", ...(watch ? ["--watch"] : [])], { RTA_TARGET: target });
 }

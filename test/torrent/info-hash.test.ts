@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vite-plus/test";
 import { createHash, webcrypto } from "node:crypto";
 import bencode from "bencode";
 import { computeInfoHash, parseInfoHashFromMagnetLink } from "../../src/torrent/info-hash";

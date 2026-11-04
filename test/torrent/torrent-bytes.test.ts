@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { base64ToBytes, bytesToBase64 } from "../../src/torrent/torrent-bytes";
 
 describe("torrent bytes over the message channel", () => {

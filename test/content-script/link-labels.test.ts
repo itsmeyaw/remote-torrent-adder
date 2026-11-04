@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { deriveLinkLabel, isMagnetLink } from "../../src/content-script/link-labels";
 
 function anchor(html: string): HTMLAnchorElement {

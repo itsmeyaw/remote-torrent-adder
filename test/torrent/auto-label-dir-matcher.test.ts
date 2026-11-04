@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { getAutoLabelResult, getAutoDirResult, explainAutoLabelDir } from "../../src/torrent/auto-label-dir-matcher";
 import { type Torrent } from "../../src/models/torrent";
 import { type AutoLabelDirSetting } from "../../src/models/webui";

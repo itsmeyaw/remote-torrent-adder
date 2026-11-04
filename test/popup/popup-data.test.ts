@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vite-plus/test";
 import { loadPopupData, submitTorrent } from "../../src/popup/popup-data";
 import { saveBufferedTorrent } from "../../src/background/buffered-torrent";
 import { Client } from "../../src/models/clients";

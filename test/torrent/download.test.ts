@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vite-plus/test";
 import { CloudflareChallengeError, downloadTorrent, getBaseUrl } from "../../src/torrent/download";
 import { bytesToBase64 } from "../../src/torrent/torrent-bytes";
 import { mockResponse, queueFetch } from "../helpers/fetch-mock";

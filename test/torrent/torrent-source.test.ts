@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { buildTorrentFromMagnetLink, parseTorrentFile } from "../../src/torrent/torrent-source";
 import { buildBencodedTorrent } from "../helpers/fixtures";
 
