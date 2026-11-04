@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const platform = vi.hoisted(() => ({ firefox: false }));
@@ -79,6 +79,56 @@ describe("NotificationsPage test buttons", () => {
             .map((call: any[]) => call[0])
             .find((message: any) => message?.action === "testNotification");
         expect(sent).toEqual({ action: "testNotification", isFailed });
+    });
+});
+
+describe("NotificationsPage dependent settings", () => {
+    const settingsWith = (overrides: { notificationsEnabled: boolean; notificationsSoundEnabled: boolean }) => ({
+        ...getDefaultSettings(),
+        ...overrides,
+    });
+
+    it("disables the sound, label button and duration while notifications are off", async () => {
+        respondWithSettings(settingsWith({ notificationsEnabled: false, notificationsSoundEnabled: true }));
+        renderPage();
+
+        expect(await screen.findByRole("switch", { name: /Play a sound/ })).toHaveAttribute("aria-disabled", "true");
+        expect(screen.getByRole("switch", { name: BUTTON_TOGGLE })).toHaveAttribute("aria-disabled", "true");
+        expect(screen.getByLabelText("Display duration")).toBeDisabled();
+    });
+
+    it("keeps the test notification buttons enabled while notifications are off", async () => {
+        respondWithSettings(settingsWith({ notificationsEnabled: false, notificationsSoundEnabled: true }));
+        renderPage();
+
+        expect(await screen.findByRole("button", { name: "Test success" })).toBeEnabled();
+        expect(screen.getByRole("button", { name: "Test failure" })).toBeEnabled();
+    });
+
+    it("shows the custom sounds with their choose buttons disabled while sound is off", async () => {
+        respondWithSettings(settingsWith({ notificationsEnabled: true, notificationsSoundEnabled: false }));
+        renderPage();
+
+        const choose = await screen.findAllByRole("button", { name: "Choose…" });
+        expect(choose).toHaveLength(2);
+        choose.forEach((button) => expect(button).toBeDisabled());
+    });
+
+    it("enables the custom sound choose buttons when notifications and sound are on", async () => {
+        respondWithSettings(settingsWith({ notificationsEnabled: true, notificationsSoundEnabled: true }));
+        renderPage();
+
+        const choose = await screen.findAllByRole("button", { name: "Choose…" });
+        await waitFor(() => choose.forEach((button) => expect(button).toBeEnabled()));
+    });
+
+    it("disables the sound switch once notifications are turned off", async () => {
+        respondWithSettings(settingsWith({ notificationsEnabled: true, notificationsSoundEnabled: true }));
+        renderPage();
+
+        await userEvent.click(await screen.findByRole("switch", { name: /Show notifications/ }));
+
+        expect(screen.getByRole("switch", { name: /Play a sound/ })).toHaveAttribute("aria-disabled", "true");
     });
 });
 
