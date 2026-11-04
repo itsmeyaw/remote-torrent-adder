@@ -16,7 +16,9 @@ describe("parseInfoHashFromMagnetLink", () => {
     });
 
     it("picks the btih among several exact topics", () => {
-        expect(parseInfoHashFromMagnetLink(`magnet:?xt=urn:btmh:1220${"a".repeat(64)}&xt=urn:btih:${HEX_HASH}`)).toBe(HEX_HASH);
+        expect(parseInfoHashFromMagnetLink(`magnet:?xt=urn:btmh:1220${"a".repeat(64)}&xt=urn:btih:${HEX_HASH}`)).toBe(
+            HEX_HASH,
+        );
     });
 
     it("returns null for a v2-only magnet", () => {

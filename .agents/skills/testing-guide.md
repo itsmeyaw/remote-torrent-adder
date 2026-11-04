@@ -17,12 +17,12 @@ Stack: vitest + jsdom, `@testing-library/react` for components, `fake-indexeddb`
 
 ### Helpers — use these instead of hand-rolling mocks
 
-| Helper | Use for |
-|---|---|
-| `test/helpers/fetch-mock.ts` | Stubbing HTTP; asserting request URL, method, headers, and body |
+| Helper                        | Use for                                                                                                                                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test/helpers/fetch-mock.ts`  | Stubbing HTTP; asserting request URL, method, headers, and body                                                                                                   |
 | `test/helpers/chrome-mock.ts` | The extension APIs behind `ext` (storage, runtime, notifications, dNR). It stubs the global the shim resolves to, so tests exercise the same path production does |
-| `test/helpers/fixtures.ts` | Building `WebUISettings`, `RTASettings`, `Torrent` objects |
-| `test/helpers/assert.ts` | Shared assertions |
+| `test/helpers/fixtures.ts`    | Building `WebUISettings`, `RTASettings`, `Torrent` objects                                                                                                        |
+| `test/helpers/assert.ts`      | Shared assertions                                                                                                                                                 |
 
 A new required field on `WebUISettings` or `RTASettings` must be added to `fixtures.ts` — and to `e2e/fixtures/settings.ts`, which seeds the same shape for the Playwright runs — or every consumer breaks.
 
@@ -65,21 +65,21 @@ First-time setup needs `pnpm exec playwright install chromium`. Extensions only 
 
 What it covers: the service worker booting on an empty, a configured, a corrupt and a half-configured profile; the options page and every tab; the popup in all three modes; content-script link catching on a real page; and a full add-torrent round-trip against a stub qBittorrent server.
 
-| Piece | Purpose |
-|---|---|
-| `e2e/fixtures/extension.ts` | Launches the profile, exposes the worker, seeds storage, restarts the browser |
+| Piece                               | Purpose                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------- |
+| `e2e/fixtures/extension.ts`         | Launches the profile, exposes the worker, seeds storage, restarts the browser   |
 | `e2e/fixtures/console-collector.ts` | Captures console output from every surface and decides what counts as a failure |
-| `e2e/fixtures/fake-qbittorrent.ts` | Stub client that records the requests it receives |
-| `e2e/fixtures/static-site.ts` | Serves a page with torrent links and a real bencoded `.torrent` |
-| `e2e/fixtures/firefox-extension.ts` | The Firefox harness: installs the add-on, exposes the same helpers |
-| `e2e/fixtures/fake-flood.ts` | Stub flood, with a configurable delay on authenticate |
+| `e2e/fixtures/fake-qbittorrent.ts`  | Stub client that records the requests it receives                               |
+| `e2e/fixtures/static-site.ts`       | Serves a page with torrent links and a real bencoded `.torrent`                 |
+| `e2e/fixtures/firefox-extension.ts` | The Firefox harness: installs the add-on, exposes the same helpers              |
+| `e2e/fixtures/fake-flood.ts`        | Stub flood, with a configurable delay on authenticate                           |
 
 ### Why Firefox needs its own harness
 
 Playwright cannot install a Firefox add-on — extension support is Chromium-only,
 and Puppeteer's `installExtension` for Firefox is broken and closed as
 not-planned. `e2e/firefox/` therefore drives a real Firefox through geckodriver
-and `selenium-webdriver`, kept as a second Playwright *project* so there is still
+and `selenium-webdriver`, kept as a second Playwright _project_ so there is still
 one command and one report. It needs a system Firefox (149+); Selenium Manager
 fetches geckodriver itself, and CI installs Firefox with
 `browser-actions/setup-firefox`.
@@ -133,15 +133,15 @@ RTA_IT_KEEP=1 pnpm run test:it -- qbittorrent   # leave the containers running a
 
 Each `test/it/<client>.it.spec.ts` calls `defineClientSuite(probe)` (`fixtures/client-suite.ts`), which derives the matrix from the client's `isLabelSupported` / `isDirSupported` / `isAddPausedSupported`: `.torrent` and magnet without options, label, directory, paused, all three combined, setting a label after the add (the notification's "Add label" button path, through the worker's `setTorrentLabel` message), the WebUI defaults (the no-config fallback path), wrong credentials, and the connection test. Each add goes through the worker's real `preAddTorrent` message as a direct Add, with the case's label, directory and paused seeded as the WebUI's defaults; the result is read back from the client's own API by the probe in `fixtures/clients/<client>.ts`. Every test generates a fresh torrent (random pieces, `.invalid` tracker) or a random-hash magnet, so nothing needs cleaning up and nothing is ever downloaded.
 
-| Client | Image | Notes |
-|---|---|---|
-| qBittorrent | `linuxserver/qbittorrent` | Web UI port must equal the host port, or qBittorrent's host header validation answers 401. `prepare()` reads the temporary password from the logs and sets fixed credentials. |
-| Transmission | `linuxserver/transmission` | Basic auth, answered by the extension's `onAuthRequired` listener |
-| Deluge | `linuxserver/deluge` | `prepare()` connects the web UI to the daemon (RTA never calls `web.connect`) and enables the Label plugin |
-| ruTorrent | `crazymax/rtorrent-rutorrent` | Basic auth from an htpasswd entry inlined as a compose `config`, answered by the extension's `onAuthRequired` listener. A fresh ruTorrent rejects every add until `php/getplugins.php` has been requested once. |
-| flood | `jesec/flood` + Transmission | `prepare()` registers the first user and its backend |
-| Porla | `ghcr.io/porla/porla` | State dir on a tmpfs, `PORLA_HTTP_HOST=0.0.0.0` so the port mapping reaches it. `prepare()` creates the first user with `auth.init` while `sys.status` reports `setup`. A torrent is only user-paused when libtorrent's `paused` flag is set without `auto_managed`. |
-| rqbit | `ikatson/rqbit` | Adding a magnet blocks until metadata resolves, so magnet cases are skipped. The add endpoint has no `paused` parameter; RTA pauses through `/torrents/{id}/pause` afterwards. |
+| Client       | Image                         | Notes                                                                                                                                                                                                                                                                |
+| ------------ | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| qBittorrent  | `linuxserver/qbittorrent`     | Web UI port must equal the host port, or qBittorrent's host header validation answers 401. `prepare()` reads the temporary password from the logs and sets fixed credentials.                                                                                        |
+| Transmission | `linuxserver/transmission`    | Basic auth, answered by the extension's `onAuthRequired` listener                                                                                                                                                                                                    |
+| Deluge       | `linuxserver/deluge`          | `prepare()` connects the web UI to the daemon (RTA never calls `web.connect`) and enables the Label plugin                                                                                                                                                           |
+| ruTorrent    | `crazymax/rtorrent-rutorrent` | Basic auth from an htpasswd entry inlined as a compose `config`, answered by the extension's `onAuthRequired` listener. A fresh ruTorrent rejects every add until `php/getplugins.php` has been requested once.                                                      |
+| flood        | `jesec/flood` + Transmission  | `prepare()` registers the first user and its backend                                                                                                                                                                                                                 |
+| Porla        | `ghcr.io/porla/porla`         | State dir on a tmpfs, `PORLA_HTTP_HOST=0.0.0.0` so the port mapping reaches it. `prepare()` creates the first user with `auth.init` while `sys.status` reports `setup`. A torrent is only user-paused when libtorrent's `paused` flag is set without `auto_managed`. |
+| rqbit        | `ikatson/rqbit`               | Adding a magnet blocks until metadata resolves, so magnet cases are skipped. The add endpoint has no `paused` parameter; RTA pauses through `/torrents/{id}/pause` afterwards.                                                                                       |
 
 Not covered, and left to the smoke test matrix: BiglyBT and Tixati (the web interface has to be enabled in the desktop GUI), Elementum (Kodi add-on), tTorrent (Android app), QNAP and Synology Download Station (NAS firmware).
 
@@ -160,6 +160,7 @@ For a structured pre-release or post-refactor pass, use `smoke-test-matrix.md`. 
 ### Test Scenarios
 
 #### Torrent link interception (happy path)
+
 1. Navigate to any torrent site (e.g. a tracker with public `.torrent` links)
 2. Click a `.torrent` download link
 3. The extension popup should open showing the torrent name and file list
@@ -167,22 +168,26 @@ For a structured pre-release or post-refactor pass, use `smoke-test-matrix.md`. 
 5. Click "Add" — verify the torrent appears in the client
 
 #### Magnet link interception
+
 1. Click a `magnet:?xt=urn:btih:...` link
 2. Popup should open with the torrent name from the `dn=` parameter
 3. Add to client — verify it appears
 
 #### Context menu
+
 1. Right-click a torrent or magnet link
 2. Look for "Send to <client>" in context menu
 3. Torrent should be added directly without opening popup
 
 #### Options page
+
 1. Right-click the extension icon → Options. Left-clicking the icon does whatever `iconClickAction` is set to — opening the primary WebUI in a new tab (the default), showing the WebUI picker, or showing the page's links — never the options page
 2. Add a new WebUI configuration
 3. Click "Test Connection" to verify credentials — note that a client whose `isConnectionTestSupported` is false won't show the button, and the base implementation reports reachability only
 4. Configure auto-label rules and verify they apply
 
 #### Notifications
+
 1. Enable notifications in Options → Notifications tab
 2. Add a torrent — verify desktop notification appears on success
 3. Verify error notification appears when client is unreachable

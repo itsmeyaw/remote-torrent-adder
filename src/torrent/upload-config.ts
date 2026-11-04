@@ -12,7 +12,10 @@ export interface ResolvedUploadConfig {
     source: { label: UploadConfigSource | null; dir: UploadConfigSource | null };
 }
 
-export type UploadConfigSettings = Pick<WebUISettings, "autoLabelDirSettings" | "defaultLabel" | "defaultDir" | "labels" | "dirs" | "addPaused">;
+export type UploadConfigSettings = Pick<
+    WebUISettings,
+    "autoLabelDirSettings" | "defaultLabel" | "defaultDir" | "labels" | "dirs" | "addPaused"
+>;
 
 /** The one place that decides the Upload Config a torrent gets when nothing more specific was chosen. */
 export function resolveUploadConfig(torrent: Torrent, webUiSettings: UploadConfigSettings): ResolvedUploadConfig {
@@ -25,7 +28,11 @@ export function resolveUploadConfig(torrent: Torrent, webUiSettings: UploadConfi
     };
 }
 
-function firstResolved(fromRule: string | null, defaultValue: string | null, list: string[]): { value?: string; source: UploadConfigSource | null } {
+function firstResolved(
+    fromRule: string | null,
+    defaultValue: string | null,
+    list: string[],
+): { value?: string; source: UploadConfigSource | null } {
     if (fromRule != null) {
         return { value: fromRule, source: "rule" };
     }

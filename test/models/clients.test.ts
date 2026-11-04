@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-    Client,
-    ClientDisplayName,
-    ClientClassByClient,
-    WebUIFactory,
-} from "../../src/models/clients";
+import { Client, ClientDisplayName, ClientClassByClient, WebUIFactory } from "../../src/models/clients";
 import { TorrentWebUI } from "../../src/models/webui";
 import { makeWebUISettings } from "../helpers/fixtures";
 

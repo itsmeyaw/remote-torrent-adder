@@ -19,7 +19,9 @@ describe("ClientSpecificSettingsEditor", () => {
 
     it("reports the toggled value without dropping the other stored keys", async () => {
         const onChange = vi.fn();
-        render(<ClientSpecificSettingsEditor descriptors={descriptors} value={{ flagOn: false }} onChange={onChange} />);
+        render(
+            <ClientSpecificSettingsEditor descriptors={descriptors} value={{ flagOn: false }} onChange={onChange} />,
+        );
 
         await userEvent.click(screen.getByRole("checkbox", { name: "Flag off" }));
 

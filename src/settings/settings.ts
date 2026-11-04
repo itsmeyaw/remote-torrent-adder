@@ -4,12 +4,11 @@ import { serializeSettings } from "./serializer";
 import { getDefaultSettings } from "./settings-defaults";
 import { parseSettings } from "./settings-validation";
 
-
 export const SETTINGS_KEY: string = "settings";
 export const SETTINGS_BACKUP_KEY_PREFIX: string = "settingsBackup:";
 
 export async function loadSettings(): Promise<RTASettings> {
-    const response = await ext.storage.local.get([SETTINGS_KEY]) as Record<string, string>;
+    const response = (await ext.storage.local.get([SETTINGS_KEY])) as Record<string, string>;
     const stored = response[SETTINGS_KEY];
     if (!stored) {
         console.debug("Initializing with default settings.");
@@ -19,7 +18,10 @@ export async function loadSettings(): Promise<RTASettings> {
     }
     const result = parseSettings(stored);
     if (!result.ok) {
-        console.error("Stored settings are invalid, backing up the stored value and resetting to defaults", result.problems);
+        console.error(
+            "Stored settings are invalid, backing up the stored value and resetting to defaults",
+            result.problems,
+        );
         await backupCorruptSettings(stored);
         const defaults = getDefaultSettings();
         await saveSettings(defaults);
@@ -43,13 +45,18 @@ async function persistNormalized(settings: RTASettings): Promise<void> {
     try {
         await saveSettings(settings);
     } catch (e) {
-        console.warn("Could not persist normalized settings; they will be normalized again on the next load", e instanceof Error ? e.name : "unknown error");
+        console.warn(
+            "Could not persist normalized settings; they will be normalized again on the next load",
+            e instanceof Error ? e.name : "unknown error",
+        );
     }
 }
 
 async function backupCorruptSettings(stored: string): Promise<void> {
-    const existing = await ext.storage.local.get(null) as Record<string, unknown>;
-    const alreadyBackedUp = Object.keys(existing).some(key => key.startsWith(SETTINGS_BACKUP_KEY_PREFIX) && existing[key] === stored);
+    const existing = (await ext.storage.local.get(null)) as Record<string, unknown>;
+    const alreadyBackedUp = Object.keys(existing).some(
+        (key) => key.startsWith(SETTINGS_BACKUP_KEY_PREFIX) && existing[key] === stored,
+    );
     if (alreadyBackedUp) {
         return;
     }

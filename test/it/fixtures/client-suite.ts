@@ -3,7 +3,13 @@ import { type ConsoleCollector } from "../../../e2e/fixtures/console-collector";
 import { WebUIFactory } from "../../../src/models/clients";
 import { type TorrentUploadConfig } from "../../../src/models/torrent";
 import { type WebUISettings } from "../../../src/models/webui";
-import { addViaExtension, configureExtension, setLabelViaExtension, testConnectionViaExtension, webUiSettingsFor } from "./add-via-extension";
+import {
+    addViaExtension,
+    configureExtension,
+    setLabelViaExtension,
+    testConnectionViaExtension,
+    webUiSettingsFor,
+} from "./add-via-extension";
 import { type ClientProbe, type TorrentState } from "./client-probe";
 import { composeDown, composeUp, keepContainers, waitFor } from "./docker";
 import { randomMagnet, TorrentServer, type GeneratedTorrent } from "./torrents";
@@ -41,16 +47,24 @@ export function defineClientSuite(probe: ClientProbe): ClientSuite {
         const torrent = options.torrent ?? torrentServer.createTorrent();
         const { config } = options;
         const defaults: Partial<WebUISettings> = config
-            ? { defaultLabel: config.label ?? null, defaultDir: config.dir ?? null, addPaused: config.addPaused ?? false }
+            ? {
+                  defaultLabel: config.label ?? null,
+                  defaultDir: config.dir ?? null,
+                  addPaused: config.addPaused ?? false,
+              }
             : {};
         await configureExtension(extension, webUiSettingsFor(probe, { ...defaults, ...options.settings }));
 
         const notification = await addViaExtension(extension, torrent.url);
         expect(notification.title, notification.message).toBe("Torrent added successfully");
 
-        const state = await waitFor(`${torrent.name} to show up in ${probe.profile}`, () => probe.find(torrent.infoHash), {
-            timeoutMs: 30_000,
-        });
+        const state = await waitFor(
+            `${torrent.name} to show up in ${probe.profile}`,
+            () => probe.find(torrent.infoHash),
+            {
+                timeoutMs: 30_000,
+            },
+        );
         await logs.waitForQuiet();
         const problems = logs.unexpectedProblems();
         expect(problems, logs.report(problems)).toEqual([]);
@@ -63,7 +77,10 @@ export function defineClientSuite(probe: ClientProbe): ClientSuite {
     });
 
     test("adds a magnet link without options", async ({ extension, logs }) => {
-        test.skip(probe.addsUnresolvedMagnets === false, `${probe.profile} only adds a magnet once it has resolved its metadata`);
+        test.skip(
+            probe.addsUnresolvedMagnets === false,
+            `${probe.profile} only adds a magnet once it has resolved its metadata`,
+        );
         await addAndFind(extension, logs, { torrent: randomMagnet() });
     });
 
@@ -80,10 +97,14 @@ export function defineClientSuite(probe: ClientProbe): ClientSuite {
 
         expect(await setLabelViaExtension(extension, torrent.infoHash, probe.label)).toEqual({});
 
-        const state = await waitFor(`${torrent.name} to be labelled in ${probe.profile}`, async () => {
-            const current = await probe.find(torrent.infoHash);
-            return current?.label === probe.label ? current : null;
-        }, { timeoutMs: 15_000 });
+        const state = await waitFor(
+            `${torrent.name} to be labelled in ${probe.profile}`,
+            async () => {
+                const current = await probe.find(torrent.infoHash);
+                return current?.label === probe.label ? current : null;
+            },
+            { timeoutMs: 15_000 },
+        );
         expect(state.label).toBe(probe.label);
     });
 
@@ -100,7 +121,10 @@ export function defineClientSuite(probe: ClientProbe): ClientSuite {
     });
 
     test("applies label, directory and paused together on a magnet link", async ({ extension, logs }) => {
-        test.skip(probe.addsUnresolvedMagnets === false, `${probe.profile} only adds a magnet once it has resolved its metadata`);
+        test.skip(
+            probe.addsUnresolvedMagnets === false,
+            `${probe.profile} only adds a magnet once it has resolved its metadata`,
+        );
         const config: TorrentUploadConfig = {
             label: webUi.isLabelSupported ? probe.label : undefined,
             dir: webUi.isDirSupported ? probe.dir : undefined,

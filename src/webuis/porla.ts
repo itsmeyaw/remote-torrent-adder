@@ -13,7 +13,11 @@ export class PorlaWebUI extends TorrentWebUI<string> {
         return token;
     }
 
-    protected override async add(torrent: Torrent, config: TorrentUploadConfig, jsonRpcToken: string): Promise<AddResult> {
+    protected override async add(
+        torrent: Torrent,
+        config: TorrentUploadConfig,
+        jsonRpcToken: string,
+    ): Promise<AddResult> {
         const fetchOpts = await this.createTorrentFetchOptions(jsonRpcToken, torrent, config);
         const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", fetchOpts);
 
@@ -26,12 +30,16 @@ export class PorlaWebUI extends TorrentWebUI<string> {
         };
     }
 
-    protected override async applyLabel(jsonRpcToken: string, infoHash: string, label: string): Promise<TorrentAddingResult> {
+    protected override async applyLabel(
+        jsonRpcToken: string,
+        infoHash: string,
+        label: string,
+    ): Promise<TorrentAddingResult> {
         const response = await this.fetch(this.createBaseUrl() + "/api/v1/jsonrpc", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=UTF-8",
-                "Authorization": "Bearer " + jsonRpcToken
+                Authorization: "Bearer " + jsonRpcToken,
             },
             body: JSON.stringify({
                 jsonrpc: "2.0",
@@ -39,9 +47,9 @@ export class PorlaWebUI extends TorrentWebUI<string> {
                 id: Math.floor(Date.now() / 1000),
                 params: {
                     info_hash: infoHash.toLowerCase(),
-                    category: label
-                }
-            })
+                    category: label,
+                },
+            }),
         });
         const responseText = await response.text();
         return {
@@ -61,13 +69,17 @@ export class PorlaWebUI extends TorrentWebUI<string> {
                 id: Math.floor(Date.now() / 1000),
                 params: {
                     username: this._settings.username,
-                    password: this._settings.password
-                }
-            })
+                    password: this._settings.password,
+                },
+            }),
         };
     }
 
-    private async createTorrentFetchOptions(jsonRpcToken: string, torrent: Torrent, config: TorrentUploadConfig): Promise<RequestInit> {
+    private async createTorrentFetchOptions(
+        jsonRpcToken: string,
+        torrent: Torrent,
+        config: TorrentUploadConfig,
+    ): Promise<RequestInit> {
         const body = torrent.isMagnet
             ? JSON.stringify(this.createPayloadForMagnet(torrent.data as string, config))
             : JSON.stringify(await this.createPayloadForTorrent(torrent, config));
@@ -76,9 +88,9 @@ export class PorlaWebUI extends TorrentWebUI<string> {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=UTF-8",
-                "Authorization": "Bearer " + jsonRpcToken
+                Authorization: "Bearer " + jsonRpcToken,
             },
-            body
+            body,
         };
     }
 
@@ -90,12 +102,15 @@ export class PorlaWebUI extends TorrentWebUI<string> {
             params: {
                 magnet_uri: magnetUri,
                 save_path: this.getDirectory(config) ?? "./",
-                ...this.createCategoryParam(config)
-            }
+                ...this.createCategoryParam(config),
+            },
         };
     }
 
-    private async createPayloadForTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<Record<string, unknown>> {
+    private async createPayloadForTorrent(
+        torrent: Torrent,
+        config: TorrentUploadConfig,
+    ): Promise<Record<string, unknown>> {
         return {
             jsonrpc: "2.0",
             method: "torrents.add",
@@ -103,8 +118,8 @@ export class PorlaWebUI extends TorrentWebUI<string> {
             params: {
                 ti: bytesToBase64(new Uint8Array(await (torrent.data as Blob).arrayBuffer())),
                 save_path: this.getDirectory(config) ?? "./",
-                ...this.createCategoryParam(config)
-            }
+                ...this.createCategoryParam(config),
+            },
         };
     }
 

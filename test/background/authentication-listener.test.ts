@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { registerAuthenticationListener, rememberWebUiTab, resolveAuthCredentials } from "../../src/background/authentication-listener";
+import {
+    registerAuthenticationListener,
+    rememberWebUiTab,
+    resolveAuthCredentials,
+} from "../../src/background/authentication-listener";
 import { makeWebUISettings, seedWebUISettings } from "../helpers/fixtures";
 
 const webUiSettings = (over = {}) => makeWebUISettings({ host: "h", port: 8080, ...over });
@@ -32,7 +36,7 @@ describe("registerAuthenticationListener", () => {
         const asyncCallback = vi.fn();
 
         listener(authDetails({ requestId: "async-1" }), asyncCallback);
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
         expect(asyncCallback).toHaveBeenCalledWith({ authCredentials: { username: "u", password: "p" } });
     });
@@ -43,7 +47,7 @@ describe("registerAuthenticationListener", () => {
         const asyncCallback = vi.fn();
 
         listener(authDetails({ requestId: "async-2", tabId: 5 }), asyncCallback);
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
         expect(asyncCallback).toHaveBeenCalledWith({});
         expect(chrome.storage.local.get).not.toHaveBeenCalled();
@@ -97,7 +101,12 @@ describe("resolveAuthCredentials", () => {
     it("stays out of a tab RTA opened when the url is outside the webui", async () => {
         seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
         await rememberWebUiTab(5, "webui-1");
-        const details = authDetails({ requestId: "t2", tabId: 5, type: "main_frame", url: "https://unrelated.example.com/" });
+        const details = authDetails({
+            requestId: "t2",
+            tabId: 5,
+            type: "main_frame",
+            url: "https://unrelated.example.com/",
+        });
         expect(await resolveAuthCredentials(details)).toEqual({});
     });
 
@@ -111,7 +120,12 @@ describe("resolveAuthCredentials", () => {
     it("stays out of subresource requests from a tab RTA opened, even to the webui", async () => {
         seedWebUISettings([webUiSettings({ username: "u", password: "p" })]);
         await rememberWebUiTab(5, "webui-1");
-        const details = authDetails({ requestId: "t5", tabId: 5, type: "xmlhttprequest", url: "http://h:8080/api/v2/app/version" });
+        const details = authDetails({
+            requestId: "t5",
+            tabId: 5,
+            type: "xmlhttprequest",
+            url: "http://h:8080/api/v2/app/version",
+        });
         expect(await resolveAuthCredentials(details)).toEqual({});
     });
 

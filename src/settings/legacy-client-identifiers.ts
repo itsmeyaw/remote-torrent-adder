@@ -49,7 +49,7 @@ export function resolveClientIdentifier(stored: string): Client | null {
  */
 export function migrateSettingsClientIdentifiers(settings: RTASettings): RTASettings {
     let changed = false;
-    const webuiSettings = settings.webuiSettings.map(webui => {
+    const webuiSettings = settings.webuiSettings.map((webui) => {
         const stored = webui.client as string;
         const resolved = resolveClientIdentifier(stored);
         if (resolved !== null && resolved !== stored) {

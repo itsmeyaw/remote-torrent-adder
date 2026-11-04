@@ -24,7 +24,9 @@ import { makeMagnetTorrent, makeWebUISettings } from "../helpers/fixtures";
 
 const { notify } = await import("../../src/background/notifications");
 
-const qbit = WebUIFactory.createWebUI(makeWebUISettings({ id: "w1", name: "qBit", client: Client.QBittorrentWebUI, host: "h", port: 8080 }))!;
+const qbit = WebUIFactory.createWebUI(
+    makeWebUISettings({ id: "w1", name: "qBit", client: Client.QBittorrentWebUI, host: "h", port: 8080 }),
+)!;
 
 describe("notify without an offscreen API", () => {
     beforeEach(() => {
@@ -48,7 +50,10 @@ describe("notify without an offscreen API", () => {
     });
 
     it("leaves the add-label button off without computing the info hash, since firefox rejects notifications with buttons", async () => {
-        const torrent = makeMagnetTorrent({ data: "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567", name: "Cool" });
+        const torrent = makeMagnetTorrent({
+            data: "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567",
+            name: "Cool",
+        });
         await notify({ type: "added", webUi: qbit, torrent }, getDefaultSettings());
         await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
 

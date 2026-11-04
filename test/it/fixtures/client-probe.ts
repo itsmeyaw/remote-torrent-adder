@@ -33,5 +33,8 @@ export function basicAuth(username: string, password: string): Record<string, st
 }
 
 export function cookiesFrom(response: Response): string {
-    return response.headers.getSetCookie().map(cookie => cookie.split(";")[0]).join("; ");
+    return response.headers
+        .getSetCookie()
+        .map((cookie) => cookie.split(";")[0])
+        .join("; ");
 }

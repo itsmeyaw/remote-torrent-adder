@@ -7,7 +7,10 @@ export type MessageHandlers = {
     [A in MessageAction]: (message: Message<A>, sender: chrome.runtime.MessageSender) => Reply<A> | Promise<Reply<A>>;
 };
 
-export async function sendMessage<A extends MessageAction>(action: A, request: MessageContracts[A]["request"]): Promise<Reply<A>> {
+export async function sendMessage<A extends MessageAction>(
+    action: A,
+    request: MessageContracts[A]["request"],
+): Promise<Reply<A>> {
     return unwrap(action, await ext.runtime.sendMessage({ action, ...request }));
 }
 
@@ -21,7 +24,10 @@ export async function sendMessageToTab<A extends MessageAction>(
 }
 
 /** For messages whose failure is deliberately ignored, such as badge updates. */
-export function sendMessageAndForget<A extends MessageAction>(action: A, request: MessageContracts[A]["request"]): void {
+export function sendMessageAndForget<A extends MessageAction>(
+    action: A,
+    request: MessageContracts[A]["request"],
+): void {
     void sendMessage(action, request).catch(() => undefined);
 }
 
@@ -40,31 +46,40 @@ function unwrap<A extends MessageAction>(action: A, reply: unknown): Reply<A> {
  * are left alone, since another context (worker, offscreen, popup, options) may own them.
  */
 export function listenForMessages(handlers: Partial<MessageHandlers>): void {
-    ext.runtime.onMessage.addListener((message: unknown, sender: chrome.runtime.MessageSender, sendResponse: (response: unknown) => void) => {
-        const action = typeof message === "object" && message !== null && "action" in message && typeof message.action === "string" ? message.action : undefined;
-        const handler = action !== undefined && Object.hasOwn(handlers, action)
-            ? (handlers as Record<string, AnyHandler | undefined>)[action]
-            : undefined;
-        if (!handler) {
-            return false;
-        }
+    ext.runtime.onMessage.addListener(
+        (message: unknown, sender: chrome.runtime.MessageSender, sendResponse: (response: unknown) => void) => {
+            const action =
+                typeof message === "object" &&
+                message !== null &&
+                "action" in message &&
+                typeof message.action === "string"
+                    ? message.action
+                    : undefined;
+            const handler =
+                action !== undefined && Object.hasOwn(handlers, action)
+                    ? (handlers as Record<string, AnyHandler | undefined>)[action]
+                    : undefined;
+            if (!handler) {
+                return false;
+            }
 
-        console.debug(`Received message of type ${action}`);
-        void (async () => {
-            let envelope: { value: unknown } | { error: string };
-            try {
-                envelope = { value: await handler(message, sender) };
-            } catch (error) {
-                // The sender gets the error and decides how loud to be; a failed in-page fetch, for one, is expected.
-                console.debug("Message handling error", action, error);
-                envelope = { error: error instanceof Error ? error.message : String(error) };
-            }
-            try {
-                sendResponse(envelope);
-            } catch {
-                // The channel closed before the reply; nobody is waiting for it.
-            }
-        })();
-        return true;
-    });
+            console.debug(`Received message of type ${action}`);
+            void (async () => {
+                let envelope: { value: unknown } | { error: string };
+                try {
+                    envelope = { value: await handler(message, sender) };
+                } catch (error) {
+                    // The sender gets the error and decides how loud to be; a failed in-page fetch, for one, is expected.
+                    console.debug("Message handling error", action, error);
+                    envelope = { error: error instanceof Error ? error.message : String(error) };
+                }
+                try {
+                    sendResponse(envelope);
+                } catch {
+                    // The channel closed before the reply; nobody is waiting for it.
+                }
+            })();
+            return true;
+        },
+    );
 }

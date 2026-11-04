@@ -12,21 +12,20 @@ export class TixatiWebUI extends TorrentWebUI {
             : await this.createPayloadForTorrent(torrent);
         payload.append("noautostart", this.getAddPaused(config) === true ? "1" : "0");
 
-        const response = await this.fetch(this.createTixatiBaseUrl(), { method: 'POST', body: payload });
+        const response = await this.fetch(this.createTixatiBaseUrl(), { method: "POST", body: payload });
         return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     private createTixatiBaseUrl(): string {
-        return [
-            this.createBaseUrl(),
-            "/transfers/action"
-        ].join("");
+        return [this.createBaseUrl(), "/transfers/action"].join("");
     }
 
     private async createPayloadForTorrent(torrent: Torrent): Promise<FormData> {
         const payload = new FormData();
-        payload.append("addlinktext", "")
-        const torrentPayload = new Blob([await (torrent.data as Blob).arrayBuffer()], { type: "application/octet-stream" });
+        payload.append("addlinktext", "");
+        const torrentPayload = new Blob([await (torrent.data as Blob).arrayBuffer()], {
+            type: "application/octet-stream",
+        });
         payload.append("metafile", torrentPayload, torrent.name);
         payload.append("addmetafile", "Add");
 

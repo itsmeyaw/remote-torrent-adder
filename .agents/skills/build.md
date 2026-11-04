@@ -2,22 +2,22 @@
 
 ## Commands
 
-| Command | Output | Use Case |
-|---|---|---|
-| `pnpm run build` | `dist/chrome/` | Chrome development build, unminified |
-| `pnpm run build:prod` | `dist-prod/chrome/` | Chrome production build, minified |
-| `pnpm run build:firefox` | `dist/firefox/` | Firefox development build |
-| `pnpm run build:firefox:prod` | `dist-prod/firefox/` | Firefox production build |
-| `pnpm run build:all` | all five | Every bundle incl. `dist-prod/firefox-unlisted/`, with the gate run once |
-| `pnpm run dev` | `dist/chrome/` | Watch mode for development |
-| `pnpm run dev:firefox` | `dist/firefox/` | Build, then launch Firefox with the add-on loaded |
-| `pnpm run lint:firefox` | — | `web-ext lint` — AMO's own linter, over `dist/firefox/` |
-| `pnpm run audit` | — | `pnpm audit (high/critical only)` minus a reviewed allowlist (`scripts/audit.ts`) |
-| `pnpm run clean` | — | Remove `dist/` |
-| `pnpm run typecheck` | — | Type-check `src/`, `test/`, configs (`tsc --noEmit`), then `scripts/` against `scripts/tsconfig.json` |
-| `pnpm run lint` | — | oxlint over the repo (`pnpm run lint:fix` to autofix) |
-| `pnpm run format` | — | oxfmt over the repo (`pnpm run format:check` only reports; CI runs it) |
-| `pnpm test` | — | Run the vitest suite |
+| Command                       | Output               | Use Case                                                                                              |
+| ----------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm run build`              | `dist/chrome/`       | Chrome development build, unminified                                                                  |
+| `pnpm run build:prod`         | `dist-prod/chrome/`  | Chrome production build, minified                                                                     |
+| `pnpm run build:firefox`      | `dist/firefox/`      | Firefox development build                                                                             |
+| `pnpm run build:firefox:prod` | `dist-prod/firefox/` | Firefox production build                                                                              |
+| `pnpm run build:all`          | all five             | Every bundle incl. `dist-prod/firefox-unlisted/`, with the gate run once                              |
+| `pnpm run dev`                | `dist/chrome/`       | Watch mode for development                                                                            |
+| `pnpm run dev:firefox`        | `dist/firefox/`      | Build, then launch Firefox with the add-on loaded                                                     |
+| `pnpm run lint:firefox`       | —                    | `web-ext lint` — AMO's own linter, over `dist/firefox/`                                               |
+| `pnpm run audit`              | —                    | `pnpm audit (high/critical only)` minus a reviewed allowlist (`scripts/audit.ts`)                     |
+| `pnpm run clean`              | —                    | Remove `dist/`                                                                                        |
+| `pnpm run typecheck`          | —                    | Type-check `src/`, `test/`, configs (`tsc --noEmit`), then `scripts/` against `scripts/tsconfig.json` |
+| `pnpm run lint`               | —                    | oxlint over the repo (`pnpm run lint:fix` to autofix)                                                 |
+| `pnpm run format`             | —                    | oxfmt over the repo (`pnpm run format:check` only reports; CI runs it)                                |
+| `pnpm test`                   | —                    | Run the vitest suite                                                                                  |
 
 ## The prebuild gate
 
@@ -44,11 +44,11 @@ CI (`.github/workflows/build-extension.yml`) runs the same three plus `pnpm run 
 2. Copies `src/assets/` and writes the generated `manifest.json`
    (`scripts/generate-manifest.ts`) into it
 3. Runs Vite once per target, driven by `RTA_TARGET`, e.g. for Chrome:
-   - `RTA_TARGET=worker` → `dist/chrome/service_worker.js` (IIFE, self-contained)
-   - `RTA_TARGET=content-script` → `dist/chrome/content-script/rta.js` (IIFE)
-   - `RTA_TARGET=popup` → `dist/chrome/popup/`
-   - `RTA_TARGET=options` → `dist/chrome/options/`
-   - `RTA_TARGET=notifications` → `dist/chrome/notifications/`
+    - `RTA_TARGET=worker` → `dist/chrome/service_worker.js` (IIFE, self-contained)
+    - `RTA_TARGET=content-script` → `dist/chrome/content-script/rta.js` (IIFE)
+    - `RTA_TARGET=popup` → `dist/chrome/popup/`
+    - `RTA_TARGET=options` → `dist/chrome/options/`
+    - `RTA_TARGET=notifications` → `dist/chrome/notifications/`
 
 The two IIFE targets are built through Vite's library mode because the
 service worker and content script each have to be a single standalone file.

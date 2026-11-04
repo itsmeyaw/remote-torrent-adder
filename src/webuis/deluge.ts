@@ -1,18 +1,17 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
 import { type AddResult, AuthenticationError, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
 
-
 export class DelugeWebUI extends TorrentWebUI {
     protected override async login(): Promise<void> {
         const payload = {
             method: "auth.login",
             params: [this._settings.password],
-            id: this.randomId()
+            id: this.randomId(),
         };
         const response = await this.fetch(this.createBaseUrl() + "/json", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
         });
         if ((await response.json())["result"] !== true) {
             throw new AuthenticationError(response.status);
@@ -20,14 +19,16 @@ export class DelugeWebUI extends TorrentWebUI {
     }
 
     protected override async add(torrent: Torrent, config: TorrentUploadConfig): Promise<AddResult> {
-        const pathOrMagnet = torrent.isMagnet
-            ? (torrent.data as string)
-            : await this.uploadTorrentFile(torrent);
+        const pathOrMagnet = torrent.isMagnet ? (torrent.data as string) : await this.uploadTorrentFile(torrent);
 
         return this.startUploadedTorrent(pathOrMagnet, config);
     }
 
-    protected override async applyLabel(_session: unknown, torrentId: string, label: string): Promise<TorrentAddingResult> {
+    protected override async applyLabel(
+        _session: unknown,
+        torrentId: string,
+        label: string,
+    ): Promise<TorrentAddingResult> {
         const delugeLabel = label.toLowerCase();
         const id = torrentId.toLowerCase();
         await this.fetch(this.createBaseUrl() + "/json", {
@@ -36,8 +37,8 @@ export class DelugeWebUI extends TorrentWebUI {
             body: JSON.stringify({
                 method: "label.add",
                 params: [delugeLabel],
-                id: this.randomId()
-            })
+                id: this.randomId(),
+            }),
         });
         const response = await this.fetch(this.createBaseUrl() + "/json", {
             method: "POST",
@@ -45,11 +46,15 @@ export class DelugeWebUI extends TorrentWebUI {
             body: JSON.stringify({
                 method: "label.set_torrent",
                 params: [id, delugeLabel],
-                id: this.randomId()
-            })
+                id: this.randomId(),
+            }),
         });
         const responseText = await response.text();
-        return { success: !JSON.parse(responseText || "{}")["error"], httpResponseCode: response.status, httpResponseBody: responseText };
+        return {
+            success: !JSON.parse(responseText || "{}")["error"],
+            httpResponseCode: response.status,
+            httpResponseBody: responseText,
+        };
     }
 
     protected override labelAfterAdd(session: unknown, torrentId: string, label: string): Promise<TorrentAddingResult> {
@@ -67,7 +72,10 @@ export class DelugeWebUI extends TorrentWebUI {
         return responseJson["files"][0];
     }
 
-    private async startUploadedTorrent(uploadedFilePathOrMagnetLink: string, config: TorrentUploadConfig): Promise<AddResult> {
+    private async startUploadedTorrent(
+        uploadedFilePathOrMagnetLink: string,
+        config: TorrentUploadConfig,
+    ): Promise<AddResult> {
         const jsonUrl = this.createBaseUrl() + "/json";
         const options: Record<string, unknown> = {
             add_paused: this.getAddPaused(config),
@@ -82,22 +90,26 @@ export class DelugeWebUI extends TorrentWebUI {
                 [
                     {
                         path: uploadedFilePathOrMagnetLink,
-                        options
-                    }
-                ]
+                        options,
+                    },
+                ],
             ],
-            id: this.randomId()
+            id: this.randomId(),
         };
 
         const response = await this.fetch(jsonUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
         });
         const responseJson = await response.json();
         const responseText = JSON.stringify(responseJson);
-        const success = !!(responseJson["result"] && responseJson["result"].length > 0
-            && responseJson["result"][0].length > 0 && responseJson["result"][0][0] === true);
+        const success = !!(
+            responseJson["result"] &&
+            responseJson["result"].length > 0 &&
+            responseJson["result"][0].length > 0 &&
+            responseJson["result"][0][0] === true
+        );
         const torrentId: string | undefined = responseJson["result"]?.[0]?.[1];
         return { success, httpResponseCode: response.status, httpResponseBody: responseText, torrentId };
     }

@@ -22,13 +22,15 @@ const SOUND_STORE: IdbStore = {
 };
 
 export function saveCustomSound(kind: SoundKind, blob: Blob, name: string): Promise<void> {
-    return withStore(SOUND_STORE, "readwrite", store => store.put({ blob, name } as StoredSound, kind)).then(() => undefined);
+    return withStore(SOUND_STORE, "readwrite", (store) => store.put({ blob, name } as StoredSound, kind)).then(
+        () => undefined,
+    );
 }
 
 export function getCustomSound(kind: SoundKind): Promise<StoredSound | undefined> {
-    return withStore<StoredSound | undefined>(SOUND_STORE, "readonly", store => store.get(kind));
+    return withStore<StoredSound | undefined>(SOUND_STORE, "readonly", (store) => store.get(kind));
 }
 
 export function deleteCustomSound(kind: SoundKind): Promise<void> {
-    return withStore(SOUND_STORE, "readwrite", store => store.delete(kind)).then(() => undefined);
+    return withStore(SOUND_STORE, "readwrite", (store) => store.delete(kind)).then(() => undefined);
 }

@@ -10,13 +10,13 @@
 // (`pnpm-lock.yaml` does not record the project's own version).
 // Prints the resulting version to stdout so callers (CI) can capture it.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from "node:fs";
 
-const manifestPath = 'src/manifest.json';
-const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+const manifestPath = "src/manifest.json";
+const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 
 function parse(version: string) {
-    const parts = version.split('.').map(Number);
+    const parts = version.split(".").map(Number);
     if (parts.length !== 3 || parts.some(Number.isNaN)) {
         throw new Error(`Invalid version "${version}" (expected x.y.z)`);
     }
@@ -26,7 +26,7 @@ function parse(version: string) {
 const arg = process.argv[2];
 let newVersion: string;
 if (arg) {
-    newVersion = arg.replace(/^v/, '');
+    newVersion = arg.replace(/^v/, "");
     parse(newVersion); // validate format
 } else {
     const [major, minor, patch] = parse(manifest.version);
@@ -34,11 +34,11 @@ if (arg) {
 }
 
 manifest.version = newVersion;
-writeFileSync(manifestPath, JSON.stringify(manifest, null, 4) + '\n');
+writeFileSync(manifestPath, JSON.stringify(manifest, null, 4) + "\n");
 
-const packagePath = 'package.json';
-const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
+const packagePath = "package.json";
+const pkg = JSON.parse(readFileSync(packagePath, "utf8"));
 pkg.version = newVersion;
-writeFileSync(packagePath, JSON.stringify(pkg, null, 4) + '\n');
+writeFileSync(packagePath, JSON.stringify(pkg, null, 4) + "\n");
 
 console.log(newVersion);

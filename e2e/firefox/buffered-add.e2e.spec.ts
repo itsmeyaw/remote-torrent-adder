@@ -40,9 +40,7 @@ test.describe("adding through the label/dir popup", () => {
         await expect.poll(async () => (await extension.pageLinks(SITE_PATTERN)).length).toBeGreaterThan(0);
         await extension.clickInPage("#torrent-link");
 
-        await expect
-            .poll(() => extension.hasBufferedTorrent(), { timeout: 20_000 })
-            .toBe(true);
+        await expect.poll(() => extension.hasBufferedTorrent(), { timeout: 20_000 }).toBe(true);
 
         await extension.openExtensionPage(extension.url("popup/popup.html"));
         await expect
@@ -51,9 +49,7 @@ test.describe("adding through the label/dir popup", () => {
 
         await extension.clickHereByText("Add Torrent");
 
-        await expect
-            .poll(() => client.pathsHit(), { timeout: 30_000 })
-            .toContain("/api/torrents/add-files");
+        await expect.poll(() => client.pathsHit(), { timeout: 30_000 }).toContain("/api/torrents/add-files");
 
         const add = client.lastAddRequest()!;
         const payload = JSON.parse(add.body) as { files: string[] };

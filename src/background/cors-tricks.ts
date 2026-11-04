@@ -18,8 +18,7 @@ export function registerCorsCircumventionForWebUis(allWebUis: TorrentWebUI[]): P
 }
 
 async function replaceCorsRules(allWebUis: TorrentWebUI[]): Promise<void> {
-    const oldRuleIds = (await ext.declarativeNetRequest.getSessionRules())
-        .map(rule => rule.id);
+    const oldRuleIds = (await ext.declarativeNetRequest.getSessionRules()).map((rule) => rule.id);
     const newRules: chrome.declarativeNetRequest.Rule[] = [];
 
     allWebUis.forEach((webUi, index) => {
@@ -33,14 +32,14 @@ async function replaceCorsRules(allWebUis: TorrentWebUI[]): Promise<void> {
                     requestHeaders: [
                         {
                             header: "origin",
-                            operation: "remove"
-                        }
-                    ]
+                            operation: "remove",
+                        },
+                    ],
                 },
                 condition: {
                     urlFilter: `|${webUiBaseUrl}*`,
-                    resourceTypes: ["xmlhttprequest"]
-                }
+                    resourceTypes: ["xmlhttprequest"],
+                },
             };
             newRules.push(rule);
         }
@@ -48,16 +47,16 @@ async function replaceCorsRules(allWebUis: TorrentWebUI[]): Promise<void> {
 
     await ext.declarativeNetRequest.updateSessionRules({
         removeRuleIds: oldRuleIds,
-        addRules: newRules
+        addRules: newRules,
     });
 }
 
 export async function clearDynamicRules(): Promise<void> {
     const rules = await ext.declarativeNetRequest.getDynamicRules();
-    const ruleIds = rules.map(rule => rule.id);
+    const ruleIds = rules.map((rule) => rule.id);
     if (ruleIds.length > 0) {
         await ext.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: ruleIds
+            removeRuleIds: ruleIds,
         });
     }
 }
@@ -80,16 +79,16 @@ export async function executeMethodWrappedWithOriginStripped<T>(method: () => Pr
                     requestHeaders: [
                         {
                             header: "origin",
-                            operation: "remove"
-                        }
-                    ]
+                            operation: "remove",
+                        },
+                    ],
                 },
                 condition: {
                     urlFilter: `|${baseUrl}*`,
-                    resourceTypes: ["xmlhttprequest"]
-                }
-            }
-        ]
+                    resourceTypes: ["xmlhttprequest"],
+                },
+            },
+        ],
     });
     try {
         return await method();
@@ -100,7 +99,11 @@ export async function executeMethodWrappedWithOriginStripped<T>(method: () => Pr
     }
 }
 
-export async function executeMethodWrappedWithReferer<T>(method: () => Promise<T>, url: string, referer: string): Promise<T> {
+export async function executeMethodWrappedWithReferer<T>(
+    method: () => Promise<T>,
+    url: string,
+    referer: string,
+): Promise<T> {
     const refererSetterRuleId = allocateDynamicRuleId();
     await ext.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: [refererSetterRuleId],
@@ -114,20 +117,20 @@ export async function executeMethodWrappedWithReferer<T>(method: () => Promise<T
                         {
                             header: "Referer",
                             operation: "set",
-                            value: referer
+                            value: referer,
                         },
                         {
                             header: "Origin",
-                            operation: "remove"
-                        }
-                    ]
+                            operation: "remove",
+                        },
+                    ],
                 },
                 condition: {
                     urlFilter: `|${url}*`,
-                    resourceTypes: ["xmlhttprequest"]
-                }
-            }
-        ]
+                    resourceTypes: ["xmlhttprequest"],
+                },
+            },
+        ],
     });
     try {
         return await method();

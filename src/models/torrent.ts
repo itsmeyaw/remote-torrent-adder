@@ -1,4 +1,3 @@
-
 export interface Torrent {
     data: Blob | string;
     name: string;

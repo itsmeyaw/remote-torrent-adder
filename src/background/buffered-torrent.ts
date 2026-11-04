@@ -45,7 +45,7 @@ export async function saveBufferedTorrent(buffered: BufferedTorrent): Promise<st
     const now = Date.now();
     const id = `${sortableTimestamp(now)}-${crypto.randomUUID()}`;
     const expiredBefore = sortableTimestamp(now - RETENTION_MS);
-    await withStore(BUFFERED_TORRENT_STORE, "readwrite", store => {
+    await withStore(BUFFERED_TORRENT_STORE, "readwrite", (store) => {
         // Queued first, so it runs before the put in the same transaction.
         store.delete(IDBKeyRange.upperBound(expiredBefore, true));
         store.delete(LEGACY_BUFFERED_TORRENT_KEY);
@@ -58,12 +58,9 @@ function sortableTimestamp(time: number): string {
     return String(time).padStart(13, "0");
 }
 
-
 export async function readBufferedTorrent(id: string): Promise<BufferedTorrent | null> {
-    const buffered = await withStore<BufferedTorrent | undefined>(
-        BUFFERED_TORRENT_STORE,
-        "readonly",
-        store => store.get(id),
+    const buffered = await withStore<BufferedTorrent | undefined>(BUFFERED_TORRENT_STORE, "readonly", (store) =>
+        store.get(id),
     );
     if (!buffered) {
         return null;
@@ -80,11 +77,9 @@ async function detachTorrentData(torrent: Torrent): Promise<Torrent> {
 }
 
 export function clearBufferedTorrent(id: string): Promise<void> {
-    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.delete(id))
-        .then(() => undefined);
+    return withStore(BUFFERED_TORRENT_STORE, "readwrite", (store) => store.delete(id)).then(() => undefined);
 }
 
 export function clearAllBufferedTorrents(): Promise<void> {
-    return withStore(BUFFERED_TORRENT_STORE, "readwrite", store => store.clear())
-        .then(() => undefined);
+    return withStore(BUFFERED_TORRENT_STORE, "readwrite", (store) => store.clear()).then(() => undefined);
 }

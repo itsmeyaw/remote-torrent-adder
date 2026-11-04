@@ -15,24 +15,29 @@ beforeEach(() => {
     linkRegexes = [/\.torrent$/];
     vi.stubGlobal("chrome", browser);
     observers = [];
-    vi.stubGlobal("MutationObserver", class extends RealMutationObserver {
-        constructor(callback: MutationCallback) {
-            super(callback);
-            observers.push(this);
-        }
-    });
+    vi.stubGlobal(
+        "MutationObserver",
+        class extends RealMutationObserver {
+            constructor(callback: MutationCallback) {
+                super(callback);
+                observers.push(this);
+            }
+        },
+    );
     browser.runtime.sendMessage.mockImplementation(async (message: { action: string }) => {
         if (message.action === "getLinkCatchingConfig") {
-            return { value: serializeObject({
-                linkCatchingEnabled: true,
-                linkCatchingRegexes: linkRegexes,
-            }) };
+            return {
+                value: serializeObject({
+                    linkCatchingEnabled: true,
+                    linkCatchingRegexes: linkRegexes,
+                }),
+            };
         }
     });
 });
 
 afterEach(() => {
-    observers.forEach(observer => observer.disconnect());
+    observers.forEach((observer) => observer.disconnect());
     vi.unstubAllGlobals();
     history.replaceState(null, "", originalUrl);
 });
@@ -47,10 +52,14 @@ async function start(html: string): Promise<void> {
 function submit(element: HTMLElement): boolean {
     const form = element instanceof HTMLFormElement ? element : (element as HTMLInputElement).form!;
     let intercepted = false;
-    form.addEventListener("submit", event => {
-        intercepted = event.defaultPrevented;
-        event.preventDefault();
-    }, { once: true });
+    form.addEventListener(
+        "submit",
+        (event) => {
+            intercepted = event.defaultPrevented;
+            event.preventDefault();
+        },
+        { once: true },
+    );
     if (element instanceof HTMLFormElement) element.requestSubmit();
     else element.click();
     return intercepted;
@@ -59,10 +68,14 @@ function submit(element: HTMLElement): boolean {
 function click(element: Element, init: MouseEventInit = {}): boolean {
     let intercepted = false;
     // Observe the extension's decision, then suppress jsdom navigation.
-    element.addEventListener("click", event => {
-        intercepted = event.defaultPrevented;
-        event.preventDefault();
-    }, { once: true });
+    element.addEventListener(
+        "click",
+        (event) => {
+            intercepted = event.defaultPrevented;
+            event.preventDefault();
+        },
+        { once: true },
+    );
     element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ...init }));
     return intercepted;
 }
@@ -87,7 +100,7 @@ describe("content-script link click targets", () => {
         link.remove();
         link.href = "https://tracker.example/replacement.torrent";
         document.body.appendChild(link);
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
         expect(click(link)).toBe(true);
         expect(browser.runtime.sendMessage).toHaveBeenCalledExactlyOnceWith({
@@ -98,8 +111,7 @@ describe("content-script link click targets", () => {
 
     it("matches and sends the resolved destination when a relative href changes", async () => {
         linkRegexes = [/^https:\/\/tracker\.example\/download\/.+\.torrent$/];
-        await start('<base href="https://tracker.example/results/">' +
-            '<a href="../download/first.torrent">First</a>');
+        await start('<base href="https://tracker.example/results/">' + '<a href="../download/first.torrent">First</a>');
         const link = document.querySelector("a")!;
         link.setAttribute("href", "../download/second.torrent");
 
@@ -138,9 +150,11 @@ describe("content-script link click targets", () => {
 
     it.each(["https://tracker.example/details/123", "", "   ", null])(
         "releases normal navigation after a bound href becomes %s",
-        async href => {
-            await start('<base href="https://tracker.example/page.torrent">' +
-                '<a href="https://tracker.example/original.torrent">Original</a>');
+        async (href) => {
+            await start(
+                '<base href="https://tracker.example/page.torrent">' +
+                    '<a href="https://tracker.example/original.torrent">Original</a>',
+            );
             const link = document.querySelector("a")!;
             if (href === null) link.removeAttribute("href");
             else link.setAttribute("href", href);
@@ -150,7 +164,7 @@ describe("content-script link click targets", () => {
         },
     );
 
-    it.each(["ctrlKey", "shiftKey", "altKey"])("preserves the %s bypass", async modifier => {
+    it.each(["ctrlKey", "shiftKey", "altKey"])("preserves the %s bypass", async (modifier) => {
         await start('<a href="https://tracker.example/original.torrent">Original</a>');
         const link = document.querySelector("a")!;
         link.href = "https://tracker.example/replacement.torrent";
@@ -174,7 +188,7 @@ describe("content-script form submit targets", () => {
     });
 
     it.each([
-        ["a submit button", '<button>Download</button>'],
+        ["a submit button", "<button>Download</button>"],
         ["an explicit submit button", '<button type="submit">Download</button>'],
         ["a submit input", '<input type="submit" value="Download">'],
         ["an image input", '<input type="image" alt="Download">'],
@@ -199,7 +213,7 @@ describe("content-script form submit targets", () => {
     });
 
     it("catches a form whose action is set to a torrent after insertion", async () => {
-        await start('<form><button>Download</button></form>');
+        await start("<form><button>Download</button></form>");
         const form = document.querySelector("form")!;
         form.action = "https://tracker.example/late.torrent";
 
@@ -218,9 +232,11 @@ describe("content-script form submit targets", () => {
     });
 
     it("sends the current form when a submit button is reassigned", async () => {
-        await start('<form id="first" action="https://tracker.example/first.torrent"></form>' +
-            '<form id="second" action="https://tracker.example/second.torrent"></form>' +
-            '<button form="first">Download</button>');
+        await start(
+            '<form id="first" action="https://tracker.example/first.torrent"></form>' +
+                '<form id="second" action="https://tracker.example/second.torrent"></form>' +
+                '<button form="first">Download</button>',
+        );
         const button = document.querySelector("button")!;
         button.setAttribute("form", "second");
 
@@ -243,7 +259,7 @@ describe("content-script form submit targets", () => {
         expect(browser.runtime.sendMessage).not.toHaveBeenCalled();
     });
 
-    it.each(["", "   ", null])("releases submission when the form action is %s", async action => {
+    it.each(["", "   ", null])("releases submission when the form action is %s", async (action) => {
         history.replaceState(null, "", "/download/page.torrent");
         const formTag = action === null ? "<form>" : `<form action="${action}">`;
         await start(`${formTag}<button>Search</button></form>`);
@@ -253,8 +269,10 @@ describe("content-script form submit targets", () => {
     });
 
     it("does not send an old form action after the associated form is removed", async () => {
-        await start('<form id="download" action="https://tracker.example/original.torrent"></form>' +
-            '<button form="download">Download</button>');
+        await start(
+            '<form id="download" action="https://tracker.example/original.torrent"></form>' +
+                '<button form="download">Download</button>',
+        );
         document.querySelector("form")!.remove();
 
         expect(click(document.querySelector("button")!)).toBe(false);
@@ -270,16 +288,16 @@ describe("content-script badge", () => {
         const calls: [{ action: string; text?: string }][] = browser.runtime.sendMessage.mock.calls;
         return calls
             .map(([message]) => message)
-            .filter(message => message.action === "updateActionBadgeText")
-            .map(message => message.text);
+            .filter((message) => message.action === "updateActionBadgeText")
+            .map((message) => message.text);
     }
 
     it("counts each distinct torrent link once across anchors and forms", async () => {
         const badge = await startAndReadBadge(
             '<a href="https://tracker.example/a.torrent">A</a>' +
-            '<a href="https://tracker.example/a.torrent">A again</a>' +
-            '<form action="https://tracker.example/a.torrent"><button>Download</button></form>' +
-            '<a href="https://tracker.example/b.torrent">B</a>',
+                '<a href="https://tracker.example/a.torrent">A again</a>' +
+                '<form action="https://tracker.example/a.torrent"><button>Download</button></form>' +
+                '<a href="https://tracker.example/b.torrent">B</a>',
         );
 
         expect(badge).toEqual(["", "1", "2"]);

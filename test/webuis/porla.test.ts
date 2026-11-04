@@ -15,7 +15,10 @@ describe("PorlaWebUI", () => {
         expect(result.success).toBe(true);
         const [loginUrl, loginOpts] = callArgs(fetch, 0);
         expect(loginUrl).toBe("http://h:1337/api/v1/jsonrpc");
-        expect(JSON.parse(loginOpts.body as string)).toMatchObject({ method: "auth.login", params: { username: expect.any(String), password: expect.any(String) } });
+        expect(JSON.parse(loginOpts.body as string)).toMatchObject({
+            method: "auth.login",
+            params: { username: expect.any(String), password: expect.any(String) },
+        });
         const [rpcUrl, rpcOpts] = callArgs(fetch, 1);
         expect(rpcUrl).toBe("http://h:1337/api/v1/jsonrpc");
         expect((rpcOpts.headers as any).Authorization).toBe("Bearer jwt-abc");
@@ -36,7 +39,12 @@ describe("PorlaWebUI", () => {
     });
 
     it("reports failure when login returns an error", async () => {
-        queueFetch(mockResponse({ status: 200, json: { jsonrpc: "2.0", id: 1, error: { code: -1, message: "Invalid username/password combination" } } }));
+        queueFetch(
+            mockResponse({
+                status: 200,
+                json: { jsonrpc: "2.0", id: 1, error: { code: -1, message: "Invalid username/password combination" } },
+            }),
+        );
         await expect(build().sendTorrent(makeMagnetTorrent(), {})).resolves.toMatchObject({ success: false });
     });
 
@@ -89,13 +97,17 @@ describe("PorlaWebUI", () => {
 
     it("reports failure when torrents.properties.set returns an error", async () => {
         queueFetch(tokenOk(), mockResponse({ status: 200, json: { error: { code: -6 } } }));
-        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toMatchObject({ success: false });
+        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toMatchObject({
+            success: false,
+        });
     });
     it("passes the connection test only when auth.login returns a token", async () => {
         queueFetch(tokenOk());
         await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: true });
 
-        queueFetch(mockResponse({ status: 200, json: { jsonrpc: "2.0", id: 1, error: { code: -1, message: "nope" } } }));
+        queueFetch(
+            mockResponse({ status: 200, json: { jsonrpc: "2.0", id: 1, error: { code: -1, message: "nope" } } }),
+        );
         await expect(build().testConnection()).resolves.toMatchObject({ reachable: true, authenticated: false });
     });
 });

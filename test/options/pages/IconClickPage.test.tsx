@@ -16,7 +16,12 @@ function respondWithSettings(settings = getDefaultSettings()) {
     });
 }
 
-const renderPage = () => render(<SettingsProvider><IconClickPage /></SettingsProvider>);
+const renderPage = () =>
+    render(
+        <SettingsProvider>
+            <IconClickPage />
+        </SettingsProvider>,
+    );
 
 describe("IconClickPage", () => {
     it("defaults to opening the primary WebUI", async () => {

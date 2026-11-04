@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { notify, registerNotificationButtonListener, registerNotificationClickListener, registerNotificationCleanupListeners, type NotificationEvent } from "../../src/background/notifications";
+import {
+    notify,
+    registerNotificationButtonListener,
+    registerNotificationClickListener,
+    registerNotificationCleanupListeners,
+    type NotificationEvent,
+} from "../../src/background/notifications";
 import { BROWSER } from "../../src/util/platform";
 import { computeInfoHash } from "../../src/torrent/info-hash";
 import { WebUIFactory, Client } from "../../src/models/clients";
@@ -13,10 +19,18 @@ vi.mock("../../src/torrent/info-hash", async (importOriginal) => {
 });
 
 const infoHash = "0123456789abcdef0123456789abcdef01234567";
-const qbit = WebUIFactory.createWebUI(makeWebUISettings({ id: "w1", name: "qBit", client: Client.QBittorrentWebUI, host: "h", port: 8080 }))!;
-const rqbit = WebUIFactory.createWebUI(makeWebUISettings({ id: "w2", name: "rqbit", client: Client.RqbitWebUI, host: "h", port: 1337 }))!;
-const added = (over: Partial<Extract<NotificationEvent, { type: "added" }>> = {}): NotificationEvent =>
-    ({ type: "added", webUi: qbit, torrent: makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${infoHash}`, name: "Cool Torrent" }), ...over });
+const qbit = WebUIFactory.createWebUI(
+    makeWebUISettings({ id: "w1", name: "qBit", client: Client.QBittorrentWebUI, host: "h", port: 8080 }),
+)!;
+const rqbit = WebUIFactory.createWebUI(
+    makeWebUISettings({ id: "w2", name: "rqbit", client: Client.RqbitWebUI, host: "h", port: 1337 }),
+)!;
+const added = (over: Partial<Extract<NotificationEvent, { type: "added" }>> = {}): NotificationEvent => ({
+    type: "added",
+    webUi: qbit,
+    torrent: makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${infoHash}`, name: "Cool Torrent" }),
+    ...over,
+});
 const labelSet: NotificationEvent = { type: "labelSet", webUi: qbit, torrentName: "Cool Torrent", label: "movies" };
 const cloudflare: NotificationEvent = { type: "cloudflareChallenge", message: "blocked", challengeUrl: "http://h/" };
 const settings = (over: Partial<RTASettings> = {}): RTASettings => ({ ...getDefaultSettings(), ...over });
@@ -87,15 +101,18 @@ describe("notify", () => {
         expect(chrome.notifications.create).not.toHaveBeenCalled();
     });
 
-    it.each([true, false])("shows a test notification with isFailed=%s even when notifications are off", async (isFailed) => {
-        await notify({ type: "test", isFailed }, settings({ notificationsEnabled: false }));
+    it.each([true, false])(
+        "shows a test notification with isFailed=%s even when notifications are off",
+        async (isFailed) => {
+            await notify({ type: "test", isFailed }, settings({ notificationsEnabled: false }));
 
-        const [, options] = (chrome.notifications.create as any).mock.calls[0];
-        expect(options).toMatchObject({
-            title: "Test Notification",
-            message: isFailed ? "This is a failed notification." : "This is a successful notification.",
-        });
-    });
+            const [, options] = (chrome.notifications.create as any).mock.calls[0];
+            expect(options).toMatchObject({
+                title: "Test Notification",
+                message: isFailed ? "This is a failed notification." : "This is a successful notification.",
+            });
+        },
+    );
 
     it("schedules a cleanup alarm for the configured duration", async () => {
         const before = Date.now();
@@ -197,7 +214,11 @@ describe("notification links", () => {
         await notify({ type: "addFailed", reason: "no link" }, settings());
         (chrome.notifications.create as any).mockResolvedValueOnce("other-id");
         await notify(cloudflare, settings());
-        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalledWith({ "notificationLink:other-id": { url: "http://h/" } }));
+        await vi.waitFor(() =>
+            expect(chrome.storage.session.set).toHaveBeenCalledWith({
+                "notificationLink:other-id": { url: "http://h/" },
+            }),
+        );
         const onClicked = (chrome.notifications.onClicked.addListener as any).mock.calls[0][0];
 
         onClicked("notif-id");
@@ -275,7 +296,11 @@ describe("the add-label button", () => {
         registerNotificationCleanupListeners();
         await notify(added(), settings());
 
-        await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalledWith({ "notificationLabelAction:notif-id": labelAction }));
+        await vi.waitFor(() =>
+            expect(chrome.storage.session.set).toHaveBeenCalledWith({
+                "notificationLabelAction:notif-id": labelAction,
+            }),
+        );
     });
 
     it("is not offered and its info hash is not computed when the option is off", async () => {
@@ -295,7 +320,10 @@ describe("the add-label button", () => {
     });
 
     it("is not offered when the info hash cannot be read from the torrent", async () => {
-        await notify(added({ torrent: makeMagnetTorrent({ data: "magnet:?dn=no-hash", name: "Cool Torrent" }) }), settings());
+        await notify(
+            added({ torrent: makeMagnetTorrent({ data: "magnet:?dn=no-hash", name: "Cool Torrent" }) }),
+            settings(),
+        );
 
         const [, options] = (chrome.notifications.create as any).mock.calls[0];
         expect(options.buttons).toBeUndefined();
@@ -329,7 +357,9 @@ describe("the add-label button", () => {
         await notify(added(), settings({ notificationsDurationMs: 1500 }));
         await vi.waitFor(() => expect(chrome.alarms.create).toHaveBeenCalled());
         await vi.waitFor(() => expect(chrome.storage.session.set).toHaveBeenCalled());
-        expect(await chrome.storage.session.get("notificationLabelAction:notif-id")).toEqual({ "notificationLabelAction:notif-id": labelAction });
+        expect(await chrome.storage.session.get("notificationLabelAction:notif-id")).toEqual({
+            "notificationLabelAction:notif-id": labelAction,
+        });
 
         firedAlarm("notification-cleanup:notif-id");
         await vi.waitFor(() => expect(chrome.notifications.clear).toHaveBeenCalledWith("notif-id"));

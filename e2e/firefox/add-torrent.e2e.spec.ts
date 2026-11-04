@@ -60,7 +60,7 @@ test.describe("adding a torrent end to end on firefox", () => {
         await expect.poll(() => client.pathsHit(), { timeout: 30_000 }).toContain("/api/v2/torrents/add");
 
         expect(client.pathsHit()).toContain("/api/v2/auth/login");
-        const login = client.requests.find(request => request.path === "/api/v2/auth/login")!;
+        const login = client.requests.find((request) => request.path === "/api/v2/auth/login")!;
         expect(login.fields).toMatchObject({ username: "user", password: "pass" });
 
         const add = client.lastAddRequest()!;

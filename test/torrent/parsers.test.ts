@@ -54,13 +54,15 @@ describe("getDeclaredTorrentNameFromMagnetLink", () => {
     });
 
     it("keeps a name containing a bare percent sign instead of throwing", () => {
-        expect(getDeclaredTorrentNameFromMagnetLink("magnet:?xt=urn:btih:abc&dn=Deadpool.100%.Fun"))
-            .toBe("Deadpool.100%.Fun");
+        expect(getDeclaredTorrentNameFromMagnetLink("magnet:?xt=urn:btih:abc&dn=Deadpool.100%.Fun")).toBe(
+            "Deadpool.100%.Fun",
+        );
     });
 
     it("ignores a dn= that only appears inside another parameter's value", () => {
-        expect(getDeclaredTorrentNameFromMagnetLink("magnet:?xt=urn:btih:abc&as=http://mirror.example/get?hdn=Bogus"))
-            .toBeNull();
+        expect(
+            getDeclaredTorrentNameFromMagnetLink("magnet:?xt=urn:btih:abc&as=http://mirror.example/get?hdn=Bogus"),
+        ).toBeNull();
     });
 });
 
@@ -97,8 +99,9 @@ describe("parseTrackersFromDecodedTorrentData", () => {
 
     it("returns no trackers when the torrent has no announce key", () => {
         expect(parseTrackersFromDecodedTorrentData({ info: {} })).toEqual([]);
-        expect(parseTrackersFromDecodedTorrentData({ "announce-list": [[enc("http://tracker.two/announce")]] }))
-            .toEqual(["http://tracker.two/announce"]);
+        expect(
+            parseTrackersFromDecodedTorrentData({ "announce-list": [[enc("http://tracker.two/announce")]] }),
+        ).toEqual(["http://tracker.two/announce"]);
     });
 
     it("ignores a non-array entry in announce-list", () => {
@@ -134,10 +137,7 @@ describe("parseFilesFromDecodedTorrentData", () => {
     it("joins the path segments of each file", () => {
         const data = {
             info: {
-                files: [
-                    { path: [enc("dir"), enc("a.mkv")] },
-                    { path: [enc("b.nfo")] },
-                ],
+                files: [{ path: [enc("dir"), enc("a.mkv")] }, { path: [enc("b.nfo")] }],
             },
         };
         expect(parseFilesFromDecodedTorrentData(data)).toEqual(["dir/a.mkv", "b.nfo"]);
@@ -160,11 +160,18 @@ describe("parseFilesFromDecodedTorrentData", () => {
     });
 
     it("falls back to info.name when files is not an array", () => {
-        expect(parseFilesFromDecodedTorrentData({ info: { name: enc("x.iso"), files: "nope" } } as unknown as DecodedTorrent)).toEqual(["x.iso"]);
+        expect(
+            parseFilesFromDecodedTorrentData({
+                info: { name: enc("x.iso"), files: "nope" },
+            } as unknown as DecodedTorrent),
+        ).toEqual(["x.iso"]);
     });
 
     it("tolerates a file entry with a missing path", () => {
-        expect(parseFilesFromDecodedTorrentData({ info: { files: [{}, { path: [enc("b.nfo")] }] } })).toEqual(["", "b.nfo"]);
+        expect(parseFilesFromDecodedTorrentData({ info: { files: [{}, { path: [enc("b.nfo")] }] } })).toEqual([
+            "",
+            "b.nfo",
+        ]);
     });
 });
 

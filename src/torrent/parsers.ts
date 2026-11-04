@@ -1,11 +1,4 @@
-import {
-    type DecodedTorrent,
-    isBencodeDictionary,
-    toInfo,
-    toInteger,
-    toList,
-    toText,
-} from "../models/decoded-torrent";
+import { type DecodedTorrent, isBencodeDictionary, toInfo, toInteger, toList, toText } from "../models/decoded-torrent";
 
 const FALLBACK_TORRENT_NAME = "file.torrent";
 const FALLBACK_MAGNET_NAME = "Some magnet link you clicked there, buddy.";
@@ -33,7 +26,7 @@ export function parseTrackersFromMagnetLink(magnetLink: string): string[] {
     } catch {
         return [];
     }
-    return Array.from(new Set(trackers.filter(tracker => tracker.length > 0)));
+    return Array.from(new Set(trackers.filter((tracker) => tracker.length > 0)));
 }
 
 export function parseTrackersFromDecodedTorrentData(data: DecodedTorrent | null | undefined): string[] {
@@ -44,8 +37,8 @@ export function parseTrackersFromDecodedTorrentData(data: DecodedTorrent | null 
         trackers.add(announce);
     }
 
-    toList(data?.["announce-list"]).forEach(tier => {
-        toList(tier).forEach(tracker => {
+    toList(data?.["announce-list"]).forEach((tier) => {
+        toList(tier).forEach((tracker) => {
             const url = toText(tracker);
             if (url !== null) {
                 trackers.add(url);
@@ -71,10 +64,12 @@ export function parseFilesFromDecodedTorrentData(data: DecodedTorrent | null | u
         return name ? [name] : [];
     }
 
-    return info.files.map(file => toList(isBencodeDictionary(file) ? file["path"] : undefined)
-        .map(segment => toText(segment))
-        .filter((segment): segment is string => segment !== null)
-        .join("/"));
+    return info.files.map((file) =>
+        toList(isBencodeDictionary(file) ? file["path"] : undefined)
+            .map((segment) => toText(segment))
+            .filter((segment): segment is string => segment !== null)
+            .join("/"),
+    );
 }
 
 export function parsePrivateFlagFromDecodedTorrentData(data: DecodedTorrent | null | undefined): boolean {

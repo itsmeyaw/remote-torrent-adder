@@ -21,7 +21,10 @@ function createLocksMock(): Pick<LockManager, "request"> {
     return {
         request: ((name: string, callback: () => unknown) => {
             const run = (tails.get(name) ?? Promise.resolve()).then(() => callback());
-            tails.set(name, run.catch(() => undefined));
+            tails.set(
+                name,
+                run.catch(() => undefined),
+            );
             return run;
         }) as LockManager["request"],
     };

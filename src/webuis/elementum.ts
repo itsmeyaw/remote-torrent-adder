@@ -8,15 +8,12 @@ export class ElementumWebUI extends TorrentWebUI {
             ? this.createPayloadForMagnet(torrent.data as string, config)
             : this.createPayloadForTorrent(torrent);
 
-        const response = await this.fetch(url, { method: 'POST', body: payload });
+        const response = await this.fetch(url, { method: "POST", body: payload });
         return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     createElementumBaseUrl(): string {
-        return [
-            this.createBaseUrl(),
-            "/playuri"
-        ].join("");
+        return [this.createBaseUrl(), "/playuri"].join("");
     }
 
     createPayloadForMagnet(magnetUri: string, _config: TorrentUploadConfig): FormData {

@@ -2,7 +2,7 @@
 
 This file is the **defined manual test pass** to run before a release, after touching a client class, or as a regression check after refactoring `TorrentWebUI`, `cors-tricks.ts`, `download.ts`, or messaging. Rows A–G are Chrome; **section H is the Firefox pass**, and has its own trigger list.
 
-It complements the automated suites rather than replacing them. `pnpm test` covers request construction, parsing, settings, and components; `pnpm run test:e2e` covers boot, link catching, the CORS rules and an add round-trip against stub clients, in both headless Chrome and real Firefox. What is left — a round-trip to a *real* client, desktop notifications actually appearing, permission prompts, service-worker lifecycle — is what the rows below are for. A change whose risk is purely in code should get a test, not a matrix run.
+It complements the automated suites rather than replacing them. `pnpm test` covers request construction, parsing, settings, and components; `pnpm run test:e2e` covers boot, link catching, the CORS rules and an add round-trip against stub clients, in both headless Chrome and real Firefox. What is left — a round-trip to a _real_ client, desktop notifications actually appearing, permission prompts, service-worker lifecycle — is what the rows below are for. A change whose risk is purely in code should get a test, not a matrix run.
 
 Reviewers should ask "which rows did you run?" instead of "did you test it?".
 
@@ -20,93 +20,93 @@ Run only the rows relevant to the change. After a release bump, run the full mat
 
 ### A. Link interception & entry points
 
-| # | Scenario | Expected |
-|---|---|---|
-| A1 | Click a `.torrent` anchor on a normal page | Popup opens with the torrent name and file list |
-| A2 | Click a magnet anchor | Popup opens with the `dn=` name (no file list) |
-| A3 | Right-click a torrent link → context menu → "Send to <client>" | Torrent added directly, no popup |
-| A4 | Click a `.torrent` link on a page where the URL matches the second default regex (`torrents.php?action=download`) | Popup opens |
-| A5 | Click a link the regex should NOT match (e.g. plain HTML link) | Default browser navigation, no popup |
-| A6 | `iconClickAction` = `openPrimaryWebUi` (default), click the toolbar icon | The first configured WebUI opens in a new tab |
-| A7 | `iconClickAction` = `showWebUiPicker`, click the toolbar icon | The picker lists every configured WebUI; choosing one opens it |
-| A8 | `iconClickAction` = `showPageLinks`, click the icon on a page with torrent links | The page's torrent links are listed and one can be added |
+| #   | Scenario                                                                                                          | Expected                                                       |
+| --- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| A1  | Click a `.torrent` anchor on a normal page                                                                        | Popup opens with the torrent name and file list                |
+| A2  | Click a magnet anchor                                                                                             | Popup opens with the `dn=` name (no file list)                 |
+| A3  | Right-click a torrent link → context menu → "Send to <client>"                                                    | Torrent added directly, no popup                               |
+| A4  | Click a `.torrent` link on a page where the URL matches the second default regex (`torrents.php?action=download`) | Popup opens                                                    |
+| A5  | Click a link the regex should NOT match (e.g. plain HTML link)                                                    | Default browser navigation, no popup                           |
+| A6  | `iconClickAction` = `openPrimaryWebUi` (default), click the toolbar icon                                          | The first configured WebUI opens in a new tab                  |
+| A7  | `iconClickAction` = `showWebUiPicker`, click the toolbar icon                                                     | The picker lists every configured WebUI; choosing one opens it |
+| A8  | `iconClickAction` = `showPageLinks`, click the icon on a page with torrent links                                  | The page's torrent links are listed and one can be added       |
 
 ### B. Add flow per client
 
 For each configured client, repeat both rows:
 
-| # | Scenario | Expected |
-|---|---|---|
-| B1 | `.torrent` file: select client, optional label/dir, click Add | Torrent appears in the client UI with the chosen label/dir/paused state |
-| B2 | Magnet URI: same flow | Torrent appears in the client UI |
+| #   | Scenario                                                      | Expected                                                                |
+| --- | ------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| B1  | `.torrent` file: select client, optional label/dir, click Add | Torrent appears in the client UI with the chosen label/dir/paused state |
+| B2  | Magnet URI: same flow                                         | Torrent appears in the client UI                                        |
 
 Tick the client off only if BOTH pass.
 
-| Client | B1 (.torrent) | B2 (magnet) |
-|---|---|---|
-| qBittorrent | | |
-| Transmission | | |
-| Deluge | | |
-| ruTorrent | | |
-| flood | | |
-| BiglyBT | | |
-| Elementum | | |
-| Porla | | |
-| Tixati | | |
-| tTorrent | | |
-| QNAP Download Station | | |
-| Synology Download Station | | |
-| rqbit | | |
+| Client                    | B1 (.torrent) | B2 (magnet) |
+| ------------------------- | ------------- | ----------- |
+| qBittorrent               |               |             |
+| Transmission              |               |             |
+| Deluge                    |               |             |
+| ruTorrent                 |               |             |
+| flood                     |               |             |
+| BiglyBT                   |               |             |
+| Elementum                 |               |             |
+| Porla                     |               |             |
+| Tixati                    |               |             |
+| tTorrent                  |               |             |
+| QNAP Download Station     |               |             |
+| Synology Download Station |               |             |
+| rqbit                     |               |             |
 
 ### C. Settings & overrides
 
-| # | Scenario | Expected |
-|---|---|---|
-| C1 | Set a per-client `defaultLabel` and `defaultDir`; add a torrent without overriding in popup | Client receives the defaults |
-| C2 | Override label and dir in the popup | Client receives the popup values, not the defaults |
-| C3 | Configure an auto-label-dir rule matching a tracker; add a matching torrent without overriding in popup | Auto rule applied |
-| C4 | Toggle `addPaused` per-torrent in popup (if `isAddPausedSupported`) | Torrent appears in the paused state |
-| C5 | A client with a client-specific descriptor (qBittorrent "Force start", ruTorrent "Don't add name path"): toggle it in Options, add a torrent | The client applies it; leaving it untouched applies the descriptor's `default` |
-| C6 | A descriptor with `perTorrent: true` (qBittorrent "Force start"): override it in the popup against the opposite Options value | The popup value wins, and does not persist back into Options |
+| #   | Scenario                                                                                                                                     | Expected                                                                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| C1  | Set a per-client `defaultLabel` and `defaultDir`; add a torrent without overriding in popup                                                  | Client receives the defaults                                                   |
+| C2  | Override label and dir in the popup                                                                                                          | Client receives the popup values, not the defaults                             |
+| C3  | Configure an auto-label-dir rule matching a tracker; add a matching torrent without overriding in popup                                      | Auto rule applied                                                              |
+| C4  | Toggle `addPaused` per-torrent in popup (if `isAddPausedSupported`)                                                                          | Torrent appears in the paused state                                            |
+| C5  | A client with a client-specific descriptor (qBittorrent "Force start", ruTorrent "Don't add name path"): toggle it in Options, add a torrent | The client applies it; leaving it untouched applies the descriptor's `default` |
+| C6  | A descriptor with `perTorrent: true` (qBittorrent "Force start"): override it in the popup against the opposite Options value                | The popup value wins, and does not persist back into Options                   |
 
 ### D. Failure modes (must produce a clear notification, not a silent fail)
 
-| # | Scenario | Expected |
-|---|---|---|
-| D1 | Stop the client → add a torrent | Error notification ("Failed to fetch" or similar); no crash |
-| D2 | Change the password in extension settings to a wrong value → add a torrent | Error notification with HTTP 401/403 |
-| D3 | Point the WebUI host to a wrong port → add a torrent | Error notification within a few seconds |
-| D4 | Add a malformed `.torrent` (truncate the file) | Error notification; service worker does NOT crash (check console) |
-| D5 | Add a torrent that already exists in the client | Either success or a specific "already exists" message — but never a silent failure |
+| #   | Scenario                                                                   | Expected                                                                           |
+| --- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| D1  | Stop the client → add a torrent                                            | Error notification ("Failed to fetch" or similar); no crash                        |
+| D2  | Change the password in extension settings to a wrong value → add a torrent | Error notification with HTTP 401/403                                               |
+| D3  | Point the WebUI host to a wrong port → add a torrent                       | Error notification within a few seconds                                            |
+| D4  | Add a malformed `.torrent` (truncate the file)                             | Error notification; service worker does NOT crash (check console)                  |
+| D5  | Add a torrent that already exists in the client                            | Either success or a specific "already exists" message — but never a silent failure |
 
 ### E. Notifications & sound
 
-| # | Scenario | Expected |
-|---|---|---|
-| E1 | With notifications enabled, add a torrent successfully | Desktop notification appears within `notificationsDurationMs` |
-| E2 | With notification sound enabled, add successfully | Sound plays once |
-| E3 | With notifications disabled, add successfully | No notification |
-| E4 | Notification on error | Error notification surfaces the HTTP code or message |
-| E5 | Raise `notificationsDurationMs`, add a torrent to a client with labels, click **Add label** on the success notification | A small window opens with the label field preset to the most recent label; setting one labels the torrent in the client, shows a "Label set" notification, and moves the label to the front of the list. With **Offer an "Add label" button** turned off in Options → Notifications, the success notification has no button |
-| E6 | Same as E5 against BiglyBT | The label shows up as a manual tag on the torrent (the request matches the torrent by its upper-case hash, which only a real BiglyBT confirms) |
+| #   | Scenario                                                                                                                | Expected                                                                                                                                                                                                                                                                                                                    |
+| --- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E1  | With notifications enabled, add a torrent successfully                                                                  | Desktop notification appears within `notificationsDurationMs`                                                                                                                                                                                                                                                               |
+| E2  | With notification sound enabled, add successfully                                                                       | Sound plays once                                                                                                                                                                                                                                                                                                            |
+| E3  | With notifications disabled, add successfully                                                                           | No notification                                                                                                                                                                                                                                                                                                             |
+| E4  | Notification on error                                                                                                   | Error notification surfaces the HTTP code or message                                                                                                                                                                                                                                                                        |
+| E5  | Raise `notificationsDurationMs`, add a torrent to a client with labels, click **Add label** on the success notification | A small window opens with the label field preset to the most recent label; setting one labels the torrent in the client, shows a "Label set" notification, and moves the label to the front of the list. With **Offer an "Add label" button** turned off in Options → Notifications, the success notification has no button |
+| E6  | Same as E5 against BiglyBT                                                                                              | The label shows up as a manual tag on the torrent (the request matches the torrent by its upper-case hash, which only a real BiglyBT confirms)                                                                                                                                                                              |
 
 ### F. Options page & persistence
 
-| # | Scenario | Expected |
-|---|---|---|
-| F1 | Add a new WebUI, save, reload extension (`chrome://extensions/` → reload) | WebUI persists |
-| F2 | Edit an existing WebUI's host/port/secure | `cors-tricks` rule is updated (Network tab: no preflight failure on the new URL) |
-| F3 | Delete a WebUI | Gone from list AND its CORS rule no longer matches (test by adding a torrent — must NOT route to the deleted host) |
-| F4 | Import/export settings | Round-trip preserves all fields including `clientSpecificSettings` |
+| #   | Scenario                                                                  | Expected                                                                                                           |
+| --- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| F1  | Add a new WebUI, save, reload extension (`chrome://extensions/` → reload) | WebUI persists                                                                                                     |
+| F2  | Edit an existing WebUI's host/port/secure                                 | `cors-tricks` rule is updated (Network tab: no preflight failure on the new URL)                                   |
+| F3  | Delete a WebUI                                                            | Gone from list AND its CORS rule no longer matches (test by adding a torrent — must NOT route to the deleted host) |
+| F4  | Import/export settings                                                    | Round-trip preserves all fields including `clientSpecificSettings`                                                 |
 
 ### G. Cross-extension hygiene (after refactors only)
 
-| # | Scenario | Expected |
-|---|---|---|
-| G1 | Service-worker idles for >30s, then add a torrent | Worker wakes, add succeeds (catches stateful bugs) |
-| G2 | Open the popup, close it without acting, reopen on a different link | Second popup shows the new torrent, not stale state |
-| G3 | Build prod (`pnpm run build:prod`) and load `dist-prod/chrome/` | Same matrix passes on the minified bundle |
-| G4 | Build prod for Firefox (`pnpm run build:firefox:prod`), then `pnpm run lint:firefox` | `web-ext lint` is clean — AMO rejects the upload otherwise |
+| #   | Scenario                                                                             | Expected                                                   |
+| --- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| G1  | Service-worker idles for >30s, then add a torrent                                    | Worker wakes, add succeeds (catches stateful bugs)         |
+| G2  | Open the popup, close it without acting, reopen on a different link                  | Second popup shows the new torrent, not stale state        |
+| G3  | Build prod (`pnpm run build:prod`) and load `dist-prod/chrome/`                      | Same matrix passes on the minified bundle                  |
+| G4  | Build prod for Firefox (`pnpm run build:firefox:prod`), then `pnpm run lint:firefox` | `web-ext lint` is clean — AMO rejects the upload otherwise |
 
 ### H. Firefox
 
@@ -119,20 +119,20 @@ Temporary Add-on…** → `dist/firefox/manifest.json`). Needs **Firefox 149+**.
 
 `pnpm run test:e2e:firefox` already covers boot, link catching, the CORS session
 rules, the Origin strip and the add round-trip against a fake client. The rows
-below are the ones it *cannot* reach.
+below are the ones it _cannot_ reach.
 
-| # | Scenario | Expected |
-|---|---|---|
-| H1 | Click a `.torrent` link on a client with **Show per-torrent selector** on | The label/dir popup opens. Watch for it closing instantly — `openActionPopup` unregisters the popup right after opening it, which is unverified on Firefox. If it flickers shut, defer the reset or force the window container |
-| H2 | Same, with **Use alternative container** on | A 420x600 popup window opens with the same form |
-| H3 | Add succeeds with notification sound enabled | Sound plays once, from the event page — there is no offscreen document on Firefox |
-| H4 | Add fails, and add succeeds on a client with labels | Both notifications appear without buttons, which is expected — Firefox rejects `buttons`, so the **Add label** button is Chrome-only |
-| H5 | Click the notification | The client WebUI opens in a new tab |
-| H6 | Revoke host access in `about:addons` → Permissions, reopen the options page | The "cannot access websites" banner appears; **Grant access** restores it and the banner disappears |
-| H7 | Right-click a torrent link → context menu → "Send to <client>" | Torrent added directly, no popup |
-| H8 | A client behind HTTP Basic auth (ruTorrent, Tixati) | Stored credentials are supplied; no browser auth prompt appears |
-| H9 | Icon click with each `iconClickAction` setting | Same as rows A6–A8 on Chrome |
-| H10 | Options and popup side by side with Chrome | Identical layout, colours and fonts in both light and dark themes |
+| #   | Scenario                                                                    | Expected                                                                                                                                                                                                                       |
+| --- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| H1  | Click a `.torrent` link on a client with **Show per-torrent selector** on   | The label/dir popup opens. Watch for it closing instantly — `openActionPopup` unregisters the popup right after opening it, which is unverified on Firefox. If it flickers shut, defer the reset or force the window container |
+| H2  | Same, with **Use alternative container** on                                 | A 420x600 popup window opens with the same form                                                                                                                                                                                |
+| H3  | Add succeeds with notification sound enabled                                | Sound plays once, from the event page — there is no offscreen document on Firefox                                                                                                                                              |
+| H4  | Add fails, and add succeeds on a client with labels                         | Both notifications appear without buttons, which is expected — Firefox rejects `buttons`, so the **Add label** button is Chrome-only                                                                                           |
+| H5  | Click the notification                                                      | The client WebUI opens in a new tab                                                                                                                                                                                            |
+| H6  | Revoke host access in `about:addons` → Permissions, reopen the options page | The "cannot access websites" banner appears; **Grant access** restores it and the banner disappears                                                                                                                            |
+| H7  | Right-click a torrent link → context menu → "Send to <client>"              | Torrent added directly, no popup                                                                                                                                                                                               |
+| H8  | A client behind HTTP Basic auth (ruTorrent, Tixati)                         | Stored credentials are supplied; no browser auth prompt appears                                                                                                                                                                |
+| H9  | Icon click with each `iconClickAction` setting                              | Same as rows A6–A8 on Chrome                                                                                                                                                                                                   |
+| H10 | Options and popup side by side with Chrome                                  | Identical layout, colours and fonts in both light and dark themes                                                                                                                                                              |
 
 ## What to record
 

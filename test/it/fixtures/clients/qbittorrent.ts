@@ -58,7 +58,9 @@ export const qbittorrent: ClientProbe = {
 
     async find(infoHash) {
         const cookie = await login(USERNAME, PASSWORD);
-        const response = await fetch(`${BASE_URL}/api/v2/torrents/info?hashes=${infoHash}`, { headers: { Cookie: cookie ?? "" } });
+        const response = await fetch(`${BASE_URL}/api/v2/torrents/info?hashes=${infoHash}`, {
+            headers: { Cookie: cookie ?? "" },
+        });
         const [torrent] = (await response.json()) as Record<string, unknown>[];
         if (!torrent || /^(checking|allocating|moving|unknown)/.test(torrent.state as string)) {
             return null;

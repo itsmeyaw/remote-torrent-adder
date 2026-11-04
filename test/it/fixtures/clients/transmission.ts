@@ -48,7 +48,11 @@ export const transmission: ClientProbe = {
 
     async prepare() {
         await waitFor("Transmission to answer RPC", async () => {
-            const result = await transmissionRpc(RPC_URL, USERNAME, PASSWORD, "session-set", { "dht-enabled": false, "pex-enabled": false, "lpd-enabled": false });
+            const result = await transmissionRpc(RPC_URL, USERNAME, PASSWORD, "session-set", {
+                "dht-enabled": false,
+                "pex-enabled": false,
+                "lpd-enabled": false,
+            });
             return result.result === "success" ? true : null;
         });
     },
@@ -58,7 +62,7 @@ export const transmission: ClientProbe = {
             ids: [infoHash],
             fields: ["hashString", "downloadDir", "status", "labels"],
         });
-        const [torrent] = ((result.arguments as { torrents?: Record<string, unknown>[] })?.torrents ?? []);
+        const [torrent] = (result.arguments as { torrents?: Record<string, unknown>[] })?.torrents ?? [];
         if (!torrent || torrent.status === STATUS_CHECK_WAIT || torrent.status === STATUS_CHECKING) {
             return null;
         }

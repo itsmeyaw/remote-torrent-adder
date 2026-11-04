@@ -20,7 +20,9 @@ export function webUiSettingsFor(probe: ClientProbe, overrides: Partial<WebUISet
 }
 
 export async function configureExtension(extension: ExtensionHarness, settings: WebUISettings): Promise<void> {
-    await extension.seedSettings(makeSettings([settings], { notificationsEnabled: true, notificationsSoundEnabled: false }));
+    await extension.seedSettings(
+        makeSettings([settings], { notificationsEnabled: true, notificationsSoundEnabled: false }),
+    );
     await expect.poll(async () => (await extension.sessionRules()).length).toBeGreaterThan(0);
     await extension.watchNotifications();
 }
@@ -31,10 +33,11 @@ export async function addViaExtension(
 ): Promise<{ title?: string; message?: string }> {
     const before = (await extension.notifications()).length;
     const page = await extension.openPage(extension.url("options/options.html"));
-    await page.evaluate(
-        message => chrome.runtime.sendMessage(message),
-        { action: "preAddTorrent", url, webUiId: WEBUI_ID },
-    );
+    await page.evaluate((message) => chrome.runtime.sendMessage(message), {
+        action: "preAddTorrent",
+        url,
+        webUiId: WEBUI_ID,
+    });
     await page.close();
     await expect
         .poll(async () => (await extension.notifications()).length, { timeout: 30_000 })
@@ -49,7 +52,7 @@ export async function setLabelViaExtension(
 ): Promise<{ value?: undefined; error?: string }> {
     const page = await extension.openPage(extension.url("options/options.html"));
     const response = await page.evaluate(
-        message => chrome.runtime.sendMessage(message) as Promise<{ value?: undefined; error?: string }>,
+        (message) => chrome.runtime.sendMessage(message) as Promise<{ value?: undefined; error?: string }>,
         { action: "setTorrentLabel", webUiId: WEBUI_ID, infoHash, torrentName: "IT torrent", label, labels: [label] },
     );
     await page.close();
@@ -62,7 +65,10 @@ export async function testConnectionViaExtension(
 ): Promise<ConnectionTestResult> {
     const page = await extension.openPage(extension.url("options/options.html"));
     const reply = await page.evaluate(
-        webUiSettings => chrome.runtime.sendMessage({ action: "testConnection", webUiSettings }) as Promise<{ value: ConnectionTestResult }>,
+        (webUiSettings) =>
+            chrome.runtime.sendMessage({ action: "testConnection", webUiSettings }) as Promise<{
+                value: ConnectionTestResult;
+            }>,
         settings,
     );
     await page.close();

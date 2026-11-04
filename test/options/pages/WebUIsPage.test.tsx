@@ -32,7 +32,12 @@ const savedWebUIs = () => {
     return save ? deserializeSettings(save.settings)!.webuiSettings : null;
 };
 
-const renderPage = () => render(<SettingsProvider><WebUIsPage /></SettingsProvider>);
+const renderPage = () =>
+    render(
+        <SettingsProvider>
+            <WebUIsPage />
+        </SettingsProvider>,
+    );
 
 describe("WebUIsPage", () => {
     it("removes the selected WebUI once the removal is confirmed", async () => {
@@ -42,7 +47,7 @@ describe("WebUIsPage", () => {
         await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
         await userEvent.click(screen.getByRole("button", { name: "For real?" }));
 
-        expect(savedWebUIs()!.map(w => w.id)).toEqual(["b"]);
+        expect(savedWebUIs()!.map((w) => w.id)).toEqual(["b"]);
     });
 
     it("keeps the selected WebUI when the removal is cancelled", async () => {
@@ -133,11 +138,15 @@ describe("WebUIsPage", () => {
     });
 
     it("renders the stored rules, including torrent name criteria", async () => {
-        respondWithWebUIs([makeWebUISettings({
-            id: "a",
-            name: "Alpha",
-            autoLabelDirSettings: [{ criteria: [{ field: "torrentName", value: "2160p" }], label: "uhd", dir: null }],
-        })]);
+        respondWithWebUIs([
+            makeWebUISettings({
+                id: "a",
+                name: "Alpha",
+                autoLabelDirSettings: [
+                    { criteria: [{ field: "torrentName", value: "2160p" }], label: "uhd", dir: null },
+                ],
+            }),
+        ]);
         renderPage();
 
         expect(await screen.findByText("Auto Label/Dir Settings")).toBeInTheDocument();
@@ -170,7 +179,10 @@ describe("WebUIsPage", () => {
 
     it("shows a warning when the connection is reachable but not verified", async () => {
         respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })], {
-            reachable: true, authenticated: null, httpResponseCode: 500, message: "Reachable, but the server answered HTTP 500; credentials could not be verified",
+            reachable: true,
+            authenticated: null,
+            httpResponseCode: 500,
+            message: "Reachable, but the server answered HTTP 500; credentials could not be verified",
         });
         renderPage();
 
@@ -192,7 +204,10 @@ describe("WebUIsPage", () => {
 
     it("shows a check mark when the connection is authenticated", async () => {
         respondWithWebUIs([makeWebUISettings({ id: "a", name: "Alpha" })], {
-            reachable: true, authenticated: true, httpResponseCode: 200, message: "Reachable & authenticated",
+            reachable: true,
+            authenticated: true,
+            httpResponseCode: 200,
+            message: "Reachable & authenticated",
         });
         renderPage();
 

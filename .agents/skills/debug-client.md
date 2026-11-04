@@ -10,7 +10,7 @@ Use when a user reports that adding a torrent to a specific client is failing �
 
 ### 1. Identify the client file and run its tests
 
-Client implementations are in `src/webuis/<clientname>.ts`. Read the relevant file first, then run its existing test file — it encodes what the request is *supposed* to look like, and is the fastest way to see whether the bug is in our request construction or in the client's behaviour:
+Client implementations are in `src/webuis/<clientname>.ts`. Read the relevant file first, then run its existing test file — it encodes what the request is _supposed_ to look like, and is the fastest way to see whether the bug is in our request construction or in the client's behaviour:
 
 ```bash
 pnpm exec vitest run test/webuis/<clientname>.test.ts
@@ -21,23 +21,24 @@ If the tests pass but the real client rejects the request, the bug is a mismatch
 ### 2. Determine failure mode
 
 Ask the user for or check:
+
 - Error message from the notification (success: false, httpResponseCode, httpResponseBody)
 - **Which browser.** Ask, and ask whether the other one works — "fails on Firefox, fine on Chrome" is a real category now and points at a different set of causes (see step 2b) than a client-API bug
 - Chrome: `chrome://extensions/` → "Errors" button, and the "service worker" link for its DevTools + Network tab
-- Firefox: `about:debugging#/runtime/this-firefox` → **Inspect** on the add-on. The background is an *event page*, not a service worker, so there is no "service worker" link to click
+- Firefox: `about:debugging#/runtime/this-firefox` → **Inspect** on the add-on. The background is an _event page_, not a service worker, so there is no "service worker" link to click
 - The Options page "Test Connection" button — distinguishes "can't reach the host at all" from "reached it, auth failed"
 
 Common failure modes and their causes:
 
-| Symptom | Likely Cause |
-|---|---|
-| `HTTP error 403` | Authentication failed or session expired |
-| `HTTP error 400` | Wrong request format (body, content-type, field names) |
-| `HTTP error 404` | Wrong API path or base URL misconfiguration |
-| `HTTP error 409` | Torrent already exists, or (Transmission) missing session token header |
-| `Failed to fetch` | CORS error, client offline, wrong host/port |
-| `HTTP error 401` | Credentials rejected |
-| `HTTP error 500` | Server-side error — check client logs |
+| Symptom           | Likely Cause                                                           |
+| ----------------- | ---------------------------------------------------------------------- |
+| `HTTP error 403`  | Authentication failed or session expired                               |
+| `HTTP error 400`  | Wrong request format (body, content-type, field names)                 |
+| `HTTP error 404`  | Wrong API path or base URL misconfiguration                            |
+| `HTTP error 409`  | Torrent already exists, or (Transmission) missing session token header |
+| `Failed to fetch` | CORS error, client offline, wrong host/port                            |
+| `HTTP error 401`  | Credentials rejected                                                   |
+| `HTTP error 500`  | Server-side error — check client logs                                  |
 
 `httpResponseCode: 0` means the failure was not an `HttpError` — the request never got a response (network failure, CORS block), and `httpResponseBody` holds the exception message.
 
@@ -56,6 +57,7 @@ Before digging into the client's API, rule out the port. In rough order of likel
 ### 3. CORS issues
 
 The extension uses `declarativeNetRequest` to bypass CORS (removes Origin, sets Referer). If CORS is still failing:
+
 - Check `src/background/cors-tricks.ts` — rules are applied per WebUI base URL. `test/background/cors-tricks.test.ts` asserts the rule shapes and is worth running first
 - Ensure the WebUI's base URL is correctly formed (check `createBaseUrl()` output — note it drops the port for 80/http and 443/https)
 - Some clients validate the Referer header value — the current code sets it to the base URL
@@ -65,13 +67,15 @@ To debug: open DevTools on the background (Chrome: `chrome://extensions/` → "s
 ### 4. Authentication debugging
 
 Most clients use session-based auth that expires. Check:
+
 - Does the client class request a new session for each `sendTorrent()` call? (Correct pattern)
-- Is the client using cookies? For the clients that log in via a `Set-Cookie` session (qBittorrent, flood), the browser attaches the cookie to subsequent extension `fetch()` calls on its own, and no client in `src/webuis/` sets `credentials` explicitly. If a *new* client needs `credentials: 'include'`, treat that as a finding worth a comment — it is not the established pattern here.
+- Is the client using cookies? For the clients that log in via a `Set-Cookie` session (qBittorrent, flood), the browser attaches the cookie to subsequent extension `fetch()` calls on its own, and no client in `src/webuis/` sets `credentials` explicitly. If a _new_ client needs `credentials: 'include'`, treat that as a finding worth a comment — it is not the established pattern here.
 - Transmission requires `X-Transmission-Session-Id` header — it returns 409 on first request with the correct ID in the response header.
 
 ### 5. API format issues
 
 Check the client's actual API:
+
 - qBittorrent v5+ changed login flow (check `qbittorrent.ts` for reference)
 - Some clients require `Content-Type: application/x-www-form-urlencoded` even for binary uploads
 - Deluge uses JSON-RPC with a specific method name and params array
@@ -80,6 +84,7 @@ Check the client's actual API:
 ### 6. Common fixes
 
 **Wrong torrent data handling**:
+
 ```typescript
 // `torrent.data` is `Blob | string` — Blob for .torrent files, string (magnet URI) when isMagnet.
 // Always branch on `torrent.isMagnet`, never on parsing the data field.
@@ -89,6 +94,7 @@ form.append("torrents", new File([torrent.data as Blob], torrent.name, { type: "
 ```
 
 **Missing content-type**:
+
 ```typescript
 // Don't manually set Content-Type for FormData — browser sets it with boundary:
 // ✓ body: form  (no Content-Type header)
@@ -96,6 +102,7 @@ form.append("torrents", new File([torrent.data as Blob], torrent.name, { type: "
 ```
 
 **Magnet vs .torrent branch**:
+
 ```typescript
 if (torrent.isMagnet) {
     // torrent.data is the magnet URI string — send as URL/string

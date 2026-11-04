@@ -81,8 +81,16 @@ describe("downloadTorrent (file)", () => {
     });
 
     it("rejects with a helpful message when the body is not a torrent", async () => {
-        queueFetch(mockResponse({ status: 200, body: "<html>nope</html>", headers: { "Content-Type": "text/html; charset=utf-8" } }));
-        await expect(downloadTorrent("https://site.com/fake.torrent")).rejects.toThrow(/text\/html instead of a torrent/);
+        queueFetch(
+            mockResponse({
+                status: 200,
+                body: "<html>nope</html>",
+                headers: { "Content-Type": "text/html; charset=utf-8" },
+            }),
+        );
+        await expect(downloadTorrent("https://site.com/fake.torrent")).rejects.toThrow(
+            /text\/html instead of a torrent/,
+        );
     });
 
     it("keeps the whole content type when it carries no parameters", async () => {
@@ -148,14 +156,18 @@ describe("downloadTorrent (through the page)", () => {
 
     it("does not retry through the worker when the page itself was challenged", async () => {
         const fetch = queueFetch(mockResponse({ status: 200, body: bencodedTorrent() }));
-        (chrome.tabs.sendMessage as any).mockResolvedValue(pageResponse(CLOUDFLARE_CHALLENGE_BODY, {
-            ok: false,
-            status: 403,
-            contentType: "text/html; charset=utf-8",
-            base64: bytesToBase64(new TextEncoder().encode(CLOUDFLARE_CHALLENGE_BODY)),
-        }));
+        (chrome.tabs.sendMessage as any).mockResolvedValue(
+            pageResponse(CLOUDFLARE_CHALLENGE_BODY, {
+                ok: false,
+                status: 403,
+                contentType: "text/html; charset=utf-8",
+                base64: bytesToBase64(new TextEncoder().encode(CLOUDFLARE_CHALLENGE_BODY)),
+            }),
+        );
 
-        await expect(downloadTorrent("https://tracker.org/get/1.torrent", { tabId: 9 })).rejects.toThrow(CloudflareChallengeError);
+        await expect(downloadTorrent("https://tracker.org/get/1.torrent", { tabId: 9 })).rejects.toThrow(
+            CloudflareChallengeError,
+        );
         expect(fetch).not.toHaveBeenCalled();
     });
 });
@@ -164,16 +176,17 @@ describe("downloadTorrent (cloudflare)", () => {
     it("recognizes a challenge from the cf-mitigated header", async () => {
         queueFetch(mockResponse({ status: 403, body: "", headers: { "cf-mitigated": "challenge" } }));
 
-        await expect(downloadTorrent("https://tracker.org/get/1.torrent"))
-            .rejects.toThrow(/Open the link in a tab/);
+        await expect(downloadTorrent("https://tracker.org/get/1.torrent")).rejects.toThrow(/Open the link in a tab/);
     });
 
     it("recognizes a challenge from the interstitial body", async () => {
-        queueFetch(mockResponse({
-            status: 403,
-            body: CLOUDFLARE_CHALLENGE_BODY,
-            headers: { "Content-Type": "text/html; charset=utf-8" },
-        }));
+        queueFetch(
+            mockResponse({
+                status: 403,
+                body: CLOUDFLARE_CHALLENGE_BODY,
+                headers: { "Content-Type": "text/html; charset=utf-8" },
+            }),
+        );
 
         const error = await downloadTorrent("https://tracker.org/get/1.torrent").catch((e: unknown) => e);
         expect(error).toBeInstanceOf(CloudflareChallengeError);

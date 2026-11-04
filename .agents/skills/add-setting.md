@@ -10,16 +10,16 @@ Use when a user wants to add a new option, flag, or configurable behaviour — a
 
 Before touching any file, establish which scope the setting belongs to:
 
-| Scope | Stored in | Configured in | Example |
-|---|---|---|---|
-| **Global** | `RTASettings` | Options → any top-level tab | Notification duration, link-catching enabled |
-| **Client-specific** | `WebUISettings.clientSpecificSettings` | Rendered automatically from a descriptor | qBittorrent "Force start", ruTorrent "Don't add name path" |
-| **Per-client (structural)** | a new field on `WebUISettings` | Options → WebUIs tab, hand-written control | Host, port, default label, SSL toggle |
-| **Per-torrent override** | `TorrentUploadConfig` | Options (default) + Popup (override) | Label, directory, add-as-paused |
+| Scope                       | Stored in                              | Configured in                              | Example                                                    |
+| --------------------------- | -------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| **Global**                  | `RTASettings`                          | Options → any top-level tab                | Notification duration, link-catching enabled               |
+| **Client-specific**         | `WebUISettings.clientSpecificSettings` | Rendered automatically from a descriptor   | qBittorrent "Force start", ruTorrent "Don't add name path" |
+| **Per-client (structural)** | a new field on `WebUISettings`         | Options → WebUIs tab, hand-written control | Host, port, default label, SSL toggle                      |
+| **Per-torrent override**    | `TorrentUploadConfig`                  | Options (default) + Popup (override)       | Label, directory, add-as-paused                            |
 
 Ask the user if not obvious.
 
-**Start with "Client-specific".** If the setting is a boolean that only matters to one client, it needs no new interface field, no options-page code and no popup code — a descriptor gets it rendered in both places automatically. Reach for the hand-wired "Per-client (structural)" path only for a setting that applies to *every* client, or that is not a boolean.
+**Start with "Client-specific".** If the setting is a boolean that only matters to one client, it needs no new interface field, no options-page code and no popup code — a descriptor gets it rendered in both places automatically. Reach for the hand-wired "Per-client (structural)" path only for a setting that applies to _every_ client, or that is not a boolean.
 
 ---
 
@@ -46,7 +46,9 @@ export interface RTASettings {
 Files to touch, in order:
 
 ### 1. `src/models/settings.ts`
+
 Add the field to `RTASettings`. Prefer a required field plus a default (matching the existing style); use `?:` only if it genuinely cannot be defaulted.
+
 ```typescript
 export interface RTASettings {
     // existing fields...
@@ -55,17 +57,22 @@ export interface RTASettings {
 ```
 
 ### 2. `src/settings/settings-defaults.ts`
+
 Add the default value in `getDefaultSettings()`:
+
 ```typescript
 return {
     // existing fields...
     myNewSetting: false,
 };
 ```
+
 Stored settings from older versions won't have the key; `parseSettings` (`src/settings/settings-validation.ts`) fills it from this default on load, save and import, so readers use `settings.myNewSetting` directly — no `??` fallback. Add a type check for the field to `SETTING_CHECKS` there.
 
 ### 3. Options UI
+
 Add the control in the appropriate tab page under `src/options/pages/`:
+
 - `NotificationsPage.tsx` for notification behaviour
 - `LinkCatchingPage.tsx` for link detection
 - `IconClickPage.tsx` for what clicking the toolbar icon does
@@ -76,9 +83,11 @@ Add the control in the appropriate tab page under `src/options/pages/`:
 Follow existing patterns: use `SettingsContext` (`src/options/SettingsContext.tsx`) to read/write, Tailwind for styling, Radix UI primitives for interactive controls.
 
 ### 4. Usage
+
 Use the setting wherever the behaviour is implemented. Background code loads settings freshly per event — `const settings = await loadSettings();` from `src/settings/settings.ts` (see `src/background/action.ts`, `src/background/messaging.ts`); look a WebUI up with `getWebUi` / `findWebUiSettings` from `src/settings/webuis.ts` — because the worker is stateless and must not cache them across invocations. Then read `settings.myNewSetting`.
 
 ### 5. Tests
+
 - `test/settings/settings-defaults.test.ts` — assert the new default
 - `test/settings/settings.test.ts` — assert load/save round-trips the field, and that settings missing the key fall back to the default
 - `test/options/SettingsContext.test.tsx` / `test/options/OptionsPage.test.tsx` — if you added UI
@@ -96,11 +105,11 @@ At the top of `src/webuis/<name>.ts` — see `qbittorrent.ts` and `rutorrent.ts`
 ```typescript
 const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> = [
     {
-        key: "forceStart",          // stable — it is persisted in clientSpecificSettings
-        label: "Force start",       // what the user sees; free to reword later
-        type: "boolean",            // the only type supported today
+        key: "forceStart", // stable — it is persisted in clientSpecificSettings
+        label: "Force start", // what the user sees; free to reword later
+        type: "boolean", // the only type supported today
         default: false,
-        perTorrent: true,           // true → also shown in the popup per torrent
+        perTorrent: true, // true → also shown in the popup per torrent
         description: "Bypass the queueing system and start immediately.",
     },
 ];
@@ -138,7 +147,9 @@ if (this.getClientSpecific("forceStart", config)) {
 Only for a setting that applies to every client, or that is not a boolean. Everything else belongs in the descriptor path above.
 
 ### 1. `src/models/webui.ts`
+
 Add it as a required field, give it a default in `getDefaultWebUiFields()` (`src/settings/settings-defaults.ts`), and add a type check to `WEBUI_FIELD_CHECKS` in `src/settings/settings-validation.ts`. Existing configs don't break: a missing field is filled from the default whenever settings are loaded, saved or imported.
+
 ```typescript
 export interface WebUISettings {
     // existing fields...
@@ -147,13 +158,17 @@ export interface WebUISettings {
 ```
 
 ### 2. Options UI — `src/options/pages/WebUIsPage.tsx`
+
 Add the control inside the per-client form. Existing fields (`showPerTorrentConfigSelector`, `useAlternativeLabelDirChooser`, `defaultLabel`, …) show the pattern. The field is always filled, so read it directly:
+
 ```typescript
 const value = webui.myClientSetting;
 ```
 
 ### 3. Usage in client classes
+
 Access via `this._settings.myClientSetting`. If many clients need it, add a protected getter to `TorrentWebUI` alongside `getLabel` / `getDirectory` / `getAddPaused`:
+
 ```typescript
 protected getMyClientSetting(): boolean {
     return this._settings.myClientSetting;
@@ -161,30 +176,35 @@ protected getMyClientSetting(): boolean {
 ```
 
 ### 4. Tests
+
 Extend `test/models/webui.test.ts` for a new base-class getter, and the affected `test/webuis/<name>.test.ts` for behaviour that changes per client. `test/helpers/fixtures.ts` builds `WebUISettings` — new **required** fields must be added there, and to `e2e/fixtures/settings.ts`.
 
 ---
 
 ## Per-Torrent Override Setting
 
-If the setting is a client-specific boolean, this is already done: set `perTorrent: true` on the descriptor. The rest of this section is for overriding a *structural* per-client field.
+If the setting is a client-specific boolean, this is already done: set `perTorrent: true` on the descriptor. The rest of this section is for overriding a _structural_ per-client field.
 
 Do everything in "Per-Client (structural)" above, naming the `WebUISettings` field `defaultMyField`, then additionally:
 
 ### A. `src/models/torrent.ts`
+
 Add to `TorrentUploadConfig` — every field there is optional, since the user may not set it per-torrent:
+
 ```typescript
 export interface TorrentUploadConfig {
     dir?: string;
     label?: string;
     addPaused?: boolean;
     clientSpecificSettings?: Record<string, boolean>;
-    myField?: boolean;   // new
+    myField?: boolean; // new
 }
 ```
 
 ### B. `src/models/webui.ts` base class getter
+
 Mirror the existing resolution order — per-torrent config first, then the per-client default, then a hard default:
+
 ```typescript
 protected getMyField(config: TorrentUploadConfig): boolean | null {
     return config.myField ?? this._settings.defaultMyField;
@@ -192,12 +212,15 @@ protected getMyField(config: TorrentUploadConfig): boolean | null {
 ```
 
 ### C. `src/popup/app/page.tsx`
+
 Add the UI control in the popup and include the chosen value in the `TorrentUploadConfig` sent when the user clicks "Add". `src/popup/popup-data.ts` builds what the popup renders and maps the result back onto the config; popup controls live in `src/popup/components/ui/`.
 
 ### D. Messages
+
 `TorrentUploadConfig` is passed through messages from popup → service worker → client (`src/models/messages.ts`). It is an interface, not a class, so adding a field is sufficient — no registration needed.
 
 ### E. Tests
+
 Add cases to `test/popup/page.test.tsx` (the control renders and its value reaches the outgoing config) and `test/popup/popup-data.test.ts`.
 
 ---
@@ -211,6 +234,7 @@ pnpm run lint
 ```
 
 `pnpm run build` runs all three first via `prebuild`. Then load the unpacked `dist/chrome/` in Chrome and verify:
+
 - New field appears correctly in Options
 - Default value is applied to configs saved before the change
 - If per-torrent: popup shows the control and the chosen value reaches the client

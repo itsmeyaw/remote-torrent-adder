@@ -39,9 +39,7 @@ async function configure(extension: ExtensionHarness, port: number, name = "Fake
 
 async function clickCaughtLink(extension: ExtensionHarness): Promise<void> {
     const page = await extension.openPage(site.baseUrl + "/");
-    await expect
-        .poll(async () => (await extension.pageLinks(`${site.baseUrl}/*`)).length)
-        .toBeGreaterThan(0);
+    await expect.poll(async () => (await extension.pageLinks(`${site.baseUrl}/*`)).length).toBeGreaterThan(0);
     await page.click("#torrent-link");
 }
 
@@ -58,7 +56,7 @@ test.describe("adding a torrent end to end", () => {
 
         expect(client.pathsHit()).toContain("/api/v2/auth/login");
 
-        const login = client.requests.find(request => request.path === "/api/v2/auth/login")!;
+        const login = client.requests.find((request) => request.path === "/api/v2/auth/login")!;
         expect(login.fields).toMatchObject({ username: "user", password: "pass" });
 
         const add = client.lastAddRequest()!;

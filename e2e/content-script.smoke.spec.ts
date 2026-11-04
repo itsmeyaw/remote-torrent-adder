@@ -18,10 +18,10 @@ test.describe("content script", () => {
         await extension.openPage(site.baseUrl + "/");
 
         const links = await extension.pageLinks(`${site.baseUrl}/*`);
-        const urls = links.map(link => link.url);
+        const urls = links.map((link) => link.url);
 
         expect(urls).toContain(`${site.baseUrl}/files/sample.torrent`);
-        expect(urls.some(url => url.startsWith("magnet:"))).toBe(true);
+        expect(urls.some((url) => url.startsWith("magnet:"))).toBe(true);
         expect(urls, "a plain .txt link must not be caught").not.toContain(`${site.baseUrl}/files/readme.txt`);
 
         await logs.waitForQuiet();

@@ -67,7 +67,11 @@ describe("mode routing", () => {
 describe("popup states", () => {
     it("shows a loading state until the torrent resolves", async () => {
         let resolve: (data: PopupData) => void = () => undefined;
-        loadPopupData.mockReturnValue(new Promise<PopupData>(r => { resolve = r; }));
+        loadPopupData.mockReturnValue(
+            new Promise<PopupData>((r) => {
+                resolve = r;
+            }),
+        );
 
         render(<Home />);
         expect(screen.getByText("Loading…")).toBeInTheDocument();
@@ -105,7 +109,11 @@ describe("popup states", () => {
 
     it("does not show placeholder label options before the real ones arrive", async () => {
         let resolve: (data: PopupData) => void = () => undefined;
-        loadPopupData.mockReturnValue(new Promise<PopupData>(r => { resolve = r; }));
+        loadPopupData.mockReturnValue(
+            new Promise<PopupData>((r) => {
+                resolve = r;
+            }),
+        );
 
         render(<Home />);
         // The old popup rendered a hardcoded ['Movies', 'TV Shows', ...] list.
@@ -118,9 +126,11 @@ describe("popup states", () => {
 
 describe("control visibility", () => {
     it("hides the controls the client does not support", async () => {
-        loadPopupData.mockResolvedValue(popupData({
-            supports: { label: false, directory: true, paused: false },
-        }));
+        loadPopupData.mockResolvedValue(
+            popupData({
+                supports: { label: false, directory: true, paused: false },
+            }),
+        );
 
         render(<Home />);
         await screen.findByRole("button", { name: "Add Torrent" });
@@ -131,12 +141,16 @@ describe("control visibility", () => {
     });
 
     it("renders a toggle for each per-torrent client-specific setting", async () => {
-        loadPopupData.mockResolvedValue(popupData({
-            clientSpecific: {
-                descriptors: [{ key: "forceStart", label: "Force start", type: "boolean", default: false, perTorrent: true }],
-                initial: { forceStart: false },
-            },
-        }));
+        loadPopupData.mockResolvedValue(
+            popupData({
+                clientSpecific: {
+                    descriptors: [
+                        { key: "forceStart", label: "Force start", type: "boolean", default: false, perTorrent: true },
+                    ],
+                    initial: { forceStart: false },
+                },
+            }),
+        );
 
         render(<Home />);
         await screen.findByRole("button", { name: "Add Torrent" });
@@ -170,12 +184,16 @@ describe("submitting", () => {
     });
 
     it("sends the toggled client-specific value", async () => {
-        loadPopupData.mockResolvedValue(popupData({
-            clientSpecific: {
-                descriptors: [{ key: "forceStart", label: "Force start", type: "boolean", default: false, perTorrent: true }],
-                initial: { forceStart: false },
-            },
-        }));
+        loadPopupData.mockResolvedValue(
+            popupData({
+                clientSpecific: {
+                    descriptors: [
+                        { key: "forceStart", label: "Force start", type: "boolean", default: false, perTorrent: true },
+                    ],
+                    initial: { forceStart: false },
+                },
+            }),
+        );
         render(<Home />);
 
         await userEvent.click(await screen.findByText("Force start"));
@@ -186,9 +204,11 @@ describe("submitting", () => {
     });
 
     it("moves the chosen value to the front so it is offered first next time", async () => {
-        loadPopupData.mockResolvedValue(popupData({
-            initial: { label: "tv", directory: "/other", paused: false },
-        }));
+        loadPopupData.mockResolvedValue(
+            popupData({
+                initial: { label: "tv", directory: "/other", paused: false },
+            }),
+        );
         render(<Home />);
 
         await userEvent.click(await screen.findByRole("button", { name: "Add Torrent" }));
@@ -215,7 +235,11 @@ describe("submitting", () => {
     it("disables the button while the add is in flight", async () => {
         loadPopupData.mockResolvedValue(popupData());
         let finish: () => void = () => undefined;
-        submitTorrent.mockReturnValue(new Promise<void>(r => { finish = r; }));
+        submitTorrent.mockReturnValue(
+            new Promise<void>((r) => {
+                finish = r;
+            }),
+        );
         render(<Home />);
 
         await userEvent.click(await screen.findByRole("button", { name: "Add Torrent" }));

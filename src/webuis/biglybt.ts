@@ -11,9 +11,13 @@ export class BiglyBTWebUI extends TransmissionWebUI {
             ? this.createPayloadForMagnet(torrent.data as string, config)
             : this.createPayloadForTorrent(torrent);
 
-        const response = await this.fetch(url, { method: 'POST', body: payload });
+        const response = await this.fetch(url, { method: "POST", body: payload });
         const responseBody = await response.text();
-        return { success: this.isSuccessResponse(responseBody), httpResponseCode: response.status, httpResponseBody: responseBody };
+        return {
+            success: this.isSuccessResponse(responseBody),
+            httpResponseCode: response.status,
+            httpResponseBody: responseBody,
+        };
     }
 
     protected override async addedTorrentId(_added: AddResult, torrent: Torrent): Promise<string | undefined> {
@@ -28,13 +32,16 @@ export class BiglyBTWebUI extends TransmissionWebUI {
         return [
             this.createBaseUrl(),
             "/transmission/",
-            torrent.isMagnet ? "rpc" : "upload", 
+            torrent.isMagnet ? "rpc" : "upload",
             !torrent.isMagnet && this.getAddPaused(config) ? "?paused=true" : "",
         ].join("");
     }
 
     createPayloadForMagnet(magnetUri: string, config: TorrentUploadConfig): string {
-        return JSON.stringify({ "method": "torrent-add", "arguments": { "paused": `${this.getAddPaused(config)}`, "filename": magnetUri } });
+        return JSON.stringify({
+            method: "torrent-add",
+            arguments: { paused: `${this.getAddPaused(config)}`, filename: magnetUri },
+        });
     }
 
     createPayloadForTorrent(torrent: Torrent): FormData {

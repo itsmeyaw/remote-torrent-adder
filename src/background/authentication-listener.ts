@@ -3,7 +3,6 @@ import { type TorrentWebUI } from "../models/webui";
 import { loadSettings } from "../settings/settings";
 import { getWebUi, getWebUis } from "../settings/webuis";
 
-
 const AUTH_TRIED_KEY_PREFIX = "authTried:";
 const WEBUI_TAB_KEY_PREFIX = "webUiTab:";
 
@@ -14,7 +13,7 @@ export function registerAuthenticationListener(): void {
                 return {};
             }
             resolveAuthCredentials(details)
-                .catch(error => {
+                .catch((error) => {
                     console.error("Failed resolving credentials for auth challenge", error);
                     return {} as chrome.webRequest.BlockingResponse;
                 })
@@ -22,7 +21,7 @@ export function registerAuthenticationListener(): void {
             return;
         },
         { urls: ["<all_urls>"] },
-        ["asyncBlocking"]
+        ["asyncBlocking"],
     );
 }
 
@@ -33,7 +32,7 @@ export async function rememberWebUiTab(tabId: number, webUiId: string): Promise<
 }
 
 export async function resolveAuthCredentials(
-    details: chrome.webRequest.OnAuthRequiredDetails
+    details: chrome.webRequest.OnAuthRequiredDetails,
 ): Promise<chrome.webRequest.BlockingResponse> {
     const triedKey = AUTH_TRIED_KEY_PREFIX + details.requestId;
     if ((await ext.storage.session.get(triedKey))[triedKey]) {
@@ -51,14 +50,16 @@ export async function resolveAuthCredentials(
     return {
         authCredentials: {
             username: webUi.settings.username,
-            password: webUi.settings.password
-        }
+            password: webUi.settings.password,
+        },
     };
 }
 
-async function findAuthorizedWebUi(details: chrome.webRequest.OnAuthRequiredDetails): Promise<TorrentWebUI | undefined> {
+async function findAuthorizedWebUi(
+    details: chrome.webRequest.OnAuthRequiredDetails,
+): Promise<TorrentWebUI | undefined> {
     if (details.tabId === -1) {
-        return getWebUis(await loadSettings()).find(candidate => isRequestForWebUi(details.url, candidate));
+        return getWebUis(await loadSettings()).find((candidate) => isRequestForWebUi(details.url, candidate));
     }
 
     // Only the tab's own navigation: a page the user browsed to later must not get credentials for its subresources

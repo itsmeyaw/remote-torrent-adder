@@ -17,7 +17,7 @@ export class FakeFlood {
 
     async start(): Promise<void> {
         this.server = createServer((req, res) => {
-            void this.handle(req).then(path => {
+            void this.handle(req).then((path) => {
                 const delay = path.includes("authenticate") ? this.authenticateDelayMs : 0;
                 setTimeout(() => {
                     res.writeHead(200, { "Content-Type": "application/json" });
@@ -25,7 +25,7 @@ export class FakeFlood {
                 }, delay);
             });
         });
-        await new Promise<void>(resolve => this.server.listen(0, "127.0.0.1", resolve));
+        await new Promise<void>((resolve) => this.server.listen(0, "127.0.0.1", resolve));
         this.port = (this.server.address() as AddressInfo).port;
     }
 
@@ -41,14 +41,14 @@ export class FakeFlood {
 
     async stop(): Promise<void> {
         this.server.closeAllConnections();
-        await new Promise<void>(resolve => this.server.close(() => resolve()));
+        await new Promise<void>((resolve) => this.server.close(() => resolve()));
     }
 
     pathsHit(): string[] {
-        return this.requests.map(request => request.path);
+        return this.requests.map((request) => request.path);
     }
 
     lastAddRequest(): { path: string; body: string } | undefined {
-        return this.requests.filter(request => request.path === "/api/torrents/add-files").at(-1);
+        return this.requests.filter((request) => request.path === "/api/torrents/add-files").at(-1);
     }
 }

@@ -67,17 +67,26 @@ describe("BiglyBTWebUI", () => {
             mockResponse({ status: 200, json: { result: "success" } }),
             mockResponse({ status: 200, json: { result: "success" } }),
         );
-        const result = await build().sendTorrent(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }), { label: "movies" });
+        const result = await build().sendTorrent(
+            makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }),
+            { label: "movies" },
+        );
 
         expect(result.success).toBe(true);
         const [url, opts] = callArgs(fetch, 2);
         expect(url).toBe("http://h:9091/transmission/rpc");
         expect((opts.headers as any)["X-Transmission-Session-Id"]).toBe("sess-1");
-        expect(JSON.parse(opts.body as string)).toEqual({ method: "torrent-set", arguments: { ids: ["0123456789abcdef0123456789abcdef01234567".toUpperCase()], labels: ["movies"] } });
+        expect(JSON.parse(opts.body as string)).toEqual({
+            method: "torrent-set",
+            arguments: { ids: ["0123456789abcdef0123456789abcdef01234567".toUpperCase()], labels: ["movies"] },
+        });
     });
 
     it("warns and adds without the label when the info hash cannot be determined", async () => {
-        const fetch = queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, json: { result: "success" } }));
+        const fetch = queueFetch(
+            mockResponse({ status: 200 }),
+            mockResponse({ status: 200, json: { result: "success" } }),
+        );
         const result = await build().sendTorrent(makeMagnetTorrent(), { label: "movies" });
 
         expect(result.success).toBe(true);
@@ -91,7 +100,10 @@ describe("BiglyBTWebUI", () => {
             mockResponse({ status: 200, body: "<h1>200: OK</h1>" }),
             mockResponse({ status: 200, json: { result: "error" } }),
         );
-        const result = await build().sendTorrent(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }), { label: "movies" });
+        const result = await build().sendTorrent(
+            makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }),
+            { label: "movies" },
+        );
 
         expect(result).toMatchObject({ success: true, httpResponseCode: 200, httpResponseBody: "<h1>200: OK</h1>" });
         expect(result.warning).toContain('Label "movies" was not applied');
@@ -103,7 +115,10 @@ describe("BiglyBTWebUI", () => {
             mockResponse({ status: 200, json: { result: "success" } }),
             mockResponse({ status: 500, body: "server error" }),
         );
-        const result = await build().sendTorrent(makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }), { label: "movies" });
+        const result = await build().sendTorrent(
+            makeMagnetTorrent({ data: `magnet:?xt=urn:btih:${"0123456789abcdef0123456789abcdef01234567"}` }),
+            { label: "movies" },
+        );
 
         expect(result.success).toBe(true);
         expect(result.warning).toContain('Label "movies" was not applied');
@@ -111,7 +126,9 @@ describe("BiglyBTWebUI", () => {
 
     it("reports failure when torrent-set does not succeed", async () => {
         queueFetch(mockResponse({ status: 200 }), mockResponse({ status: 200, json: { result: "error" } }));
-        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toMatchObject({ success: false });
+        await expect(build().setLabel("0123456789abcdef0123456789abcdef01234567", "movies")).resolves.toMatchObject({
+            success: false,
+        });
     });
 
     it("reports the real status and body when the session cookie request is rejected", async () => {

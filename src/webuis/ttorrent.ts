@@ -13,15 +13,12 @@ export class TTorrentWebUI extends TorrentWebUI {
             url += "/downloadTorrent";
         }
 
-        const response = await this.fetch(url, { method: 'POST', body: payload });
+        const response = await this.fetch(url, { method: "POST", body: payload });
         return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
 
     private createTTorrentBaseUrl(): string {
-        return [
-            this.createBaseUrl(),
-            "/cmd"
-        ].join("");
+        return [this.createBaseUrl(), "/cmd"].join("");
     }
 
     private async createPayloadForTorrent(torrent: Torrent): Promise<FormData> {

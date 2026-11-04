@@ -1,7 +1,9 @@
 import { test, expect } from "../fixtures/firefox-extension";
 
 test.describe("notifications on firefox", () => {
-    test("firefox still rejects notification buttons, so the add-label button stays chrome-only", async ({ extension }) => {
+    test("firefox still rejects notification buttons, so the add-label button stays chrome-only", async ({
+        extension,
+    }) => {
         const outcome = extension.evaluate<string>(
             [
                 "return await browser.notifications.create('', {",

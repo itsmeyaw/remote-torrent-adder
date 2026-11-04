@@ -1,5 +1,11 @@
 import { type Torrent, type TorrentUploadConfig } from "../models/torrent";
-import { type AddResult, type ClientSpecificSettingDescriptor, type ConnectionTestResult, type TorrentAddingResult, TorrentWebUI } from "../models/webui";
+import {
+    type AddResult,
+    type ClientSpecificSettingDescriptor,
+    type ConnectionTestResult,
+    type TorrentAddingResult,
+    TorrentWebUI,
+} from "../models/webui";
 
 const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> = [
     {
@@ -8,7 +14,8 @@ const CLIENT_SPECIFIC_SETTINGS: ReadonlyArray<ClientSpecificSettingDescriptor> =
         type: "boolean",
         default: false,
         perTorrent: false,
-        description: "Put content directly in the destination directory instead of letting rTorrent append the torrent's own folder name.",
+        description:
+            "Put content directly in the destination directory instead of letting rTorrent append the torrent's own folder name.",
     },
 ];
 
@@ -29,17 +36,21 @@ export class RuTorrentWebUI extends TorrentWebUI {
             payload = this.createPayloadForTorrent(torrent, config);
         }
 
-        const response = await this.fetch(url, { method: 'POST', headers, body: payload });
+        const response = await this.fetch(url, { method: "POST", headers, body: payload });
         const responseBody = await response.text();
         const success = /result\[\]=Success/.test(response.url) || /addTorrentSuccess/.test(responseBody);
         return { success, httpResponseCode: response.status, httpResponseBody: responseBody };
     }
 
-    protected override async applyLabel(_session: unknown, infoHash: string, label: string): Promise<TorrentAddingResult> {
+    protected override async applyLabel(
+        _session: unknown,
+        infoHash: string,
+        label: string,
+    ): Promise<TorrentAddingResult> {
         const response = await this.fetch(this.createBaseUrl() + "/plugins/httprpc/action.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `mode=setlabel&hash=${infoHash.toUpperCase()}&v=${encodeURIComponent(encodeURIComponent(label))}`
+            body: `mode=setlabel&hash=${infoHash.toUpperCase()}&v=${encodeURIComponent(encodeURIComponent(label))}`,
         });
         return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }

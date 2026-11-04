@@ -17,7 +17,7 @@ const webUi = (id: string, name: string) => new QBittorrentWebUI(settingsFor(id,
 const clickData = (menuItemId: string): any => ({ menuItemId, linkUrl: "http://x/file.torrent" });
 const tab: any = { windowId: 11 };
 
-const flush = () => new Promise(resolve => setTimeout(resolve, 0));
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function clickListener() {
     const calls = (chrome.contextMenus.onClicked.addListener as any).mock.calls;
@@ -63,13 +63,14 @@ describe("refreshContextMenu", () => {
         const order: string[] = [];
         let resolveRemoveAll: () => void = () => undefined;
         (chrome.contextMenus.removeAll as any).mockImplementation(
-            () => new Promise<void>(resolve => {
-                order.push("removeAll:start");
-                resolveRemoveAll = () => {
-                    order.push("removeAll:done");
-                    resolve();
-                };
-            })
+            () =>
+                new Promise<void>((resolve) => {
+                    order.push("removeAll:start");
+                    resolveRemoveAll = () => {
+                        order.push("removeAll:done");
+                        resolve();
+                    };
+                }),
         );
         (chrome.contextMenus.create as any).mockImplementation((opts: any) => {
             order.push(`create:${opts.id}`);
@@ -90,10 +91,11 @@ describe("refreshContextMenu", () => {
         const order: string[] = [];
         const pendingRemoveAlls: (() => void)[] = [];
         (chrome.contextMenus.removeAll as any).mockImplementation(
-            () => new Promise<void>(resolve => {
-                order.push("removeAll");
-                pendingRemoveAlls.push(resolve);
-            })
+            () =>
+                new Promise<void>((resolve) => {
+                    order.push("removeAll");
+                    pendingRemoveAlls.push(resolve);
+                }),
         );
         (chrome.contextMenus.create as any).mockImplementation((opts: any) => {
             order.push(`create:${opts.id}`);
@@ -112,12 +114,7 @@ describe("refreshContextMenu", () => {
         pendingRemoveAlls[1]!();
         await second;
 
-        expect(order).toEqual([
-            "removeAll",
-            "create:server-main",
-            "removeAll",
-            "create:server-main",
-        ]);
+        expect(order).toEqual(["removeAll", "create:server-main", "removeAll", "create:server-main"]);
     });
 
     it("reports a failed menu creation instead of swallowing it", async () => {
@@ -133,7 +130,7 @@ describe("refreshContextMenu", () => {
 
         expect(consoleError).toHaveBeenCalledWith(
             "Failed creating context menu item server-main",
-            "Cannot create item with duplicate id"
+            "Cannot create item with duplicate id",
         );
         consoleError.mockRestore();
     });
@@ -198,7 +195,10 @@ describe("registerContextMenuClickListener", () => {
 
         await click("server-main");
 
-        expect(consoleError).toHaveBeenCalledWith("Context menu click failed", expect.objectContaining({ message: "storage is down" }));
+        expect(consoleError).toHaveBeenCalledWith(
+            "Context menu click failed",
+            expect.objectContaining({ message: "storage is down" }),
+        );
         expect(chrome.notifications.create).not.toHaveBeenCalled();
         consoleError.mockRestore();
     });

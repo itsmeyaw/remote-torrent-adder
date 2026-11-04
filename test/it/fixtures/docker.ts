@@ -26,7 +26,7 @@ export async function composeUp(profile: string, attempts = 3): Promise<void> {
             if (attempt >= attempts) {
                 throw error;
             }
-            await new Promise(resolve => setTimeout(resolve, 5_000));
+            await new Promise((resolve) => setTimeout(resolve, 5_000));
         }
     }
 }
@@ -55,7 +55,7 @@ export async function waitFor<T>(
         } catch (error) {
             lastError = error;
         }
-        await new Promise(resolve => setTimeout(resolve, intervalMs));
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
     throw new Error(`Timed out waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`);
 }

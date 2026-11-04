@@ -46,7 +46,9 @@ describe("deriveLinkLabel", () => {
 
     it("decodes the last path segment", () => {
         const element = anchor(`<a href="https://example.com/downloads/Cool%20Torrent.torrent"></a>`);
-        expect(deriveLinkLabel(element, "https://example.com/downloads/Cool%20Torrent.torrent")).toBe("Cool Torrent.torrent");
+        expect(deriveLinkLabel(element, "https://example.com/downloads/Cool%20Torrent.torrent")).toBe(
+            "Cool Torrent.torrent",
+        );
     });
 
     it("falls back to the raw url when the last segment is empty, e.g. a trailing slash", () => {

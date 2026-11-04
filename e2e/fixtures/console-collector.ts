@@ -26,9 +26,7 @@ const BENIGN_WARNINGS: RegExp[] = [
  * Warnings that Chrome itself emits and that always indicate a real defect in
  * the extension, so they are promoted to failures.
  */
-const FATAL_WARNINGS: RegExp[] = [
-    /Unchecked runtime\.lastError/,
-];
+const FATAL_WARNINGS: RegExp[] = [/Unchecked runtime\.lastError/];
 
 export class ConsoleCollector {
     readonly entries: LogEntry[] = [];
@@ -41,13 +39,13 @@ export class ConsoleCollector {
         for (const page of context.pages()) {
             this.attachPage(page);
         }
-        context.on("serviceworker", worker => this.attachWorker(worker));
-        context.on("page", page => this.attachPage(page));
+        context.on("serviceworker", (worker) => this.attachWorker(worker));
+        context.on("page", (page) => this.attachPage(page));
     }
 
     attachWorker(worker: Worker): void {
         const surface = "service-worker";
-        worker.on("console", message => this.record(surface, message));
+        worker.on("console", (message) => this.record(surface, message));
         void worker
             .evaluate(() => {
                 const scope = self as unknown as { __rtaE2eHooked?: boolean };
@@ -55,10 +53,10 @@ export class ConsoleCollector {
                     return;
                 }
                 scope.__rtaE2eHooked = true;
-                self.addEventListener("error", event => {
+                self.addEventListener("error", (event) => {
                     console.error("[e2e:uncaught]", (event as ErrorEvent).message);
                 });
-                self.addEventListener("unhandledrejection", event => {
+                self.addEventListener("unhandledrejection", (event) => {
                     console.error("[e2e:unhandledrejection]", String((event as PromiseRejectionEvent).reason));
                 });
             })
@@ -67,12 +65,14 @@ export class ConsoleCollector {
 
     attachPage(page: Page): void {
         const surface = pageSurface(page.url());
-        page.on("console", message => this.record(surface || pageSurface(page.url()), message));
-        page.on("pageerror", error => this.push({
-            surface: surface || pageSurface(page.url()),
-            type: "pageerror",
-            text: error.message,
-        }));
+        page.on("console", (message) => this.record(surface || pageSurface(page.url()), message));
+        page.on("pageerror", (error) =>
+            this.push({
+                surface: surface || pageSurface(page.url()),
+                type: "pageerror",
+                text: error.message,
+            }),
+        );
     }
 
     /**
@@ -80,7 +80,10 @@ export class ConsoleCollector {
      * than `quietMs` after the call - output the surface has not emitted yet
      * must not be mistaken for output that has already settled.
      */
-    async waitForQuiet({ quietMs = 750, timeoutMs = 20_000 }: { quietMs?: number; timeoutMs?: number } = {}): Promise<void> {
+    async waitForQuiet({
+        quietMs = 750,
+        timeoutMs = 20_000,
+    }: { quietMs?: number; timeoutMs?: number } = {}): Promise<void> {
         const start = Date.now();
         const deadline = start + timeoutMs;
         while (Date.now() < deadline) {
@@ -89,21 +92,23 @@ export class ConsoleCollector {
             if (idleFor >= quietMs) {
                 return;
             }
-            await new Promise(resolve => setTimeout(resolve, Math.max(25, quietMs - idleFor)));
+            await new Promise((resolve) => setTimeout(resolve, Math.max(25, quietMs - idleFor)));
         }
     }
 
     /** Every entry that should fail a test unless a spec explicitly expects it. */
     problems(): LogEntry[] {
-        return this.entries.filter(entry => {
+        return this.entries.filter((entry) => {
             if (entry.type === "pageerror" || entry.type === "error") {
                 return true;
             }
             if (entry.type !== "warning") {
                 return false;
             }
-            return FATAL_WARNINGS.some(pattern => pattern.test(entry.text))
-                || !BENIGN_WARNINGS.some(pattern => pattern.test(entry.text));
+            return (
+                FATAL_WARNINGS.some((pattern) => pattern.test(entry.text)) ||
+                !BENIGN_WARNINGS.some((pattern) => pattern.test(entry.text))
+            );
         });
     }
 
@@ -113,18 +118,18 @@ export class ConsoleCollector {
      */
     unexpectedProblems(expected: RegExp[] = []): LogEntry[] {
         const problems = this.problems();
-        const unmatched = expected.filter(pattern => !problems.some(entry => pattern.test(entry.text)));
+        const unmatched = expected.filter((pattern) => !problems.some((entry) => pattern.test(entry.text)));
         if (unmatched.length) {
             throw new Error(`Expected these messages but none arrived: ${unmatched.map(String).join(", ")}`);
         }
-        return problems.filter(entry => !expected.some(pattern => pattern.test(entry.text)));
+        return problems.filter((entry) => !expected.some((pattern) => pattern.test(entry.text)));
     }
 
     report(entries: LogEntry[] = this.entries): string {
         if (!entries.length) {
             return "(no console output)";
         }
-        return entries.map(entry => `  [${entry.surface}] ${entry.type}: ${entry.text}`).join("\n");
+        return entries.map((entry) => `  [${entry.surface}] ${entry.type}: ${entry.text}`).join("\n");
     }
 
     clear(): void {

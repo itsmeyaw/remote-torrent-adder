@@ -52,7 +52,7 @@ export function createChromeMock(): any {
                             result[key] = storage[key];
                         }
                     }
-                    return new Promise<Record<string, any>>(resolve => {
+                    return new Promise<Record<string, any>>((resolve) => {
                         queueMicrotask(() => {
                             cb?.(result);
                             resolve(result);
@@ -68,7 +68,7 @@ export function createChromeMock(): any {
                     cb?.();
                     // Chrome dispatches change events out of band, after the
                     // write has already been acknowledged.
-                    queueMicrotask(() => storageListeners.forEach(listener => listener(changes, "local")));
+                    queueMicrotask(() => storageListeners.forEach((listener) => listener(changes, "local")));
                     return Promise.resolve();
                 }),
                 onChanged: {

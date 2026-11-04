@@ -11,14 +11,11 @@ function run(script: string, args: string[] = []) {
 describe("generate-update-manifest CLI", () => {
     const script = "scripts/generate-update-manifest.ts";
 
-    it.each(["", "abc", "1.2", "1.2.3.4", "1.2.3-beta", "v1.2"])(
-        "refuses to write updates.json for %o",
-        version => {
-            const result = run(script, version ? [version] : []);
-            expect(result.status).not.toBe(0);
-            expect(result.stderr).toMatch(/Usage:/);
-        }
-    );
+    it.each(["", "abc", "1.2", "1.2.3.4", "1.2.3-beta", "v1.2"])("refuses to write updates.json for %o", (version) => {
+        const result = run(script, version ? [version] : []);
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toMatch(/Usage:/);
+    });
 });
 
 describe("build-unlisted guard", () => {

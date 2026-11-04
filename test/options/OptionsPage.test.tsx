@@ -24,13 +24,13 @@ describe("options tablist semantics", () => {
 
         const tablist = screen.getByRole("tablist", { name: "Options sections" });
         expect(tablist).toBeInTheDocument();
-        expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(tabNames);
+        expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(tabNames);
     });
 
     it("marks exactly one tab as selected", () => {
         render(<OptionsPage />);
 
-        const selected = screen.getAllByRole("tab").filter(tab => tab.getAttribute("aria-selected") === "true");
+        const selected = screen.getAllByRole("tab").filter((tab) => tab.getAttribute("aria-selected") === "true");
         expect(selected).toHaveLength(1);
         expect(selected[0]).toHaveTextContent("WebUIs");
     });
@@ -49,7 +49,7 @@ describe("options tablist semantics", () => {
 
         const tabs = screen.getAllByRole("tab");
         expect(tabs[0]).toHaveAttribute("tabindex", "0");
-        tabs.slice(1).forEach(tab => expect(tab).toHaveAttribute("tabindex", "-1"));
+        tabs.slice(1).forEach((tab) => expect(tab).toHaveAttribute("tabindex", "-1"));
     });
 
     it("renders only the active panel", () => {

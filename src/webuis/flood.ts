@@ -7,12 +7,12 @@ export class FloodWebUI extends TorrentWebUI {
         const response = await this.fetch(this.createBaseUrl() + "/api/auth/authenticate", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json; charset=UTF-8"
+                "Content-Type": "application/json; charset=UTF-8",
             },
             body: JSON.stringify({
                 username: this._settings.username,
-                password: this._settings.password
-            })
+                password: this._settings.password,
+            }),
         });
         const json = await response.json();
         if (!json.success) {
@@ -34,11 +34,15 @@ export class FloodWebUI extends TorrentWebUI {
         };
     }
 
-    protected override async applyLabel(_session: unknown, infoHash: string, label: string): Promise<TorrentAddingResult> {
+    protected override async applyLabel(
+        _session: unknown,
+        infoHash: string,
+        label: string,
+    ): Promise<TorrentAddingResult> {
         const response = await this.fetch(this.createBaseUrl() + "/api/torrents/tags", {
             method: "PATCH",
             headers: { "Content-Type": "application/json; charset=UTF-8" },
-            body: JSON.stringify({ hashes: [infoHash.toUpperCase()], tags: [label] })
+            body: JSON.stringify({ hashes: [infoHash.toUpperCase()], tags: [label] }),
         });
         return { success: true, httpResponseCode: response.status, httpResponseBody: await response.text() };
     }
@@ -51,9 +55,9 @@ export class FloodWebUI extends TorrentWebUI {
         return {
             method: "POST",
             headers: {
-                "Content-Type": "application/json; charset=UTF-8"
+                "Content-Type": "application/json; charset=UTF-8",
             },
-            body
+            body,
         };
     }
 
@@ -65,11 +69,14 @@ export class FloodWebUI extends TorrentWebUI {
             destination: this.getDirectory(config) ?? "",
             tags,
             isBasePath: false,
-            isCompleted: false
+            isCompleted: false,
         };
     }
 
-    private async createPayloadForTorrent(torrent: Torrent, config: TorrentUploadConfig): Promise<Record<string, unknown>> {
+    private async createPayloadForTorrent(
+        torrent: Torrent,
+        config: TorrentUploadConfig,
+    ): Promise<Record<string, unknown>> {
         const tags = this.getLabel(config) ? [this.getLabel(config)] : [];
         return {
             files: [bytesToBase64(new Uint8Array(await (torrent.data as Blob).arrayBuffer()))],
@@ -77,7 +84,7 @@ export class FloodWebUI extends TorrentWebUI {
             destination: this.getDirectory(config) ?? "",
             tags,
             isBasePath: false,
-            isCompleted: false
+            isCompleted: false,
         };
     }
 
