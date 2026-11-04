@@ -2,8 +2,7 @@ import { defineConfig } from 'oxlint';
 
 export default defineConfig({
     plugins: ['typescript'],
-    // The rule set below mirrors the old ESLint config (eslint:recommended +
-    // typescript-eslint recommended), so nothing is switched on by category.
+    // Rules are opted into one by one below; no category is switched on wholesale.
     categories: { correctness: 'off' },
     env: { builtin: true },
     ignorePatterns: ['dist/**', 'dist-prod/**', 'coverage/**', 'node_modules/**', '.tmp/**'],
@@ -109,8 +108,7 @@ export default defineConfig({
     // Later overrides win, so the exemptions come after the rules they lift.
     overrides: [
         {
-            // TypeScript already checks these, as typescript-eslint's
-            // eslint-recommended turned them off.
+            // TypeScript already checks these.
             files: ['**/*.{ts,tsx,mts,cts}'],
             rules: {
                 'constructor-super': 'off',
@@ -196,7 +194,7 @@ export default defineConfig({
         {
             files: ['**/*.{js,cjs,mjs}'],
             env: { node: true },
-            rules: { 'typescript/no-require-imports': 'off' },
+            rules: { 'no-undef': 'error', 'typescript/no-require-imports': 'off' },
         },
         {
             files: ['*.config.ts', 'scripts/**/*.ts'],
