@@ -62,9 +62,10 @@ test.describe("service worker", () => {
     });
 
     test("recovers from corrupt stored settings", async ({ extension, logs }) => {
-        await extension.writeRawSettings("{ this is not json");
         logs.clear();
-        await extension.restart();
+        // The running worker repairs the write itself; restarting mid-repair only logs shutdown noise.
+        await extension.writeRawSettings("{ this is not json");
+        await expect.poll(() => extension.readSettings()).not.toBe("{ this is not json");
         await logs.waitForQuiet();
 
         const stored = await extension.readSettings();

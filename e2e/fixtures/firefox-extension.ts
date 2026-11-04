@@ -229,20 +229,21 @@ export class FirefoxExtensionHarness {
         );
     }
 
-    async hasBufferedTorrent(): Promise<boolean> {
-        return this.evaluate<boolean>(
+    /** The id of the newest Buffered Torrent, or null when none is parked. */
+    async bufferedTorrentId(): Promise<string | null> {
+        return this.evaluate<string | null>(
             [
-                "const record = await new Promise((res, rej) => {",
+                "return await new Promise((res, rej) => {",
                 '  const open = indexedDB.open("rta-torrents", 1);',
                 "  open.onerror = () => rej(open.error);",
                 "  open.onsuccess = () => {",
                 '    const tx = open.result.transaction("buffered", "readonly");',
-                '    const get = tx.objectStore("buffered").get("pending");',
-                "    get.onsuccess = () => res(get.result); get.onerror = () => rej(get.error);",
+                '    const cursor = tx.objectStore("buffered").openCursor(null, "prev");',
+                "    cursor.onsuccess = () => res(cursor.result && cursor.result.value.torrent ? String(cursor.result.key) : null);",
+                "    cursor.onerror = () => rej(cursor.error);",
                 "    tx.oncomplete = () => open.result.close();",
                 "  };",
                 "});",
-                "return Boolean(record && record.torrent);",
             ].join("\n"),
         );
     }

@@ -40,9 +40,14 @@ test.describe("adding through the label/dir popup", () => {
         await expect.poll(async () => (await extension.pageLinks(SITE_PATTERN)).length).toBeGreaterThan(0);
         await extension.clickInPage("#torrent-link");
 
-        await expect.poll(() => extension.hasBufferedTorrent(), { timeout: 20_000 }).toBe(true);
+        let bufferedId: string | null = null;
+        await expect
+            .poll(async () => (bufferedId = await extension.bufferedTorrentId()), { timeout: 20_000 })
+            .not.toBeNull();
 
-        await extension.openExtensionPage(extension.url("popup/popup.html"));
+        await extension.openExtensionPage(
+            extension.url(`popup/popup.html?buffered=${encodeURIComponent(bufferedId!)}`),
+        );
         await expect
             .poll(async () => extension.evaluateHere<string>("return document.body.innerText;"), { timeout: 15_000 })
             .toContain("Add Torrent");

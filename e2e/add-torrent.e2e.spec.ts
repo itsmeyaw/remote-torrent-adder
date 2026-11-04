@@ -87,7 +87,7 @@ test.describe("adding a torrent end to end", () => {
             "the worker must still be alive after a rejected add",
         ).toBeTruthy();
 
-        const problems = logs.unexpectedProblems();
+        const problems = logs.unexpectedProblems([/Torrent rejected by Fake qBittorrent/]);
         expect(problems, logs.report(problems)).toEqual([]);
     });
 
